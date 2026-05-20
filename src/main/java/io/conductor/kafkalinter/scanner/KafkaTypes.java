@@ -50,6 +50,13 @@ public final class KafkaTypes {
     public static final String TRANSACTION_TIMEOUT_MS_KEY = "transaction.timeout.ms";
     public static final String MAX_POLL_INTERVAL_MS_KEY = "max.poll.interval.ms";
     public static final String BATCH_SIZE_KEY = "batch.size";
+    public static final String PARTITIONER_CLASS_KEY = "partitioner.class";
+    public static final String FETCH_MAX_BYTES_KEY = "fetch.max.bytes";
+    /** Partitioner classes deprecated by KIP-794 since 3.3 — the default strategy is now strictly better. */
+    public static final Set<String> PARTITIONER_DEPRECATED_FQCNS = Set.of(
+            "org.apache.kafka.clients.producer.internals.DefaultPartitioner",
+            "org.apache.kafka.clients.producer.UniformStickyPartitioner"
+    );
     public static final String SECURITY_PROTOCOL_KEY = "security.protocol";
     public static final String SSL_ENDPOINT_ID_ALGO_KEY = "ssl.endpoint.identification.algorithm";
     public static final String SASL_JAAS_CONFIG_KEY = "sasl.jaas.config";
@@ -59,6 +66,13 @@ public final class KafkaTypes {
     public static final String SSL_KEY_PASSWORD_KEY = "ssl.key.password";
 
     // kafka-streams config keys
+    public static final String STREAMS_APPLICATION_ID_KEY = "application.id";
+    public static final Set<String> STREAMS_GENERIC_APPLICATION_IDS = Set.of(
+            "streams-app", "kafka-streams", "kafka-streams-app", "streams",
+            "my-streams-app", "my-app", "myapp",
+            "test", "test-app", "demo", "demo-app", "example", "example-app",
+            "app", "application", "dev", "default"
+    );
     public static final String STREAMS_REPLICATION_FACTOR_KEY = "replication.factor";
     public static final String STREAMS_STATE_DIR_KEY = "state.dir";
     public static final String STREAMS_PROCESSING_GUARANTEE_KEY = "processing.guarantee";

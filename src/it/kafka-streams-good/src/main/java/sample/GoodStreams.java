@@ -10,7 +10,7 @@ public final class GoodStreams {
 
     public Properties safeProperties() {
         Properties p = new Properties();
-        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "app");
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "good-streams-pipeline-v1");
         p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         p.put("replication.factor", "3");
         p.put("state.dir", "/var/lib/streams");

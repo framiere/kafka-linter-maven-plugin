@@ -732,6 +732,36 @@ public final class RuleId {
             .whyMatters("This rule isn't about choosing between 5 ms and 50 ms — that's a real tuning decision. It's about catching the units-mistake / extra-zeros class of typo. If you genuinely want a minute of linger, the rule's threshold is wrong for your case and you should disable it; in every other case, you have a bug.")
             .build());
 
+    public static final RuleId PRODUCER_PARTITIONER_CLASS_DEPRECATED = register(builder("PRODUCER_PARTITIONER_CLASS_DEPRECATED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_PARTITIONER_CLASS_DEPRECATED.md")
+            .message("partitioner.class points at DefaultPartitioner or UniformStickyPartitioner — both deprecated since Kafka 3.3 (KIP-794).")
+            .tagline("KIP-794 made the built-in 'no partitioner.class set' strategy strictly better than the old DefaultPartitioner. Explicitly naming one of the deprecated classes leaves you on the worse code path.")
+            .mechanism("Before 3.3, the producer used `DefaultPartitioner` (hash on key, sticky round-robin on null key) or `UniformStickyPartitioner` (sticky regardless of key). Both produce uneven broker load because the 'sticky' strategy keeps writing to a slow partition even after it falls behind. The 3.3 built-in strategy (active when `partitioner.class` is *not* set) uses queue size + RTT feedback to steer records away from slow partitions.")
+            .impact("Sticking with the deprecated classes manifests as broker-side imbalance under load: one partition's leader replicates twice as much as its peers, and that hotspot becomes the throughput bottleneck. With the modern strategy, the producer self-corrects and the imbalance disappears.")
+            .whyMatters("The fix is to *delete* the `partitioner.class` line entirely — the new default is the right answer. The deprecated classes will be removed in a future major; code that names them will break on upgrade.")
+            .build());
+
+    public static final RuleId CONSUMER_FETCH_MAX_BYTES_TOO_LOW = register(builder("CONSUMER_FETCH_MAX_BYTES_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_FETCH_MAX_BYTES_TOO_LOW.md")
+            .message("fetch.max.bytes below 1 MiB — consumer cannot pull large batches even when the broker has data ready.")
+            .tagline("fetch.max.bytes caps the per-FetchRequest payload. Shrink it and you cap the consumer's throughput regardless of how fast the broker can serve.")
+            .mechanism("On `poll()`, the consumer issues a FetchRequest with `fetch.max.bytes` as the upper bound on bytes the broker can return across all assigned partitions. The default is 52 MiB. The minimum useful value is roughly one max-sized record; below 1 MiB you cannot even pull a single batch that uses Kafka's default `message.max.bytes` (1 MiB).")
+            .impact("With `fetch.max.bytes=65536` (a common copy-paste from a 'tiny consumer' tutorial), each FetchRequest returns at most 64 KiB. The consumer issues 800+ FetchRequests/sec to keep up with a moderate produce rate, broker request-handler CPU spikes, and the consumer's actual throughput is bounded at roughly `64 KiB / RTT`.")
+            .whyMatters("There is no upside to shrinking this — broker memory is not the bottleneck. The right knobs for memory pressure are `max.partition.fetch.bytes` (per-partition) and `max.poll.records` (number of records returned per poll), not the byte cap on the FetchRequest itself.")
+            .build());
+
+    public static final RuleId STREAMS_APPLICATION_ID_GENERIC = register(builder("STREAMS_APPLICATION_ID_GENERIC")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_APPLICATION_ID_GENERIC.md")
+            .message("application.id is a generic placeholder (streams-app, test, demo, ...). Two apps with the same id share a consumer group, changelog topics, and state-store names.")
+            .tagline("application.id is the unique identity of a Streams application across the cluster. A generic value collides with the next person who also leaves it at the default.")
+            .mechanism("Kafka Streams uses `application.id` as the consumer group, as the prefix for internal changelog/repartition topics (e.g. `<appId>-KSTREAM-...-changelog`), as the embedded admin-client `client.id`, and as part of the local RocksDB path. The same id from two different apps means both will join the same consumer group, both will try to claim the same changelog topics, and the topology layouts must match — or the apps fight over the same state.")
+            .impact("Two services both shipping with `application.id=streams-app` will rebalance against each other every time either restarts, will try to write each other's changelog records, and will fail with InvalidTopicException once their topologies diverge. The 'fix' often looks like flaky CI or 'random' rebalances and takes days to diagnose.")
+            .whyMatters("Pick a value that includes the service name and ideally the topology version: `payments-fraud-screening-v3`. Treat changing it like a database name change — it is one. This rule catches the copy-paste-tutorial class of bug, where the placeholder ships to staging without being changed.")
+            .build());
+
     public static final RuleId STREAMS_NUM_STANDBY_REPLICAS_ZERO = register(builder("STREAMS_NUM_STANDBY_REPLICAS_ZERO")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_NUM_STANDBY_REPLICAS_ZERO.md")

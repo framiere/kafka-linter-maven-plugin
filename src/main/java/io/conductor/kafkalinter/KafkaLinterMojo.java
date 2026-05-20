@@ -209,6 +209,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_LINGER_MS_TOO_HIGH, s, KafkaTypes.LINGER_MS_KEY,
                 v -> parseIntOrZero(v) > 60000,
                 "linger.ms={value} — above 60 s. Every record sits in the accumulator that long before send; almost certainly a units/typo mistake."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_PARTITIONER_CLASS_DEPRECATED, s -> ConfigKeyValueRule.literalAny(
+                RuleId.PRODUCER_PARTITIONER_CLASS_DEPRECATED, s, KafkaTypes.PARTITIONER_CLASS_KEY,
+                KafkaTypes.PARTITIONER_DEPRECATED_FQCNS,
+                "partitioner.class={value} — deprecated by KIP-794. Delete this line; the built-in strategy (queue+RTT aware) is strictly better."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_LOW, s, KafkaTypes.FETCH_MAX_BYTES_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 0 && n < 1_048_576L; },
+                "fetch.max.bytes={value} — below 1 MiB. The consumer cannot pull a single max-sized batch; FetchRequest rate explodes and effective throughput is capped at ~ value/RTT."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_APPLICATION_ID_GENERIC, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_APPLICATION_ID_GENERIC, s, KafkaTypes.STREAMS_APPLICATION_ID_KEY,
+                v -> v != null && KafkaTypes.STREAMS_GENERIC_APPLICATION_IDS.contains(v.trim().toLowerCase()),
+                "application.id={value} — a generic placeholder. Two apps with this id will collide on consumer-group, changelogs, and state. Use service-name-vN."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },

@@ -370,6 +370,26 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: PRODUCER_PARTITIONER_CLASS_DEPRECATED.
+    public void producerPartitionerClassDeprecated() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("partitioner.class", "org.apache.kafka.clients.producer.UniformStickyPartitioner");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_FETCH_MAX_BYTES_TOO_LOW.
+    public void consumerFetchMaxBytesTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("fetch.max.bytes", "65536");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();
