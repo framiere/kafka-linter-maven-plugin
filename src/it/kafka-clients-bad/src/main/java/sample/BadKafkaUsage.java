@@ -320,7 +320,7 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
-    // RULE: PRODUCER_TXN_TIMEOUT_TOO_HIGH.
+    // RULE: PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_HIGH.
     public void producerTxnTimeoutTooHigh() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "kafka:9092");
@@ -739,6 +739,26 @@ public final class BadKafkaUsage {
         p.put("bootstrap.servers", "kafka:9092");
         p.put("group.id", "orders-fraud-detection-v3");
         p.put("fetch.max.bytes", "209715200");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: CONSUMER_SESSION_TIMEOUT_MS_TOO_HIGH.
+    public void consumerSessionTimeoutMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("session.timeout.ms", "300000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_HIGH.
+    public void consumerHeartbeatIntervalMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("heartbeat.interval.ms", "20000");
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
         consumer.close();
     }

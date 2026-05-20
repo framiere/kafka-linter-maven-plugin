@@ -501,6 +501,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "fetch.max.bytes={value} — above 100 MiB. A single FetchResponse can stall the consumer for seconds and pin that many bytes in heap per request; defaults around 50 MiB are safer."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_SESSION_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_SESSION_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.SESSION_TIMEOUT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 60_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "session.timeout.ms={value} — above 60 s. Most managed brokers cap this at 60 s (group.max.session.timeout.ms); past that the consumer's JoinGroup is rejected at startup. Even when accepted, a crashed pod's partitions stay frozen for the full window before rebalancing."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_HIGH, s, KafkaTypes.HEARTBEAT_INTERVAL_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) >= 15_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "heartbeat.interval.ms={value} — at/above session.timeout.ms / 3. One missed heartbeat (GC pause, network blip) now triggers an eviction and a group-wide rebalance. Keep it ≤ 1/3 of session.timeout.ms."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 900_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "transaction.timeout.ms={value} — above 15 min. A crashed transactional producer blocks the LSO on every partition it wrote to for the full window; downstream read_committed consumers stall with zero error signal."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
