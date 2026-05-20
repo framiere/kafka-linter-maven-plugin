@@ -48,6 +48,9 @@ public final class KafkaTypes {
     public static final String STREAMS_STATE_DIR_KEY = "state.dir";
     public static final String STREAMS_PROCESSING_GUARANTEE_KEY = "processing.guarantee";
     public static final Set<String> STREAMS_EOS_V1_VALUES = Set.of("exactly_once", "exactly_once_beta");
+    public static final String STREAMS_COMMIT_INTERVAL_MS_KEY = "commit.interval.ms";
+    public static final String STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY = "cache.max.bytes.buffering";
+    public static final String STREAMS_STATESTORE_CACHE_MAX_BYTES_KEY = "statestore.cache.max.bytes";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

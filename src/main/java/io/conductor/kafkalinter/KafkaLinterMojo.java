@@ -196,6 +196,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_EOS_V1_DEPRECATED, s, KafkaTypes.STREAMS_PROCESSING_GUARANTEE_KEY,
                 KafkaTypes.STREAMS_EOS_V1_VALUES,
                 "processing.guarantee={value} — EOS-v1 was deprecated by KIP-732 and removed in Kafka 4.0. Use exactly_once_v2."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_COMMIT_INTERVAL_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_COMMIT_INTERVAL_TOO_LOW, s, KafkaTypes.STREAMS_COMMIT_INTERVAL_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 100; },
+                "commit.interval.ms={value} — well below the 100 ms documented floor. Broker write rate (offset commits + changelog flush) goes pathological."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_CACHE_DISABLED, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_CACHE_DISABLED, s, KafkaTypes.STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY,
+                "0"::equals,
+                "cache.max.bytes.buffering=0 — every state-store update is forwarded; changelog write rate explodes."));
         addIfEnabled(rules, sev, RuleId.STREAMS_CLEANUP_IN_PROD, s -> new MethodCallRule(
                 RuleId.STREAMS_CLEANUP_IN_PROD, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("cleanUp"),
                 "KafkaStreams.cleanUp() — wipes local state. Acceptable in tests; in prod it forces full changelog rebuild."));

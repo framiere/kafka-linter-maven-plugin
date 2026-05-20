@@ -46,6 +46,24 @@ public final class BadStreams {
         streams.start();
     }
 
+    // RULE: STREAMS_COMMIT_INTERVAL_TOO_LOW.
+    public Properties commitIntervalTooLow() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "app");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("commit.interval.ms", "50");
+        return p;
+    }
+
+    // RULE: STREAMS_CACHE_DISABLED.
+    public Properties cacheDisabled() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "app");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("cache.max.bytes.buffering", "0");
+        return p;
+    }
+
     // RULE: STREAMS_THROUGH_DEPRECATED.
     public void throughDeprecated(StreamsBuilder b) {
         KStream<String, String> s = b.stream("in");

@@ -374,6 +374,26 @@ public final class RuleId {
             .whyMatters("cleanUp() exists for the test pattern of 'fresh state for each test run'. In production, even a small bug that triggers it on a hot path is a multi-hour outage.")
             .build());
 
+    public static final RuleId STREAMS_COMMIT_INTERVAL_TOO_LOW = register(builder("STREAMS_COMMIT_INTERVAL_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_COMMIT_INTERVAL_TOO_LOW.md")
+            .message("Streams commit.interval.ms < 100 — pathological commit rate. Brokers and changelog topics will feel it.")
+            .tagline("Committing every millisecond means the broker commits a million times a millisecond. 🤝")
+            .mechanism("Streams uses `commit.interval.ms` (default 30000 under at-least-once, 100 under EOS-v2) to time-bound how often the runtime drains the producer, advances source positions, and flushes state stores. Each commit triggers a state-store flush, a changelog produce, and an offset commit — three brokers-side writes. Setting it below 100 ms compounds this into a continuous storm.")
+            .impact("Broker CPU saturates on offset/changelog writes. Producer batching collapses (each commit forces a flush). State store I/O climbs to the point that the topology stops making forward progress on input. Discovered as 'topology is stuck but consumer-lag isn't growing fast enough' — the runtime is spending all its time committing.")
+            .whyMatters("Default 30 s under AT_LEAST_ONCE is intentional — record-level delivery is already covered by the producer's idempotence. Under EOS-v2 the default 100 ms is the documented sweet spot; lower than that is almost always a misunderstanding (people think they're reducing latency; they're actually increasing it). 🤝 Coordinate this knob with the broker team — they'll see the load immediately.")
+            .build());
+
+    public static final RuleId STREAMS_CACHE_DISABLED = register(builder("STREAMS_CACHE_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_CACHE_DISABLED.md")
+            .message("Streams cache disabled (cache.max.bytes.buffering=0 or statestore.cache.max.bytes=0) — every state-store update becomes a changelog produce.")
+            .tagline("Cache=0 makes brokers cry. Update rates explode without it.")
+            .mechanism("Streams' record cache buffers state-store updates between commit intervals and emits *only the latest value per key* downstream — this collapses a hot key receiving 1000 updates/second into one downstream record per commit. Setting `cache.max.bytes.buffering=0` (or the new `statestore.cache.max.bytes=0`, since Kafka 3.4) disables the cache and forwards every update.")
+            .impact("Changelog topic write rate explodes (every state mutation goes to the broker). Downstream operators receive every intermediate value instead of the converged one. Consumer apps reading from the output topic see a 100× message-rate increase on the same logical workload. Symptoms: broker IO climbing on the changelog topic; downstream `records-per-second` mismatching upstream `records-consumed-per-second`.")
+            .whyMatters("Keep the cache on. Disabling it is sometimes deliberate (you want every intermediate state, e.g. for audit), but that case is rare and should be paired with downstream sizing for the burst. The Streams 3.4+ `statestore.cache.max.bytes` key replaces `cache.max.bytes.buffering` — make sure you don't accidentally set both to zero.")
+            .build());
+
     public static final RuleId STREAMS_THROUGH_DEPRECATED = register(builder("STREAMS_THROUGH_DEPRECATED")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_THROUGH_DEPRECATED.md")
