@@ -52,6 +52,8 @@ public final class KafkaTypes {
     public static final String BATCH_SIZE_KEY = "batch.size";
     public static final String PARTITIONER_CLASS_KEY = "partitioner.class";
     public static final String FETCH_MAX_BYTES_KEY = "fetch.max.bytes";
+    public static final String CHECK_CRCS_KEY = "check.crcs";
+    public static final String MAX_BLOCK_MS_KEY = "max.block.ms";
     /** Partitioner classes deprecated by KIP-794 since 3.3 — the default strategy is now strictly better. */
     public static final Set<String> PARTITIONER_DEPRECATED_FQCNS = Set.of(
             "org.apache.kafka.clients.producer.internals.DefaultPartitioner",
@@ -78,6 +80,7 @@ public final class KafkaTypes {
     public static final String STREAMS_PROCESSING_GUARANTEE_KEY = "processing.guarantee";
     public static final Set<String> STREAMS_EOS_V1_VALUES = Set.of("exactly_once", "exactly_once_beta");
     public static final String STREAMS_COMMIT_INTERVAL_MS_KEY = "commit.interval.ms";
+    public static final String STREAMS_TASK_TIMEOUT_MS_KEY = "task.timeout.ms";
     public static final String STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY = "cache.max.bytes.buffering";
     public static final String STREAMS_STATESTORE_CACHE_MAX_BYTES_KEY = "statestore.cache.max.bytes";
     public static final String STREAMS_NUM_STANDBY_REPLICAS_KEY = "num.standby.replicas";

@@ -221,6 +221,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_APPLICATION_ID_GENERIC, s, KafkaTypes.STREAMS_APPLICATION_ID_KEY,
                 v -> v != null && KafkaTypes.STREAMS_GENERIC_APPLICATION_IDS.contains(v.trim().toLowerCase()),
                 "application.id={value} — a generic placeholder. Two apps with this id will collide on consumer-group, changelogs, and state. Use service-name-vN."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_CHECK_CRCS_FALSE, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_CHECK_CRCS_FALSE, s, KafkaTypes.CHECK_CRCS_KEY, "false",
+                "check.crcs=false — consumer accepts records without verifying the on-the-wire CRC. Corrupt records reach the application as valid."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_BLOCK_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_MAX_BLOCK_MS_TOO_LOW, s, KafkaTypes.MAX_BLOCK_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
+                "max.block.ms={value} — below 10 s. Routine metadata fetches bubble up as TimeoutException from send(); bound the upstream call instead."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
@@ -274,6 +281,9 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_CACHE_KEY_DEPRECATED, s, KafkaTypes.STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY,
                 v -> v != null && !v.isEmpty(),
                 "cache.max.bytes.buffering={value} — deprecated since Kafka 3.4. Rename to statestore.cache.max.bytes."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TASK_TIMEOUT_MS_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_TASK_TIMEOUT_MS_ZERO, s, KafkaTypes.STREAMS_TASK_TIMEOUT_MS_KEY, "0",
+                "task.timeout.ms=0 — first transient broker error kills the task. Default 300000 ms is the right starting point."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

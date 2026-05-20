@@ -752,6 +752,36 @@ public final class RuleId {
             .whyMatters("There is no upside to shrinking this — broker memory is not the bottleneck. The right knobs for memory pressure are `max.partition.fetch.bytes` (per-partition) and `max.poll.records` (number of records returned per poll), not the byte cap on the FetchRequest itself.")
             .build());
 
+    public static final RuleId CONSUMER_CHECK_CRCS_FALSE = register(builder("CONSUMER_CHECK_CRCS_FALSE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_CHECK_CRCS_FALSE.md")
+            .message("check.crcs=false — consumer accepts records without verifying the on-the-wire CRC.")
+            .tagline("CRC checks are how the consumer detects bit-rot, broker bugs, and network corruption. Turning them off means corrupted records are processed as valid.")
+            .mechanism("Every Kafka record-batch is stored with a CRC32C checksum. The consumer recomputes it after decompression and compares — a mismatch raises CorruptRecordException. With `check.crcs=false`, the comparison is skipped entirely and the (potentially corrupt) batch is forwarded to the application.")
+            .impact("Bit-flips during broker storage, a faulty NIC on either end of the connection, or a broker-side compression bug all produce records that look valid to the application — wrong field values, truncated payloads, or random schema-validation failures downstream. The first 'evidence' is usually a strange business-logic error that nobody can reproduce.")
+            .whyMatters("The CPU cost of CRC verification is in the single-digit percent on the consumer side; modern JVMs use the CRC32C hardware instruction. There is no defensible reason to turn this off in production. The setting exists for benchmarking; if you see it in code, it leaked.")
+            .build());
+
+    public static final RuleId PRODUCER_MAX_BLOCK_MS_TOO_LOW = register(builder("PRODUCER_MAX_BLOCK_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_MAX_BLOCK_MS_TOO_LOW.md")
+            .message("max.block.ms below 10 s — producer.send() throws on transient metadata-fetch delays instead of waiting them out.")
+            .tagline("max.block.ms is how long send() is allowed to wait for metadata or buffer space. Cut it too short and a routine bootstrap-server hiccup becomes a TimeoutException to the caller.")
+            .mechanism("On `producer.send()`, the producer may block in two places: waiting for cluster metadata (first send to a topic, leader changes) and waiting for accumulator space (when records pile up). `max.block.ms` (default 60 s) caps the total wait. When it expires, `send()` throws TimeoutException synchronously — your application code sees the failure, not the sender thread.")
+            .impact("With `max.block.ms=1000`, a single cross-region metadata fetch — routine after a broker restart or leader move — bubbles up as a TimeoutException from `send()`. The application typically logs and drops the record. A small broker hiccup that the producer would have absorbed in 1.5 s becomes a record-loss event.")
+            .whyMatters("The motivation is usually 'send() should never block this thread' — which is reasonable, but the right shape is to keep `max.block.ms` at the default and put the call behind a circuit-breaker or worker pool that owns the latency budget. Treating `max.block.ms` as a per-call latency cap mistakes one knob for another.")
+            .build());
+
+    public static final RuleId STREAMS_TASK_TIMEOUT_MS_ZERO = register(builder("STREAMS_TASK_TIMEOUT_MS_ZERO")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_TASK_TIMEOUT_MS_ZERO.md")
+            .message("task.timeout.ms=0 — the first transient broker error kills the task instead of retrying.")
+            .tagline("task.timeout.ms is the retry-on-transient-error budget per Streams task. Setting it to 0 means 'crash on the first hiccup' — the opposite of what production wants.")
+            .mechanism("When a Streams task hits a transient error (TimeoutException, broker disconnect, NotLeaderForPartition), the runtime retries internally for up to `task.timeout.ms` before raising the error to the global handler. The default is 5 minutes; the floor 0 means 'no retries'.")
+            .impact("With `task.timeout.ms=0`, a routine leader-election (which the broker resolves in 1-3 s) shows up as a task failure, which (depending on the StreamsUncaughtExceptionHandler) either restarts the thread or kills the whole app. The application looks unstable and flaps under normal cluster operation.")
+            .whyMatters("This is almost never what users want — they usually set it during testing to 'fail fast' and forget to remove it. The default is the right answer in production. If you genuinely need faster failure surfacing, do it at the handler level, not by zeroing the retry budget.")
+            .build());
+
     public static final RuleId STREAMS_APPLICATION_ID_GENERIC = register(builder("STREAMS_APPLICATION_ID_GENERIC")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_APPLICATION_ID_GENERIC.md")

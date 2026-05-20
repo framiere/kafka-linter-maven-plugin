@@ -106,4 +106,13 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_TASK_TIMEOUT_MS_ZERO.
+    public Properties taskTimeoutMsZero() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("task.timeout.ms", "0");
+        return p;
+    }
 }

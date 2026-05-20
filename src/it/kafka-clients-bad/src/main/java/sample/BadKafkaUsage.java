@@ -390,6 +390,26 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_CHECK_CRCS_FALSE.
+    public void consumerCheckCrcsFalse() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("check.crcs", "false");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_MAX_BLOCK_MS_TOO_LOW.
+    public void producerMaxBlockMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("max.block.ms", "1000");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();
