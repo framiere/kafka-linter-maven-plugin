@@ -1143,6 +1143,34 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: SCHEMA_REGISTRY_AUTO_REGISTER_TRUE.
+    public Properties schemaRegistryAutoRegisterTrue() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("schema.registry.url", "https://sr.internal:8081");
+        p.put("auto.register.schemas", "true");
+        return p;
+    }
+
+    // RULE: SCHEMA_REGISTRY_USE_LATEST_VERSION_TRUE.
+    public Properties schemaRegistryUseLatestVersionTrue() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("schema.registry.url", "https://sr.internal:8081");
+        p.put("use.latest.version", "true");
+        return p;
+    }
+
+    // RULE: SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO_LITERAL.
+    public Properties schemaRegistryBasicAuthUserInfoLiteral() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("schema.registry.url", "https://sr.internal:8081");
+        p.put("basic.auth.credentials.source", "USER_INFO");
+        p.put("basic.auth.user.info", "sr-user:sr-password-1234");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
