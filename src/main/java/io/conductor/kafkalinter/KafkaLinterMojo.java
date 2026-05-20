@@ -1258,6 +1258,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.heartbeat-interval={value} — at/above session.timeout.ms / 3 (default session 45 s). One missed heartbeat (GC pause, network blip) now triggers eviction and a group-wide rebalance. Keep at the default 3 s.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_SESSION_TIMEOUT_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_SESSION_TIMEOUT_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_SESSION_TIMEOUT_TOO_LOW),
+                    "spring.kafka.consumer.session-timeout",
+                    v -> { long n = parseSpringDurationMs(v); return n > 0 && n < 10_000L; },
+                    "spring.kafka.consumer.session-timeout={value} — below 10 s. Routine GC pauses and network blips exceed the session window; the consumer is evicted and the group rebalances. Pure noise rebalances; default 45 s is almost always right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_HEARTBEAT_INTERVAL_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_HEARTBEAT_INTERVAL_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_HEARTBEAT_INTERVAL_TOO_LOW),
+                    "spring.kafka.consumer.heartbeat-interval",
+                    v -> { long n = parseSpringDurationMs(v); return n > 0 && n < 1_000L; },
+                    "spring.kafka.consumer.heartbeat-interval={value} — below 1 s. Floods the group coordinator with heartbeats; broker-side CPU goes up for zero detection benefit (session.timeout.ms is the actual eviction knob). Default 3 s is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_HIGH),
+                    "spring.kafka.producer.properties.transaction.timeout.ms",
+                    v -> parseLongOrZero(v) > 900_000L,
+                    "spring.kafka.producer.properties.transaction.timeout.ms={value} — above 15 min. A crashed transactional producer blocks the LSO on every partition it wrote to for the full window; downstream read_committed consumers stall with zero error signal. Default 60 s lets the broker self-heal in a minute.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
