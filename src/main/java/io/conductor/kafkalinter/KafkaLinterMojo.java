@@ -1306,6 +1306,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.max.poll.interval.ms={value} — below 60 s. Any batch overrun evicts the consumer; group enters a poll/evict loop with unbounded re-delivery. Tighten max.poll.records instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_INTERVAL_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_INTERVAL_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_INTERVAL_MS_TOO_HIGH),
+                    "spring.kafka.consumer.properties.max.poll.interval.ms",
+                    v -> parseLongOrZero(v) > 1_800_000L,
+                    "spring.kafka.consumer.properties.max.poll.interval.ms={value} — above 30 min. A stuck consumer holds its partitions for the full window; other replicas cannot take the load; lag grows unbounded with no detection signal.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MIN_BYTES_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_FETCH_MIN_BYTES_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MIN_BYTES_TOO_HIGH),
+                    "spring.kafka.consumer.fetch-min-size",
+                    v -> parseSpringDataSizeBytes(v) > 10L * 1024L * 1024L,
+                    "spring.kafka.consumer.fetch-min-size={value} — above 10 MiB. Every fetch blocks until fetch-max-wait elapses; end-to-end latency floors at fetch-max-wait on quiet topics.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH),
+                    "spring.kafka.consumer.fetch-max-wait",
+                    v -> parseSpringDurationMs(v) > 5_000L,
+                    "spring.kafka.consumer.fetch-max-wait={value} — above 5 s. Empty fetches block the broker request handler for the full window; end-to-end latency floors at the wait time and max.poll.interval.ms margin shrinks.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
@@ -1637,6 +1661,35 @@ public class KafkaLinterMojo extends AbstractMojo {
                 case "m":  return n * 60_000L;
                 case "h":  return n * 3_600_000L;
                 case "d":  return n * 86_400_000L;
+            }
+        }
+        return 0L;
+    }
+
+    /**
+     * Parse a Spring Boot DataSize string to bytes. Accepts: bare digits (bytes — Spring's default
+     * unit for Kafka DataSize properties), and the standard DataSize suffixes ("1B", "1KB", "1MB",
+     * "1GB", "1TB") with case-insensitive matching. Spring DataSize uses binary scaling (KB = 1024 B,
+     * MB = 1024 KB, …). Returns 0 on any parse failure so callers' numeric predicates evaluate false.
+     */
+    private static long parseSpringDataSizeBytes(String v) {
+        if (v == null) return 0L;
+        String t = v.trim();
+        if (t.isEmpty()) return 0L;
+        if (t.matches("\\d+")) {
+            try { return Long.parseLong(t); } catch (NumberFormatException e) { return 0L; }
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^(\\d+)\\s*(b|kb|mb|gb|tb)$")
+                .matcher(t.toLowerCase(java.util.Locale.ROOT));
+        if (m.matches()) {
+            long n; try { n = Long.parseLong(m.group(1)); } catch (NumberFormatException e) { return 0L; }
+            switch (m.group(2)) {
+                case "b":  return n;
+                case "kb": return n * 1024L;
+                case "mb": return n * 1024L * 1024L;
+                case "gb": return n * 1024L * 1024L * 1024L;
+                case "tb": return n * 1024L * 1024L * 1024L * 1024L;
             }
         }
         return 0L;
