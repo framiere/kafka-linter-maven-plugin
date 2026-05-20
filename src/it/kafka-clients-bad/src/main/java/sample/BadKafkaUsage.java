@@ -284,6 +284,26 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: SR_VALUE_SUBJECT_NAME_STRATEGY_NON_DEFAULT.
+    public void srValueSubjectNameStrategyNonDefault() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("schema.registry.url", "https://schema-registry:8081");
+        p.put("value.subject.name.strategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: SR_KEY_SUBJECT_NAME_STRATEGY_NON_DEFAULT.
+    public void srKeySubjectNameStrategyNonDefault() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("schema.registry.url", "https://schema-registry:8081");
+        p.put("key.subject.name.strategy", "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: PRODUCER_BUFFER_MEMORY_TOO_SMALL.
     public void producerBufferMemoryTooSmall() {
         Properties p = new Properties();

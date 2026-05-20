@@ -339,6 +339,11 @@ public class KafkaLinterMojo extends AbstractMojo {
                 KafkaTypes.STREAMS_REPARTITION_PURGE_INTERVAL_MS_KEY,
                 v -> { if (v == null) return false; try { long n = Long.parseLong(v.trim()); return n > 0 && n < 5_000L; } catch (NumberFormatException e) { return false; } },
                 "repartition.purge.interval.ms={value} — below 5 s. DeleteRecords admin RPCs hammer the controller queue and the admin-client inflight slots, contending with create/delete topic and leader election. Default 30000 (30 s) is right; raise to ≥5000."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_HIGH, s,
+                KafkaTypes.STREAMS_REPARTITION_PURGE_INTERVAL_MS_KEY,
+                v -> { if (v == null) return false; try { long n = Long.parseLong(v.trim()); return n > 300_000L; } catch (NumberFormatException e) { return false; } },
+                "repartition.purge.interval.ms={value} — above 5 min. Repartition-topic records sit on broker disk for the full interval after they're consumed; on a high-throughput topology that's tens of GB of avoidable disk usage. Default 30000 (30 s) is right; keep below 300000."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TOPOLOGY_OPTIMIZATION_NONE, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_TOPOLOGY_OPTIMIZATION_NONE, s, KafkaTypes.STREAMS_TOPOLOGY_OPTIMIZATION_KEY, "none",
                 "topology.optimization=none — extra repartition/changelog topics that 'all' would eliminate. For new apps, switch to 'all'."));
@@ -983,6 +988,14 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE, s -> ConfigKeyValueRule.literal(
                 RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE, s, KafkaTypes.SR_LATEST_COMPATIBILITY_STRICT_KEY, "false",
                 "latest.compatibility.strict=false — combined with use.latest.version=true, the serializer pins records to the latest registered schema without verifying that the runtime record is compatible with it. Silent data loss: fields can be dropped or coerced with no error at serialization time."));
+        addIfEnabled(rules, sev, RuleId.SR_VALUE_SUBJECT_NAME_STRATEGY_NON_DEFAULT, s -> new ConfigKeyValueRule(
+                RuleId.SR_VALUE_SUBJECT_NAME_STRATEGY_NON_DEFAULT, s, KafkaTypes.SR_VALUE_SUBJECT_NAME_STRATEGY_KEY,
+                v -> v != null && KafkaTypes.SR_NON_DEFAULT_SUBJECT_NAME_STRATEGY_FQCNS.stream().anyMatch(v.trim()::equals),
+                "value.subject.name.strategy={value} — non-default strategy. Schema Registry compatibility checks set on <topic>-value no longer apply, and CI/governance tooling that indexes by topic-name silently misses breaking changes. Set to io.confluent.kafka.serializers.subject.TopicNameStrategy (the default)."));
+        addIfEnabled(rules, sev, RuleId.SR_KEY_SUBJECT_NAME_STRATEGY_NON_DEFAULT, s -> new ConfigKeyValueRule(
+                RuleId.SR_KEY_SUBJECT_NAME_STRATEGY_NON_DEFAULT, s, KafkaTypes.SR_KEY_SUBJECT_NAME_STRATEGY_KEY,
+                v -> v != null && KafkaTypes.SR_NON_DEFAULT_SUBJECT_NAME_STRATEGY_FQCNS.stream().anyMatch(v.trim()::equals),
+                "key.subject.name.strategy={value} — non-default strategy. Shared Avro key types across topics collide under one registry subject; the topic's compatibility level is bypassed. Set to io.confluent.kafka.serializers.subject.TopicNameStrategy (the default)."));
         addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_URL_HTTP, s -> new ConfigKeyValueRule(
                 RuleId.SCHEMA_REGISTRY_URL_HTTP, s, KafkaTypes.SCHEMA_REGISTRY_URL_KEY,
                 v -> v != null && v.startsWith("http://"),
@@ -1812,6 +1825,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.properties.schema.registry.url",
                     v -> v != null && v.startsWith("http://"),
                     "spring.kafka.properties.schema.registry.url={value} — Schema Registry over plain HTTP. Schemas and basic-auth credentials leak. Use https://.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SR_VALUE_SUBJECT_NAME_STRATEGY_NON_DEFAULT) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SR_VALUE_SUBJECT_NAME_STRATEGY_NON_DEFAULT, sev.get(RuleId.SR_VALUE_SUBJECT_NAME_STRATEGY_NON_DEFAULT),
+                    "spring.kafka.properties.value.subject.name.strategy",
+                    v -> v != null && KafkaTypes.SR_NON_DEFAULT_SUBJECT_NAME_STRATEGY_FQCNS.stream().anyMatch(v.trim()::equals),
+                    "spring.kafka.properties.value.subject.name.strategy={value} — non-default Schema Registry subject strategy. Compatibility levels set on <topic>-value no longer apply; CI/governance tooling that indexes by topic-name silently misses breaking changes. Default TopicNameStrategy.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SR_KEY_SUBJECT_NAME_STRATEGY_NON_DEFAULT) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SR_KEY_SUBJECT_NAME_STRATEGY_NON_DEFAULT, sev.get(RuleId.SR_KEY_SUBJECT_NAME_STRATEGY_NON_DEFAULT),
+                    "spring.kafka.properties.key.subject.name.strategy",
+                    v -> v != null && KafkaTypes.SR_NON_DEFAULT_SUBJECT_NAME_STRATEGY_FQCNS.stream().anyMatch(v.trim()::equals),
+                    "spring.kafka.properties.key.subject.name.strategy={value} — non-default Schema Registry subject strategy. Shared Avro key types across topics collide under one registry subject; the topic's compatibility level is bypassed. Default TopicNameStrategy.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         return rules;

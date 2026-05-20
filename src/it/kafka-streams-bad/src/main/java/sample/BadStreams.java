@@ -477,4 +477,14 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_HIGH.
+    public Properties repartitionPurgeIntervalMsTooHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("repartition.purge.interval.ms", "600000"); // 10 min — well above the 5-min ceiling
+        p.put("replication.factor", "3");
+        return p;
+    }
 }
