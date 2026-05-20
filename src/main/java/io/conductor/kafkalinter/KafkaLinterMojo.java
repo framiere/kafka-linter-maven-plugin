@@ -715,10 +715,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SASL_LOGIN_CONNECT_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 5000; },
                 "sasl.login.connect.timeout.ms={value} — below 5000 ms. The TCP-connect timeout to the IdP (OAuth/OIDC token endpoint, Kerberos KDC) is tighter than realistic cold-start latency; every login attempt fails before the very first handshake completes. Raise to >=5000 (10000+ for cloud IdPs)."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.SASL_LOGIN_CONNECT_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 60_000L; },
+                "sasl.login.connect.timeout.ms={value} — above 60 s. The TCP-connect timeout to the IdP (OAuth/OIDC token endpoint) is so loose that an unreachable IdP pins the login thread for the full duration before fast-failing. Outage detection latency multiplies, K8s probes flap, and token-refresh thunder during partial IdP degradation pins every client for the full timeout. Default 10 s is right."));
         addIfEnabled(rules, sev, RuleId.KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SASL_LOGIN_READ_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 5000; },
                 "sasl.login.read.timeout.ms={value} — below 5000 ms. The socket-read timeout to the IdP is tighter than realistic JWT-issuance latency; client closes the socket mid-response and treats every cold-start as auth failure. Raise to >=5000 (10000+ for cloud IdPs)."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.SASL_LOGIN_READ_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 60_000L; },
+                "sasl.login.read.timeout.ms={value} — above 60 s. The socket-read timeout to the IdP is so loose that a hung IdP backend (TCP accepted but no response) pins the login thread for the full duration. Token-refresh thunder amplifies on partial IdP slowness. Default 10 s is right."));
         addIfEnabled(rules, sev, RuleId.SECURITY_SASL_OAUTHBEARER_TOKEN_ENDPOINT_HTTP, s -> new ConfigKeyValueRule(
                 RuleId.SECURITY_SASL_OAUTHBEARER_TOKEN_ENDPOINT_HTTP, s, KafkaTypes.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL_KEY,
                 v -> v != null && v.trim().toLowerCase(java.util.Locale.ROOT).startsWith("http://"),
@@ -734,6 +742,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_LOW, s, KafkaTypes.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 30000; },
                 "socket.connection.setup.timeout.max.ms={value} — below the 30 s default. Caps the exponential backoff between TCP+TLS+SASL setup retries too tight; clients re-handshake faster than the broker can complete prior negotiations. Raise to >=30000."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_HIGH, s, KafkaTypes.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 300_000L; },
+                "socket.connection.setup.timeout.max.ms={value} — above 5 min. Exponential-backoff cap for connection setup retries; after a few failed attempts every attempt costs the full cap. Detecting a dead broker takes minutes per attempt; client walks through bootstrap.servers an order of magnitude slower. Default 30 s is right."));
         addIfEnabled(rules, sev, RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s -> new MethodCallRule(
                 RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s, Set.of(KafkaTypes.OBJECT_MAPPER),
                 Set.of(KafkaTypes.JACKSON_ENABLE_DEFAULT_TYPING_METHOD, KafkaTypes.JACKSON_ACTIVATE_DEFAULT_TYPING_METHOD),

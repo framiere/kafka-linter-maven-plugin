@@ -1197,6 +1197,33 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_HIGH.
+    public Properties saslLoginConnectTimeoutMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("sasl.login.connect.timeout.ms", "300000");
+        return p;
+    }
+
+    // RULE: KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_HIGH.
+    public Properties saslLoginReadTimeoutMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("sasl.login.read.timeout.ms", "300000");
+        return p;
+    }
+
+    // RULE: KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_HIGH.
+    public Properties socketConnectionSetupTimeoutMaxMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("socket.connection.setup.timeout.max.ms", "600000");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
