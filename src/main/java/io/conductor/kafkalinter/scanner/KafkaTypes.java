@@ -140,6 +140,7 @@ public final class KafkaTypes {
             "org.apache.kafka.streams.processor.WallclockTimestampExtractor";
     public static final String GROUP_INSTANCE_ID_KEY = "group.instance.id";
     public static final String SEND_BUFFER_BYTES_KEY = "send.buffer.bytes";
+    public static final String RECEIVE_BUFFER_BYTES_KEY = "receive.buffer.bytes";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

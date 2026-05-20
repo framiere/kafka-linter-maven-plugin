@@ -425,6 +425,24 @@ public class KafkaLinterMojo extends AbstractMojo {
                     } catch (NumberFormatException e) { return false; }
                 },
                 "send.buffer.bytes={value} — at or below 16 KiB. Caps TCP throughput to buffer/RTT; defeats OS autotuning. Use -1 or leave default (128 KiB)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_RECEIVE_BUFFER_BYTES_TOO_SMALL, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_RECEIVE_BUFFER_BYTES_TOO_SMALL, s, KafkaTypes.RECEIVE_BUFFER_BYTES_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try {
+                        long n = Long.parseLong(v.trim());
+                        return n > 0 && n <= 16384L;
+                    } catch (NumberFormatException e) { return false; }
+                },
+                "receive.buffer.bytes={value} — at or below 16 KiB. Caps TCP throughput to buffer/RTT; defeats OS autotuning. Use -1 or leave default (64 KiB)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPLICATION_FACTOR_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_REPLICATION_FACTOR_TOO_HIGH, s, KafkaTypes.STREAMS_REPLICATION_FACTOR_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Integer.parseInt(v.trim()) > 5; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "replication.factor={value} — above 5. Internal-topic disk and follower-fetch bandwidth scale linearly; RF=3 already survives any single AZ outage."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -628,6 +646,12 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "outgoing", "acks",
                     v -> v != null && !"all".equalsIgnoreCase(v.trim()) && !"-1".equals(v.trim()),
                     "mp.messaging.outgoing.{channel}.acks={value} — partial durability. Set to 'all' (default since kafka-clients 3.0) or remove the override."));
+        }
+        if (sev.get(RuleId.QK_OUTGOING_WAIT_FOR_WRITE_COMPLETION_FALSE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_OUTGOING_WAIT_FOR_WRITE_COMPLETION_FALSE, sev.get(RuleId.QK_OUTGOING_WAIT_FOR_WRITE_COMPLETION_FALSE),
+                    "outgoing", "waitForWriteCompletion", "false",
+                    "mp.messaging.outgoing.{channel}.waitForWriteCompletion=false — channel acks upstream before the broker accepts the record. Broker failures become silent drops."));
         }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
