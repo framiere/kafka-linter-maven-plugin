@@ -191,6 +191,15 @@ public final class BadKafkaUsage {
         c.close();
     }
 
+    // RULE: PRODUCER_IDEMPOTENCE_DISABLED.
+    public void producerIdempotenceDisabled() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("enable.idempotence", "false");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: KAFKA_CLIENT_TYPO_GROUP_ID.
     public void typoGroupId() {
         Properties p = new Properties();

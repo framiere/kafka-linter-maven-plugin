@@ -186,6 +186,16 @@ public final class RuleId {
             .whyMatters("`earliest` is almost always the right default for analytics, replay, and any system that processes historical data. `latest` is right for monitoring/health/heartbeat consumers where stale records are useless. Pick deliberately, document the reason, and consider `none` (fail loud) if neither is acceptable.")
             .build());
 
+    public static final RuleId PRODUCER_IDEMPOTENCE_DISABLED = register(builder("PRODUCER_IDEMPOTENCE_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_IDEMPOTENCE_DISABLED.md")
+            .message("enable.idempotence=false — undoing five years of duplicate-and-reorder fixes. Default is true since Kafka 3.0.")
+            .tagline("Turning idempotence off in 2026 is undoing five years of work the client did for you.")
+            .mechanism("The idempotent producer attaches a producer ID (PID) and per-partition monotonic sequence numbers to each batch. The broker maintains a five-record sequence window per (PID, partition) and rejects duplicates or out-of-order arrivals. KIP-679 made `enable.idempotence=true` the default in Kafka 3.0 (fully fixed in 3.0.1 / 3.1.1 / 3.2.0). Setting `enable.idempotence=false` explicitly opts out of that machinery.")
+            .impact("After any transient network blip, retries produce duplicates on the broker — observable as same-key, same-payload, sequential offsets downstream. With `max.in.flight.requests.per.connection > 1`, retries also reorder writes per partition: msg2 lands before msg1. Compaction does not save you for non-compacted topics. `record-retry-rate` going non-zero during an incident is the trigger window for the data damage.")
+            .whyMatters("Rely on the default (`true`) and let the client do this for you. Legitimate exceptions: Kafka Connect (defaults to false for broker-version breadth, KAFKA-13759), and pre-2.8 brokers without the IDEMPOTENT_WRITE ACL — both rare in 2026. 🤝 Removing `false` is not a one-line fix if `acks`, `retries`, or `max.in.flight.requests.per.connection` are also explicitly set: KIP-679's silent-disable rules mean the producer's actual runtime config depends on those knobs too.")
+            .build());
+
     public static final RuleId PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE = register(builder("PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE.md")

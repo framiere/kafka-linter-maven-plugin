@@ -168,6 +168,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s -> ConfigKeyValueRule.literal(
                 RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s, KafkaTypes.ALLOW_AUTO_CREATE_TOPICS_KEY, "true",
                 "allow.auto.create.topics=true — a typo can permanently create a one-partition, default-RF topic."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_IDEMPOTENCE_DISABLED, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_IDEMPOTENCE_DISABLED, s, KafkaTypes.ENABLE_IDEMPOTENCE_KEY, "false",
+                "enable.idempotence=false — explicit opt-out of the default (true since Kafka 3.0). Reintroduces duplicate / out-of-order writes on retry."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE, ProducerTxnIdWithoutIdempotenceRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, ProducerMaxInFlightTooHighRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ASSIGN_AND_SUBSCRIBE, ConsumerAssignAndSubscribeRule::new);
