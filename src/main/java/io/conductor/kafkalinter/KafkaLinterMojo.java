@@ -326,6 +326,19 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_REPLICATION_FACTOR_TWO, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_REPLICATION_FACTOR_TWO, s, KafkaTypes.STREAMS_REPLICATION_FACTOR_KEY, "2",
                 "Streams replication.factor=2 — losing one broker leaves only one replica; production target is 3 with min.insync.replicas=2."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT, s, KafkaTypes.STREAMS_REPLICATION_FACTOR_KEY, "-1",
+                "Streams replication.factor=-1 — defers to broker default.replication.factor, which is 1 on every managed Kafka platform's default. Internal changelog/repartition topics silently end up at RF=1 on prod. Set an explicit positive value (3 is the canonical answer)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_TOO_HIGH, s,
+                KafkaTypes.STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_KEY,
+                v -> { if (v == null) return false; try { long n = Long.parseLong(v.trim()); return n > 604_800_000L; } catch (NumberFormatException e) { return false; } },
+                "windowstore.changelog.additional.retention.ms={value} — above 7 days. This is the changelog-side safety buffer, not the active-store retention; pushing it past 7 days bloats internal-topic disk and multiplies restore time after rebalances. Default 24h (86400000) is right."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_LOW, s,
+                KafkaTypes.STREAMS_REPARTITION_PURGE_INTERVAL_MS_KEY,
+                v -> { if (v == null) return false; try { long n = Long.parseLong(v.trim()); return n > 0 && n < 5_000L; } catch (NumberFormatException e) { return false; } },
+                "repartition.purge.interval.ms={value} — below 5 s. DeleteRecords admin RPCs hammer the controller queue and the admin-client inflight slots, contending with create/delete topic and leader election. Default 30000 (30 s) is right; raise to ≥5000."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TOPOLOGY_OPTIMIZATION_NONE, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_TOPOLOGY_OPTIMIZATION_NONE, s, KafkaTypes.STREAMS_TOPOLOGY_OPTIMIZATION_KEY, "none",
                 "topology.optimization=none — extra repartition/changelog topics that 'all' would eliminate. For new apps, switch to 'all'."));

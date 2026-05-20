@@ -188,6 +188,8 @@ public final class KafkaTypes {
     public static final String RECEIVE_BUFFER_BYTES_KEY = "receive.buffer.bytes";
     public static final String STREAMS_BUFFERED_RECORDS_PER_PARTITION_KEY = "buffered.records.per.partition";
     public static final String STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_KEY = "rack.aware.assignment.strategy";
+    public static final String STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_KEY = "windowstore.changelog.additional.retention.ms";
+    public static final String STREAMS_REPARTITION_PURGE_INTERVAL_MS_KEY = "repartition.purge.interval.ms";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

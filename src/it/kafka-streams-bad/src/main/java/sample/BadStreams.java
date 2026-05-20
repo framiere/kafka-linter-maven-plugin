@@ -448,4 +448,33 @@ public final class BadStreams {
     public void sessionWindowsWithDeprecated() {
         SessionWindows w = SessionWindows.with(Duration.ofMinutes(1));
     }
+
+    // RULE: STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT.
+    public Properties replicationFactorBrokerDefault() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("replication.factor", "-1");
+        return p;
+    }
+
+    // RULE: STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_TOO_HIGH.
+    public Properties windowstoreChangelogAdditionalRetentionMsTooHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("windowstore.changelog.additional.retention.ms", "2592000000"); // 30 days
+        p.put("replication.factor", "3");
+        return p;
+    }
+
+    // RULE: STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_LOW.
+    public Properties repartitionPurgeIntervalMsTooLow() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("repartition.purge.interval.ms", "1000");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }
