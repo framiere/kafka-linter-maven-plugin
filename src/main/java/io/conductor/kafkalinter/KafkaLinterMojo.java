@@ -654,6 +654,17 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.KAFKA_ENABLE_METRICS_PUSH_FALSE, s -> ConfigKeyValueRule.literal(
                 RuleId.KAFKA_ENABLE_METRICS_PUSH_FALSE, s, KafkaTypes.ENABLE_METRICS_PUSH_KEY, "false",
                 "enable.metrics.push=false — disables KIP-714 client telemetry to the broker. Cluster operators lose visibility into this client's latency/throughput/error metrics during incidents. Default true; only disable when explicitly required."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_CLIENT_ID_PLACEHOLDER, s, KafkaTypes.CLIENT_ID_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "client.id={value} — looks like an unresolved placeholder (${...}). Metrics, broker request-log and per-client-id quotas all use the literal text; every pod collapses onto one observability bucket. Resolve before putting into Properties."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MAX_WARMUP_REPLICAS_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_MAX_WARMUP_REPLICAS_ZERO, s, KafkaTypes.STREAMS_MAX_WARMUP_REPLICAS_KEY, "0",
+                "max.warmup.replicas=0 — Streams cannot warm up tasks on new instances. Every scale-up freezes those partitions for the full changelog-restore duration (often 10-60 s per task). Default 2 bounds restore bandwidth; leave it."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED, s -> new ConfigKeyValueRule(
                 RuleId.CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED, s, KafkaTypes.PARTITION_ASSIGNMENT_STRATEGY_KEY,
                 v -> {
@@ -1165,5 +1176,14 @@ public class KafkaLinterMojo extends AbstractMojo {
         String t = v.trim();
         if (t.isEmpty()) return false;
         return !t.contains("${");
+    }
+
+    /** True when v carries an unresolved ${...} placeholder — a Java-side bug, since plain Java does not expand templates. */
+    private static boolean looksLikeUnresolvedPlaceholder(String v) {
+        if (v == null) return false;
+        int open = v.indexOf("${");
+        if (open < 0) return false;
+        int close = v.indexOf('}', open + 2);
+        return close > open + 2;
     }
 }

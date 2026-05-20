@@ -272,4 +272,14 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_MAX_WARMUP_REPLICAS_ZERO.
+    public Properties maxWarmupReplicasZero() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("max.warmup.replicas", "0");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }
