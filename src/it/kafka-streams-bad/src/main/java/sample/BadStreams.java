@@ -4,8 +4,11 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.kstream.TransformerSupplier;
+import org.apache.kafka.streams.kstream.ValueTransformerWithKeySupplier;
 
 import java.util.Properties;
 
@@ -290,5 +293,28 @@ public final class BadStreams {
         p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
         p.put("replication.factor", "3");
         return p;
+    }
+
+    // RULE: STREAMS_TRANSFORM_DEPRECATED — KIP-820 replaced this with KStream.process(ProcessorSupplier).
+    @SuppressWarnings("deprecation")
+    public void transformDeprecated(StreamsBuilder b) {
+        KStream<String, String> s = b.stream("in");
+        TransformerSupplier<String, String, KeyValue<String, String>> supplier = () -> null;
+        s.transform(supplier);
+    }
+
+    // RULE: STREAMS_TRANSFORM_VALUES_DEPRECATED — KIP-820 replaced this with KStream.processValues(FixedKeyProcessorSupplier).
+    @SuppressWarnings("deprecation")
+    public void transformValuesDeprecated(StreamsBuilder b) {
+        KStream<String, String> s = b.stream("in");
+        ValueTransformerWithKeySupplier<String, String, String> supplier = () -> null;
+        s.transformValues(supplier);
+    }
+
+    // RULE: STREAMS_BRANCH_DEPRECATED — KIP-418 replaced this with KStream.split().branch(...).
+    @SuppressWarnings({"deprecation", "unchecked"})
+    public void branchDeprecated(StreamsBuilder b) {
+        KStream<String, String> s = b.stream("in");
+        KStream<String, String>[] branches = s.branch((k, v) -> true, (k, v) -> false);
     }
 }

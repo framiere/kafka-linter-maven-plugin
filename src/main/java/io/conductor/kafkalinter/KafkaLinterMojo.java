@@ -658,6 +658,15 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_TRANSFORM_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("transform"),
+                "KStream.transform() is deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) with the new org.apache.kafka.streams.processor.api.Processor."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_VALUES_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_TRANSFORM_VALUES_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("transformValues"),
+                "KStream.transformValues() is deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.processValues(FixedKeyProcessorSupplier) which type-enforces the key-invariant."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BRANCH_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_BRANCH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("branch"),
+                "KStream.branch(Predicate...) is deprecated since Kafka Streams 2.8 (KIP-418) — replaced by KStream.split().branch(..., Branched.as(name)) which supports named branches and a defaultBranch for unmatched records."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
                 RuleId.CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER, s, KafkaTypes.GROUP_INSTANCE_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
