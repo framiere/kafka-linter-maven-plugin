@@ -582,6 +582,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "default.api.timeout.ms={value} — above 5 min. Blocking calls like commitSync()/position()/listTopics() hang the calling thread for the whole window before throwing; graceful shutdown stalls past the pod's terminationGracePeriod."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_BLOCK_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_MAX_BLOCK_MS_TOO_HIGH, s, KafkaTypes.MAX_BLOCK_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 60_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.block.ms={value} — above 60 s. producer.send() and partitionsFor() block the calling thread for the full window when the buffer is full or metadata is stale; request-handler thread pools drain within seconds during transient broker hiccups."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MAX_WAIT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_FETCH_MAX_WAIT_MS_TOO_LOW, s, KafkaTypes.FETCH_MAX_WAIT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n > 0 && n < 50L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "fetch.max.wait.ms={value} — below 50 ms. Broker returns immediately even when fetch.min.bytes is not satisfied; consumer spins in a tight empty-fetch loop, wasting broker and client CPU."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RETRY_BACKOFF_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_RETRY_BACKOFF_MS_TOO_HIGH, s, KafkaTypes.RETRY_BACKOFF_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 30_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "retry.backoff.ms={value} — above 30 s. Producer waits this long between retries of retriable errors; routine leader-move recovery that the default (100 ms) handles in seconds now takes minutes."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

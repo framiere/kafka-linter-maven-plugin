@@ -832,6 +832,36 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: PRODUCER_MAX_BLOCK_MS_TOO_HIGH.
+    public void producerMaxBlockMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("max.block.ms", "600000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_FETCH_MAX_WAIT_MS_TOO_LOW.
+    public void consumerFetchMaxWaitMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("fetch.max.wait.ms", "10");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_RETRY_BACKOFF_MS_TOO_HIGH.
+    public void producerRetryBackoffMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("retry.backoff.ms", "60000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
