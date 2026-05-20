@@ -181,6 +181,18 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_IDEMPOTENCE_DISABLED, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_IDEMPOTENCE_DISABLED, s, KafkaTypes.ENABLE_IDEMPOTENCE_KEY, "false",
                 "enable.idempotence=false — explicit opt-out of the default (true since Kafka 3.0). Reintroduces duplicate / out-of-order writes on retry."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_BUFFER_MEMORY_TOO_SMALL, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_BUFFER_MEMORY_TOO_SMALL, s, KafkaTypes.BUFFER_MEMORY_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 0 && n < 16_777_216L; },
+                "buffer.memory={value} — below 16 MiB. Sender thread cannot keep up with bursts; producer.send() will block on the hot path."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_REQUEST_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_REQUEST_TIMEOUT_TOO_LOW, s, KafkaTypes.REQUEST_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
+                "request.timeout.ms={value} — below 10 s. Routine cross-AZ produce times burn through retries; bound the application call instead."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_SESSION_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_SESSION_TIMEOUT_TOO_LOW, s, KafkaTypes.SESSION_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
+                "session.timeout.ms={value} — below 10 s. Routine GC pauses will trigger spurious rebalances. Default 45 s is almost always right."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE, ProducerTxnIdWithoutIdempotenceRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, ProducerMaxInFlightTooHighRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ASSIGN_AND_SUBSCRIBE, ConsumerAssignAndSubscribeRule::new);
@@ -434,5 +446,10 @@ public class KafkaLinterMojo extends AbstractMojo {
     private static int parseIntOrZero(String s) {
         if (s == null) return 0;
         try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return 0; }
+    }
+
+    private static long parseLongOrZero(String s) {
+        if (s == null) return 0L;
+        try { return Long.parseLong(s.trim()); } catch (NumberFormatException e) { return 0L; }
     }
 }

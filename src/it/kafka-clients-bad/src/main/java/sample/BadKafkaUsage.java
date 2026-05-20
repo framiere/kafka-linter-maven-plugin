@@ -282,6 +282,34 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: PRODUCER_BUFFER_MEMORY_TOO_SMALL.
+    public void producerBufferMemoryTooSmall() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("buffer.memory", "1048576");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_REQUEST_TIMEOUT_TOO_LOW.
+    public void producerRequestTimeoutTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("request.timeout.ms", "3000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_SESSION_TIMEOUT_TOO_LOW.
+    public void consumerSessionTimeoutTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("session.timeout.ms", "5000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

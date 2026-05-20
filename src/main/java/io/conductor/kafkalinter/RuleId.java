@@ -582,6 +582,36 @@ public final class RuleId {
             .whyMatters("If the listener does any blocking work, mark the method `@Blocking` (or `@Blocking(\"my-pool\")` for isolation). SmallRye then dispatches it on a worker thread and the event loop stays responsive.")
             .build());
 
+    public static final RuleId PRODUCER_BUFFER_MEMORY_TOO_SMALL = register(builder("PRODUCER_BUFFER_MEMORY_TOO_SMALL")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_BUFFER_MEMORY_TOO_SMALL.md")
+            .message("buffer.memory below 16 MiB — the accumulator fills under any burst and producer.send() blocks.")
+            .tagline("buffer.memory is the producer's total record-accumulator budget. Too small and the hot path blocks waiting for room.")
+            .mechanism("The producer buffers records in memory before the sender thread drains them into ProduceRequests. `buffer.memory` is the global cap (default 32 MiB). When the accumulator is full, `send()` blocks for up to `max.block.ms` waiting for the sender to free space.")
+            .impact("Under a traffic spike or a brief broker slow-down, the buffer fills, and every producer thread synchronously blocks on `send()`. Application-side latency p99 spikes from microseconds to seconds. With an even bigger spike, `send()` throws TimeoutException after `max.block.ms` — records lost.")
+            .whyMatters("Defaults (32 MiB) are right for most apps. Setting `buffer.memory` below 16 MiB is almost always a copy from a sample for a constrained device, or a misguided 'memory tuning' that forgot the impact on the hot path. Either revert or raise `max.block.ms` deliberately.")
+            .build());
+
+    public static final RuleId PRODUCER_REQUEST_TIMEOUT_TOO_LOW = register(builder("PRODUCER_REQUEST_TIMEOUT_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_REQUEST_TIMEOUT_TOO_LOW.md")
+            .message("request.timeout.ms below 10 s — the producer gives up before the broker has had a chance to ack a normal request.")
+            .tagline("request.timeout.ms shorter than 10 s burns retries on routine broker latency, then fails the record.")
+            .mechanism("`request.timeout.ms` is how long the producer waits for a ProduceResponse before retrying (counted against `retries`/`delivery.timeout.ms`). The default (30 s in 3.x) leaves headroom for leader-elections, transient broker pauses, and cross-region calls.")
+            .impact("Setting it to 5 s or less means a normal cross-AZ produce — which routinely takes 1-3 s during a Kafka rebalance — runs out of time, the producer retries, then the retry runs out of time too. After `delivery.timeout.ms` (also small if you cut this) the record is failed back to the app.")
+            .whyMatters("This tuning is usually applied to 'make the producer fail fast' for a circuit-breaker design. The right shape for that is to set a budget on the application call, not to cut the broker-protocol timeout. Leave `request.timeout.ms` at the default; bound the upstream call instead.")
+            .build());
+
+    public static final RuleId CONSUMER_SESSION_TIMEOUT_TOO_LOW = register(builder("CONSUMER_SESSION_TIMEOUT_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_SESSION_TIMEOUT_TOO_LOW.md")
+            .message("session.timeout.ms below 10 s — routine GC pauses and broker hiccups will trigger spurious rebalances.")
+            .tagline("session.timeout.ms is the patience the broker has for a missed heartbeat. Too small means every blip kicks the consumer out of the group.")
+            .mechanism("The consumer sends a heartbeat to the group coordinator every `heartbeat.interval.ms` (default 3 s). If no heartbeat arrives within `session.timeout.ms` (default 45 s since 3.0), the broker considers the consumer dead and triggers a rebalance.")
+            .impact("With `session.timeout.ms=5000` (a common copy from old guides), a 6-second G1 GC pause or a brief OS thread freeze drops the consumer. Every other group member pauses while the rebalance completes. Throughput drops to zero for the group, not just the affected consumer. The thrash often cascades — the next GC kicks another consumer out.")
+            .whyMatters("Default 45 s is correct for most workloads. The justification for shrinking it is 'failover faster' — but the cost (more frequent and unnecessary rebalances) almost always outweighs the benefit. If failover speed matters, use static group membership instead (`group.instance.id`).")
+            .build());
+
     public static final RuleId STREAMS_NUM_STANDBY_REPLICAS_ZERO = register(builder("STREAMS_NUM_STANDBY_REPLICAS_ZERO")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_NUM_STANDBY_REPLICAS_ZERO.md")
