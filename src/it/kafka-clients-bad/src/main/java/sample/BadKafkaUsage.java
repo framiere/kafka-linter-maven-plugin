@@ -912,6 +912,17 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: CONSUMER_INTERCEPTOR_CLASSES_LEGACY.
+    public void consumerInterceptorClassesLegacy() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("interceptor.classes",
+                "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

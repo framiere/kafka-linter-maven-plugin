@@ -68,6 +68,13 @@ public final class KafkaTypes {
     public static final String AUTO_INCLUDE_JMX_REPORTER_KEY = "auto.include.jmx.reporter";
     public static final Set<String> CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES = Set.of("earliest", "latest", "none");
     public static final Set<String> PRODUCER_ACKS_VALID_VALUES = Set.of("0", "1", "-1", "all");
+    public static final String STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY = "probing.rebalance.interval.ms";
+    public static final String INTERCEPTOR_CLASSES_KEY = "interceptor.classes";
+    /** Confluent legacy Control Center monitoring interceptors — replaced by Health+ since CP 7. */
+    public static final Set<String> LEGACY_MONITORING_INTERCEPTOR_FQCNS = Set.of(
+            "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor",
+            "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+    );
     public static final Set<String> PRODUCER_GENERIC_TRANSACTIONAL_IDS = Set.of(
             "tx", "txn", "transaction", "my-tx", "my-txn", "my-transaction",
             "test", "test-tx", "test-txn", "demo", "demo-tx",

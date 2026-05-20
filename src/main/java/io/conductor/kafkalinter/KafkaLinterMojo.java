@@ -633,6 +633,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                     return !KafkaTypes.PRODUCER_ACKS_VALID_VALUES.contains(t);
                 },
                 "acks={value} — not one of 0/1/-1/all. The producer throws ConfigException at construction; the pod crash-loops on first deploy."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_LOW, s, KafkaTypes.STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n > 0 && n < 60_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "probing.rebalance.interval.ms={value} — below 60 s. Every probe triggers a group-wide cooperative rebalance just to ask if standby tasks are caught up; topology spends more time rebalancing than processing. Default 600000 is right."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_INTERCEPTOR_CLASSES_LEGACY, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_INTERCEPTOR_CLASSES_LEGACY, s, KafkaTypes.INTERCEPTOR_CLASSES_KEY,
+                v -> v != null && KafkaTypes.LEGACY_MONITORING_INTERCEPTOR_FQCNS.stream().anyMatch(v::contains),
+                "interceptor.classes={value} — wires Confluent's legacy MonitoringConsumerInterceptor/MonitoringProducerInterceptor. On managed Kafka the monitoring topic doesn't exist; writes fail silently while per-record CPU is still paid. Migrate to Confluent Health+ and remove."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -931,6 +943,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.max-poll-records",
                     v -> { try { long n = v == null ? 0 : Long.parseLong(v.trim()); return n >= 1 && n <= 5; } catch (NumberFormatException e) { return false; } },
                     "spring.kafka.consumer.max-poll-records={value} — at or below 5. Each KafkaListener poll returns at most a handful of records; per-poll listener-container overhead dominates and throughput collapses 50-100× vs the default 500.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE, sev.get(RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE),
+                    "spring.kafka.producer.properties.enable.idempotence", "false",
+                    "spring.kafka.producer.properties.enable.idempotence=false — explicit opt-out of the idempotent producer (default since kafka-clients 3.0). Retries can write duplicates and reorder records. Remove the override.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_RECORD) != Severity.OFF) {
