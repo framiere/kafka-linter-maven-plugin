@@ -1354,6 +1354,28 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.batch-size={value} — above 1 MiB. buffer.memory holds only a handful of in-flight batches; one slow partition pins its slot for the full delivery.timeout window and stalls writes to healthy partitions.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_HIGH),
+                    "spring.kafka.consumer.properties.max.partition.fetch.bytes",
+                    v -> parseLongOrZero(v) > 16L * 1024L * 1024L,
+                    "spring.kafka.consumer.properties.max.partition.fetch.bytes={value} — above 16 MiB. Worst-case heap per poll scales linearly with partitions; OOM mid-batch is self-sustaining (re-delivery hits the same OOM on restart).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, sev.get(RuleId.SPRING_BOOT_CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE),
+                    "spring.kafka.consumer.properties.allow.auto.create.topics", "true",
+                    "spring.kafka.consumer.properties.allow.auto.create.topics=true — a typo in @KafkaListener silently creates a one-partition, default-RF topic. Listener attaches, sees zero records, no error logged. Disable client-side to surface typos as boot failures.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_CHECK_CRCS_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_CONSUMER_CHECK_CRCS_FALSE, sev.get(RuleId.SPRING_BOOT_CONSUMER_CHECK_CRCS_FALSE),
+                    "spring.kafka.consumer.properties.check.crcs", "false",
+                    "spring.kafka.consumer.properties.check.crcs=false — consumer accepts records without verifying the on-the-wire CRC. Disk/network/memory corruption reaches the @KafkaListener as valid records. Default true; intrinsic CRC32C cost is <1% per GiB.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
