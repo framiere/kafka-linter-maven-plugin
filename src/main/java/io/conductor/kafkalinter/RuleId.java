@@ -772,6 +772,36 @@ public final class RuleId {
             .whyMatters("The motivation is usually 'send() should never block this thread' — which is reasonable, but the right shape is to keep `max.block.ms` at the default and put the call behind a circuit-breaker or worker pool that owns the latency budget. Treating `max.block.ms` as a per-call latency cap mistakes one knob for another.")
             .build());
 
+    public static final RuleId CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_LOW = register(builder("CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_LOW.md")
+            .message("heartbeat.interval.ms below 1 s — consumer floods the group coordinator and adds broker-side CPU for no upside.")
+            .tagline("heartbeat.interval.ms is how often the consumer pings the group coordinator. Under 1 s, you pay the broker every cycle for no failure-detection benefit.")
+            .mechanism("The consumer's heartbeat thread sends a HeartbeatRequest every `heartbeat.interval.ms` (default 3 s) to keep its group membership alive. The coordinator declares the consumer dead only after `session.timeout.ms` elapses without one. Heartbeats are cheap individually but the broker pays per request — request-handler thread time, log-segment IO if there's group state to update.")
+            .impact("With `heartbeat.interval.ms=100`, a 50-consumer group sends 500 heartbeats/sec to one broker (the group coordinator) just to maintain liveness. Broker request-handler queues build up, the coordinator broker's metrics blame 'unfair traffic share', and the failure-detection latency you gained (faster eviction) is measured in milliseconds — far below GC pause times anyway.")
+            .whyMatters("3 s default is the right answer. The standard advice is `heartbeat.interval.ms ≈ session.timeout.ms / 3`. If someone has shrunk this 'to fail faster', they have misunderstood the design — `session.timeout.ms` is the actual failure-detection knob; the heartbeat interval just controls how often we check.")
+            .build());
+
+    public static final RuleId PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW = register(builder("PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW.md")
+            .message("reconnect.backoff.ms below 100 ms — broker outage turns into a tight reconnect loop from this client.")
+            .tagline("reconnect.backoff.ms is the floor on how fast the client retries a TCP connect after a failure. Below 100 ms it becomes a synthetic DDoS on the broker the moment it tries to come back.")
+            .mechanism("On TCP connect failure the client waits `reconnect.backoff.ms`, then retries (with exponential growth up to `reconnect.backoff.max.ms`). The default is 50 ms — already aggressive. Shrinking it further turns the connect loop into a CPU-bound spin until the broker accepts.")
+            .impact("During a broker-side outage (a network split, a rolling restart, a CrashLoopBackOff), every client in your fleet hammers the recovering broker's listener thread before it has finished binding. The broker accepts, immediately gets overloaded by the next 500 reconnect attempts, drops the next connection, and the loop reseeds. Recovery from a one-second outage stretches to minutes.")
+            .whyMatters("Default 50 ms (with the max growing to 1 s) is the right shape. Cutting it further is almost always copy-paste of someone else's misunderstanding. If you want fast first-attempt reconnect, that's already the default; if you want quiet behavior during outage, *raise* this knob, don't lower it.")
+            .build());
+
+    public static final RuleId QK_OUTGOING_ACKS_NOT_ALL = register(builder("QK_OUTGOING_ACKS_NOT_ALL")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_OUTGOING_ACKS_NOT_ALL.md")
+            .message("mp.messaging.outgoing.<channel>.acks not 'all' — partial durability on this outgoing channel.")
+            .tagline("acks decides how many replicas must persist a record before the broker says OK. Anything but 'all' opens a window where 'sent successfully' means 'gone after a leader crash'.")
+            .mechanism("On the Quarkus / SmallRye outgoing channel, the underlying producer's `acks` setting controls how many in-sync replicas must write before the broker ACKs. `acks=0` ACKs immediately (no broker confirmation), `acks=1` ACKs as soon as the leader writes (lost if leader dies before replication), `acks=all` (or `-1`) waits for all in-sync replicas — the only durable setting.")
+            .impact("With `acks=1` on a critical pipeline (payment events, audit logs), a single broker death during the few-hundred-ms replication gap causes silent message loss. The producer's `send()` callback fires success, downstream consumers never see the record, and there is no record-loss metric — because from the producer's point of view, nothing failed.")
+            .whyMatters("The kafka-clients default has been `acks=all` since 3.0, but the Quarkus channel still honors an explicit override. Treat any explicit non-'all' value as something that needs justification — usually the answer is 'this was copied from a tutorial' and it should be removed.")
+            .build());
+
     public static final RuleId CONSUMER_GROUP_ID_GENERIC = register(builder("CONSUMER_GROUP_ID_GENERIC")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/CONSUMER_GROUP_ID_GENERIC.md")

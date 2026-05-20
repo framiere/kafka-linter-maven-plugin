@@ -86,4 +86,10 @@ public final class SmallRyeChannelConfigRule implements ProjectScopedRule {
         return new SmallRyeChannelConfigRule(id, sev, direction, setting,
                 badLiteral::equalsIgnoreCase, detail);
     }
+
+    public static SmallRyeChannelConfigRule predicate(RuleId id, Severity sev,
+                                                      String direction, String setting,
+                                                      Predicate<String> badValue, String detail) {
+        return new SmallRyeChannelConfigRule(id, sev, direction, setting, badValue, detail);
+    }
 }

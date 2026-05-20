@@ -56,6 +56,8 @@ public final class KafkaTypes {
     public static final String MAX_BLOCK_MS_KEY = "max.block.ms";
     public static final String DEFAULT_API_TIMEOUT_MS_KEY = "default.api.timeout.ms";
     public static final String FETCH_MIN_BYTES_KEY = "fetch.min.bytes";
+    public static final String HEARTBEAT_INTERVAL_MS_KEY = "heartbeat.interval.ms";
+    public static final String RECONNECT_BACKOFF_MS_KEY = "reconnect.backoff.ms";
     public static final Set<String> CONSUMER_GENERIC_GROUP_IDS = Set.of(
             "group", "consumer", "consumer-group", "kafka-consumer",
             "my-group", "my-consumer", "test", "test-group", "demo", "demo-group",

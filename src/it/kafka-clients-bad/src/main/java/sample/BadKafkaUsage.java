@@ -449,6 +449,26 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_LOW.
+    public void consumerHeartbeatIntervalMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("heartbeat.interval.ms", "100");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW.
+    public void producerReconnectBackoffMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("reconnect.backoff.ms", "10");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();

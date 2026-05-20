@@ -244,6 +244,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_FETCH_MIN_BYTES_TOO_HIGH, s, KafkaTypes.FETCH_MIN_BYTES_KEY,
                 v -> { long n = parseLongOrZero(v); return n > 10_485_760L; },
                 "fetch.min.bytes={value} — above 10 MiB. Every poll waits up to fetch.max.wait.ms for that much data to accumulate; latency cliff."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_LOW, s, KafkaTypes.HEARTBEAT_INTERVAL_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 1000; },
+                "heartbeat.interval.ms={value} — below 1 s. Floods the group coordinator with no failure-detection upside; tune session.timeout.ms if you need faster eviction."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW, s, KafkaTypes.RECONNECT_BACKOFF_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Integer.parseInt(v.trim()) < 100; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "reconnect.backoff.ms={value} — below 100 ms. Broker outage becomes a tight reconnect loop; raise this, don't lower it."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
@@ -457,6 +469,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.QK_RETRIES_ZERO, sev.get(RuleId.QK_RETRIES_ZERO),
                     "outgoing", "retries", "0",
                     "mp.messaging.outgoing.{channel}.retries=0 — transient broker errors become permanent send failures. Default (effectively unbounded, capped by delivery.timeout.ms) is right."));
+        }
+        if (sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_OUTGOING_ACKS_NOT_ALL, sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL),
+                    "outgoing", "acks",
+                    v -> v != null && !"all".equalsIgnoreCase(v.trim()) && !"-1".equals(v.trim()),
+                    "mp.messaging.outgoing.{channel}.acks={value} — partial durability. Set to 'all' (default since kafka-clients 3.0) or remove the override."));
         }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
