@@ -234,6 +234,16 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s -> ConfigKeyValueRule.literal(
                 RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s, KafkaTypes.SSL_ENDPOINT_ID_ALGO_KEY, "",
                 "ssl.endpoint.identification.algorithm=\"\" — hostname verification disabled. Any cert on the trusted chain is accepted regardless of CN/SAN (MITM vector)."));
+        addIfEnabled(rules, sev, RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE, s -> ConfigKeyValueRule.literal(
+                RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE, s, KafkaTypes.SR_AUTO_REGISTER_SCHEMAS_KEY, "true",
+                "auto.register.schemas=true — producer registers new schemas to the Schema Registry on the fly. Set to false in non-dev environments and register schemas via CI."));
+        addIfEnabled(rules, sev, RuleId.SR_USE_LATEST_VERSION_TRUE, s -> ConfigKeyValueRule.literal(
+                RuleId.SR_USE_LATEST_VERSION_TRUE, s, KafkaTypes.SR_USE_LATEST_VERSION_KEY, "true",
+                "use.latest.version=true — without latest.compatibility.strict=true the serializer can write records under an incompatible latest schema."));
+        addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_URL_HTTP, s -> new ConfigKeyValueRule(
+                RuleId.SCHEMA_REGISTRY_URL_HTTP, s, KafkaTypes.SCHEMA_REGISTRY_URL_KEY,
+                v -> v != null && v.startsWith("http://"),
+                "schema.registry.url={value} — over plain HTTP. Schemas and basic-auth credentials leak on the wire. Switch to https://."));
 
         return rules;
     }
@@ -377,6 +387,28 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, sev.get(RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED),
                     null, "ssl.endpoint.identification.algorithm", "",
                     "mp.messaging.{direction}.{channel}.ssl.endpoint.identification.algorithm=\"\" — hostname verification turned off (MITM vector)."));
+        }
+        if (sev.get(RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE, sev.get(RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE),
+                    "spring.kafka.properties.auto.register.schemas", "true",
+                    "spring.kafka.properties.auto.register.schemas=true — producer can register new schemas at runtime. Set to false outside dev and use a CI step.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SR_USE_LATEST_VERSION_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SR_USE_LATEST_VERSION_TRUE, sev.get(RuleId.SR_USE_LATEST_VERSION_TRUE),
+                    "spring.kafka.properties.use.latest.version", "true",
+                    "spring.kafka.properties.use.latest.version=true — without latest.compatibility.strict, the serializer may write records the consumers can't read.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SCHEMA_REGISTRY_URL_HTTP) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SCHEMA_REGISTRY_URL_HTTP, sev.get(RuleId.SCHEMA_REGISTRY_URL_HTTP),
+                    "spring.kafka.properties.schema.registry.url",
+                    v -> v != null && v.startsWith("http://"),
+                    "spring.kafka.properties.schema.registry.url={value} — Schema Registry over plain HTTP. Schemas and basic-auth credentials leak. Use https://.",
+                    "org.springframework.kafka", "spring-kafka"));
         }
         return rules;
     }

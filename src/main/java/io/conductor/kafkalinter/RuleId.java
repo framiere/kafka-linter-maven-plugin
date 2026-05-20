@@ -630,6 +630,36 @@ public final class RuleId {
             .whyMatters("The fix is one character: `SASL_SSL`. The TLS layer wraps the SASL handshake and the record stream. SASL_PLAINTEXT is almost always a mis-copy from a lab guide that nobody fixed before going to prod.")
             .build());
 
+    public static final RuleId SR_AUTO_REGISTER_SCHEMAS_TRUE = register(builder("SR_AUTO_REGISTER_SCHEMAS_TRUE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SR_AUTO_REGISTER_SCHEMAS_TRUE.md")
+            .message("auto.register.schemas=true on a producer — the app writes new schemas to the registry on its own. Governance bypass.")
+            .tagline("Producers should not be able to register schemas in production. That's a CI/CD step, not an app step.")
+            .mechanism("With `auto.register.schemas=true` (the default for Confluent serializers), the first record with a new or modified schema triggers a POST to the registry's `/subjects/<topic>-value/versions` endpoint. The new version is created on the fly under whatever compatibility rule is set on the subject.")
+            .impact("A producer rolled out with a buggy schema silently creates a new version that all downstream consumers then have to deal with. If compatibility is set to NONE (or no consumers exist yet), incompatible breaking changes ship without review. Schema evolution stops being a deliberate process.")
+            .whyMatters("Set `auto.register.schemas=false` in non-development environments and register schemas through CI (e.g. Gradle/Maven Schema Registry plugins, or a dedicated job). The lint catches the explicit-true; the bigger fix is making sure the property is set in the deployed config, not just absent.")
+            .build());
+
+    public static final RuleId SR_USE_LATEST_VERSION_TRUE = register(builder("SR_USE_LATEST_VERSION_TRUE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("security")
+            .docPath("security/SR_USE_LATEST_VERSION_TRUE.md")
+            .message("use.latest.version=true without latest.compatibility.strict=true — producers may write records with an incompatible latest schema.")
+            .tagline("Pinning to 'latest' without strict compatibility means schema rollbacks can corrupt the topic.")
+            .mechanism("`use.latest.version=true` tells the serializer to always serialize against the latest registered version of the subject, rather than the schema embedded in the producer's POJO. Without `latest.compatibility.strict=true`, the serializer doesn't verify that the runtime schema is compatible with that latest — it just uses it.")
+            .impact("If someone registers an incompatible schema (manually, or via a bad CI run), every producer immediately starts writing records that consumers can't deserialize. The breakage is global and immediate, not isolated to the producer that changed.")
+            .whyMatters("Either set both `use.latest.version=true` AND `latest.compatibility.strict=true`, or leave both unset and let each producer's embedded schema drive registration. Half-configured is the dangerous state.")
+            .build());
+
+    public static final RuleId SCHEMA_REGISTRY_URL_HTTP = register(builder("SCHEMA_REGISTRY_URL_HTTP")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SCHEMA_REGISTRY_URL_HTTP.md")
+            .message("schema.registry.url uses http:// — credentials and schemas travel in clear.")
+            .tagline("HTTP to the Schema Registry leaks subject definitions and any basic-auth user/password on every request.")
+            .mechanism("`schema.registry.url=http://...` makes every schema lookup, registration, and authentication request go over a plain TCP socket. If `basic.auth.credentials.source=USER_INFO` is set, the user:password is base64-encoded in an Authorization header — readable to anyone on the path.")
+            .impact("On any non-isolated network, basic-auth credentials are recoverable from a single packet capture. Even without auth, subject schemas (which often encode business-domain detail like field names) are visible to passive observers.")
+            .whyMatters("Switch to `https://` and put the Schema Registry behind TLS. Confluent Cloud and managed registries are HTTPS by default — this lint catches the case where someone copied an example URL or set up a local dev registry that survived into the deployed config.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

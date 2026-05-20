@@ -36,6 +36,8 @@ public final class KafkaTypes {
     public static final String ALLOW_AUTO_CREATE_TOPICS_KEY = "allow.auto.create.topics";
     public static final String GROUP_ID_KEY = "group.id";
     public static final String SCHEMA_REGISTRY_URL_KEY = "schema.registry.url";
+    public static final String SR_AUTO_REGISTER_SCHEMAS_KEY = "auto.register.schemas";
+    public static final String SR_USE_LATEST_VERSION_KEY = "use.latest.version";
     public static final String AUTO_OFFSET_RESET_KEY = "auto.offset.reset";
     public static final String RETRIES_KEY = "retries";
     public static final String LINGER_MS_KEY = "linger.ms";

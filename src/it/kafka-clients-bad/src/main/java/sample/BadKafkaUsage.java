@@ -255,6 +255,33 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: SR_AUTO_REGISTER_SCHEMAS_TRUE.
+    public void srAutoRegisterSchemasTrue() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("auto.register.schemas", "true");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: SR_USE_LATEST_VERSION_TRUE.
+    public void srUseLatestVersionTrue() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("use.latest.version", "true");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: SCHEMA_REGISTRY_URL_HTTP.
+    public void schemaRegistryUrlHttp() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("schema.registry.url", "http://schema-registry:8081");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
