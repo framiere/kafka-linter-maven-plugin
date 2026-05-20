@@ -1184,6 +1184,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.request.timeout.ms={value} — above 2 min. Each silent leader failure pins the Sender thread on the dead broker for the full window before retry; produce p99.9 jumps to request.timeout.ms, and delivery.timeout.ms math breaks. Default 30 s.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT, sev.get(RuleId.SPRING_BOOT_CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT),
+                    "spring.kafka.consumer.isolation-level",
+                    v -> v != null && "read_uncommitted".equalsIgnoreCase(v.trim()),
+                    "spring.kafka.consumer.isolation-level={value} — explicit read_uncommitted on a transactional topic returns aborted and in-flight transaction records; the consumer's side effects run on writes the producer subsequently rolls back. On non-transactional topics the setting is a no-op; explicit declaration is a copy-paste smell.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_TYPE_GZIP) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_TYPE_GZIP, sev.get(RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_TYPE_GZIP),
+                    "spring.kafka.producer.compression-type", "gzip",
+                    "spring.kafka.producer.compression-type=gzip — gzip has 2-5× the CPU cost of lz4/zstd for an identical or worse compression ratio on Kafka batch sizes. zstd or lz4 are strictly better in 2026; the transition is online.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW),
+                    "spring.kafka.consumer.properties.default.api.timeout.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 30_000L; },
+                    "spring.kafka.consumer.properties.default.api.timeout.ms={value} — below 30 s. Routine partition-leader moves and broker rolling restarts exhaust the retry budget; commitSync, position, endOffsets, partitionsFor all start throwing TimeoutException during events the consumer should absorb. Default 60 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),
