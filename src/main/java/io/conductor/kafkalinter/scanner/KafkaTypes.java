@@ -48,6 +48,8 @@ public final class KafkaTypes {
     public static final String REQUEST_TIMEOUT_MS_KEY = "request.timeout.ms";
     public static final String SESSION_TIMEOUT_MS_KEY = "session.timeout.ms";
     public static final String TRANSACTION_TIMEOUT_MS_KEY = "transaction.timeout.ms";
+    public static final String MAX_POLL_INTERVAL_MS_KEY = "max.poll.interval.ms";
+    public static final String BATCH_SIZE_KEY = "batch.size";
     public static final String SECURITY_PROTOCOL_KEY = "security.protocol";
     public static final String SSL_ENDPOINT_ID_ALGO_KEY = "ssl.endpoint.identification.algorithm";
     public static final String SASL_JAAS_CONFIG_KEY = "sasl.jaas.config";

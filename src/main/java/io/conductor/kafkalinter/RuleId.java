@@ -702,6 +702,36 @@ public final class RuleId {
             .whyMatters("Default 45 s is correct for most workloads. The justification for shrinking it is 'failover faster' — but the cost (more frequent and unnecessary rebalances) almost always outweighs the benefit. If failover speed matters, use static group membership instead (`group.instance.id`).")
             .build());
 
+    public static final RuleId CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW = register(builder("CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW.md")
+            .message("max.poll.interval.ms below 60 s — the group coordinator will evict the consumer mid-batch if a poll cycle takes longer.")
+            .tagline("max.poll.interval.ms is the floor on how long the consumer is allowed to spend processing one poll. Too small turns normal processing into a rebalance loop.")
+            .mechanism("Between two calls to `poll()`, the consumer keeps sending heartbeats (so `session.timeout.ms` is satisfied), but the group coordinator also tracks `max.poll.interval.ms`. If the gap between polls exceeds this, the coordinator forces a rebalance and kicks the consumer out as 'live-locked'. Default is 300_000 ms (5 minutes).")
+            .impact("Set to 30_000 ms by someone copying a 'fast failover' snippet, and any batch that takes more than 30 s — a database write under load, a downstream HTTP call timing out — triggers a rebalance. The consumer rejoins, re-polls the same batch (uncommitted), processes it again, gets evicted again. The group makes zero forward progress while looping on the same records.")
+            .whyMatters("This is the classic 'why are my consumers in a rebalance loop' bug. Fix the underlying slow processing (smaller `max.poll.records`, async processing, threadpool with manual offset commit) — don't paper over it by shortening this timeout. If anything, raise it above the default for batch processors with known slow per-record work.")
+            .build());
+
+    public static final RuleId PRODUCER_BATCH_SIZE_TOO_SMALL = register(builder("PRODUCER_BATCH_SIZE_TOO_SMALL")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_BATCH_SIZE_TOO_SMALL.md")
+            .message("batch.size below the 16384-byte default — partition-level batches stay tiny and the producer issues one ProduceRequest per few records.")
+            .tagline("batch.size is the upper bound on how much the accumulator collects per partition before sending. Shrink it and you defeat the only batching the producer does.")
+            .mechanism("The producer maintains a per-partition record-batch buffer. It sends the batch when it reaches `batch.size`, when `linger.ms` elapses, or when `flush()`/`close()` runs. The default `16384` (16 KiB) is small enough to keep latency tight and large enough to amortize the produce-RPC overhead.")
+            .impact("With `batch.size=1024` (or worse, `0`), every two or three records trigger an immediate send. The broker sees N× more ProduceRequests for the same record volume — broker request-handler CPU, network round-trips, and the ISR-replication cost per batch all multiply. Throughput craters; the producer's record-send-rate metric drops 5-10×.")
+            .whyMatters("This rarely improves latency — `linger.ms` already gives that knob. The motivation is almost always 'I read a Kafka guide that said tune batch.size' — applied in the wrong direction. The right tuning is *upwards* (32 KiB, 64 KiB) when throughput matters, never downwards.")
+            .build());
+
+    public static final RuleId PRODUCER_LINGER_MS_TOO_HIGH = register(builder("PRODUCER_LINGER_MS_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_LINGER_MS_TOO_HIGH.md")
+            .message("linger.ms above 60 s — every send waits up to a minute in the accumulator before going on the wire.")
+            .tagline("linger.ms is end-to-end latency the application pays for each record. Above ~60 s, this is almost certainly a typo.")
+            .mechanism("`linger.ms` is the maximum time the sender thread waits before dispatching a partial batch. A small value (5-50 ms) trades a touch of latency for tighter batches. A large value (60_000+) means the producer sits on records for that long even when the broker is healthy and idle.")
+            .impact("A `linger.ms=300000` typo (intended `300` ms, but `_000` got pasted) means every produced record sits in the accumulator for 5 minutes before send. The application looks like it's working (send() returns instantly, callbacks just don't fire), and downstream consumers see a 5-minute lag. By the time someone notices, hours of records are sitting in the producer's RAM.")
+            .whyMatters("This rule isn't about choosing between 5 ms and 50 ms — that's a real tuning decision. It's about catching the units-mistake / extra-zeros class of typo. If you genuinely want a minute of linger, the rule's threshold is wrong for your case and you should disable it; in every other case, you have a bug.")
+            .build());
+
     public static final RuleId STREAMS_NUM_STANDBY_REPLICAS_ZERO = register(builder("STREAMS_NUM_STANDBY_REPLICAS_ZERO")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_NUM_STANDBY_REPLICAS_ZERO.md")

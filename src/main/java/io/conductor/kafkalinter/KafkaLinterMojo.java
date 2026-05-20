@@ -193,6 +193,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_SESSION_TIMEOUT_TOO_LOW, s, KafkaTypes.SESSION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
                 "session.timeout.ms={value} — below 10 s. Routine GC pauses will trigger spurious rebalances. Default 45 s is almost always right."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW, s, KafkaTypes.MAX_POLL_INTERVAL_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 60000; },
+                "max.poll.interval.ms={value} — below 60 s. Any single poll cycle that overruns this triggers a rebalance; the consumer enters a re-poll/re-evict loop."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_BATCH_SIZE_TOO_SMALL, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_BATCH_SIZE_TOO_SMALL, s, KafkaTypes.BATCH_SIZE_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Integer.parseInt(v.trim()) < 16384; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "batch.size={value} — below the 16384-byte default. The producer sends one ProduceRequest per few records; broker request rate explodes."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_LINGER_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_LINGER_MS_TOO_HIGH, s, KafkaTypes.LINGER_MS_KEY,
+                v -> parseIntOrZero(v) > 60000,
+                "linger.ms={value} — above 60 s. Every record sits in the accumulator that long before send; almost certainly a units/typo mistake."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },

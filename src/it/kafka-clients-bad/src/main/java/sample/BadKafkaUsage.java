@@ -340,6 +340,36 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW.
+    public void consumerMaxPollIntervalMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("max.poll.interval.ms", "30000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_BATCH_SIZE_TOO_SMALL.
+    public void producerBatchSizeTooSmall() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("batch.size", "1024");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_LINGER_MS_TOO_HIGH.
+    public void producerLingerMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("linger.ms", "300000");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();
