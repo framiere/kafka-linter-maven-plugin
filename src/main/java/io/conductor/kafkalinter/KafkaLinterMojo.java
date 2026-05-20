@@ -160,6 +160,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("endOffsets"),
                 desc -> desc != null && desc.equals("(Ljava/util/Collection;)Ljava/util/Map;"),
                 "Consumer.endOffsets(Collection) (no Duration) blocks for up to default.api.timeout.ms (60 s by default) on broker/leader unavailability. Lag-monitoring scripts and admin tooling that use this overload pin threads during the exact outages they exist to detect. Use endOffsets(Collection, Duration) so timeouts surface as recoverable TimeoutException."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("beginningOffsets"),
+                desc -> desc != null && desc.equals("(Ljava/util/Collection;)Ljava/util/Map;"),
+                "Consumer.beginningOffsets(Collection) (no Duration) blocks for up to default.api.timeout.ms (60 s by default) on broker/leader unavailability. Use beginningOffsets(Collection, Duration) so timeouts surface as recoverable TimeoutException."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("offsetsForTimes"),
+                desc -> desc != null && desc.equals("(Ljava/util/Map;)Ljava/util/Map;"),
+                "Consumer.offsetsForTimes(Map) (no Duration) blocks for up to default.api.timeout.ms (60 s by default) on broker/leader unavailability. Replay tooling that uses this overload appears 'stuck' during exactly the incidents that prompt replay. Use offsetsForTimes(Map, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_POSITION_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("position"),
+                desc -> desc != null && desc.equals("(Lorg/apache/kafka/common/TopicPartition;)J"),
+                "Consumer.position(TopicPartition) (no Duration) can block for up to default.api.timeout.ms on coordinator unavailability when the cached position is stale. Lag/health probes that use this overload hang for 60 s per partition during outages. Use position(TopicPartition, Duration)."));
 
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",

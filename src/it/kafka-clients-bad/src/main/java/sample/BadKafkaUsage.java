@@ -1314,6 +1314,39 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT.
+    public void consumerBeginningOffsetsNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        java.util.List<org.apache.kafka.common.TopicPartition> tps = java.util.List.of(
+                new org.apache.kafka.common.TopicPartition("topic", 0));
+        java.util.Map<org.apache.kafka.common.TopicPartition, Long> begins = consumer.beginningOffsets(tps);
+        begins.forEach((tp, off) -> { /* find earliest offset */ });
+        consumer.close();
+    }
+
+    // RULE: CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT.
+    public void consumerOffsetsForTimesNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        java.util.Map<org.apache.kafka.common.TopicPartition, Long> q = new java.util.HashMap<>();
+        q.put(new org.apache.kafka.common.TopicPartition("topic", 0), System.currentTimeMillis() - 86_400_000L);
+        java.util.Map<org.apache.kafka.common.TopicPartition, org.apache.kafka.clients.consumer.OffsetAndTimestamp> r = consumer.offsetsForTimes(q);
+        r.forEach((tp, off) -> { /* replay-from-yesterday entry point */ });
+        consumer.close();
+    }
+
+    // RULE: CONSUMER_POSITION_NO_TIMEOUT.
+    public void consumerPositionNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        org.apache.kafka.common.TopicPartition tp = new org.apache.kafka.common.TopicPartition("topic", 0);
+        consumer.assign(java.util.List.of(tp));
+        long pos = consumer.position(tp); // unbounded — blocks on coordinator outage when cache is stale
+        System.out.println("position=" + pos);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
