@@ -168,6 +168,14 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s -> ConfigKeyValueRule.literal(
                 RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s, KafkaTypes.ALLOW_AUTO_CREATE_TOPICS_KEY, "true",
                 "allow.auto.create.topics=true — a typo can permanently create a one-partition, default-RF topic."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_MAX_POLL_RECORDS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_MAX_POLL_RECORDS_TOO_HIGH, s, KafkaTypes.MAX_POLL_RECORDS_KEY,
+                v -> parseIntOrZero(v) > 1000,
+                "max.poll.records={value} — a batch this size will not fit inside the default max.poll.interval.ms for any non-trivial processing cost. Rebalance storm risk."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_DELIVERY_TIMEOUT_TOO_SMALL, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_DELIVERY_TIMEOUT_TOO_SMALL, s, KafkaTypes.DELIVERY_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 30000; },
+                "delivery.timeout.ms={value} — shorter than 30s leaves no headroom for routine broker leader-elections. The producer will fail records that would have been delivered by retry."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_IDEMPOTENCE_DISABLED, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_IDEMPOTENCE_DISABLED, s, KafkaTypes.ENABLE_IDEMPOTENCE_KEY, "false",
                 "enable.idempotence=false — explicit opt-out of the default (true since Kafka 3.0). Reintroduces duplicate / out-of-order writes on retry."));
@@ -302,5 +310,10 @@ public class KafkaLinterMojo extends AbstractMojo {
         Severity s = sev.get(id);
         if (s == null || s == Severity.OFF) return;
         rules.add(ctor.apply(s));
+    }
+
+    private static int parseIntOrZero(String s) {
+        if (s == null) return 0;
+        try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return 0; }
     }
 }

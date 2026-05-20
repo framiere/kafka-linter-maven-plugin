@@ -191,6 +191,25 @@ public final class BadKafkaUsage {
         c.close();
     }
 
+    // RULE: CONSUMER_MAX_POLL_RECORDS_TOO_HIGH.
+    public void consumerMaxPollRecordsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("group.id", "g");
+        p.put("max.poll.records", "5000");
+        KafkaConsumer<String, String> c = new KafkaConsumer<>(p);
+        c.close();
+    }
+
+    // RULE: PRODUCER_DELIVERY_TIMEOUT_TOO_SMALL.
+    public void producerDeliveryTimeoutTooSmall() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("delivery.timeout.ms", "5000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: PRODUCER_IDEMPOTENCE_DISABLED.
     public void producerIdempotenceDisabled() {
         Properties p = new Properties();

@@ -40,6 +40,8 @@ public final class KafkaTypes {
     public static final String RETRIES_KEY = "retries";
     public static final String LINGER_MS_KEY = "linger.ms";
     public static final String ISOLATION_LEVEL_KEY = "isolation.level";
+    public static final String MAX_POLL_RECORDS_KEY = "max.poll.records";
+    public static final String DELIVERY_TIMEOUT_MS_KEY = "delivery.timeout.ms";
 
     // kafka-streams config keys
     public static final String STREAMS_REPLICATION_FACTOR_KEY = "replication.factor";

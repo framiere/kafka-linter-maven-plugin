@@ -186,6 +186,26 @@ public final class RuleId {
             .whyMatters("`earliest` is almost always the right default for analytics, replay, and any system that processes historical data. `latest` is right for monitoring/health/heartbeat consumers where stale records are useless. Pick deliberately, document the reason, and consider `none` (fail loud) if neither is acceptable.")
             .build());
 
+    public static final RuleId CONSUMER_MAX_POLL_RECORDS_TOO_HIGH = register(builder("CONSUMER_MAX_POLL_RECORDS_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_MAX_POLL_RECORDS_TOO_HIGH.md")
+            .message("max.poll.records > 1000 — a batch you can't process inside max.poll.interval.ms turns into a rebalance storm.")
+            .tagline("A batch you can't process in max.poll.interval.ms is a batch you'll process twice.")
+            .mechanism("`max.poll.records` (default 500) is the cap on records returned by a single `poll()`. `max.poll.interval.ms` (default 300000) is the maximum time between polls before the broker assumes the consumer is dead and removes it from the group. If per-record processing time × batch size > poll-interval, the consumer gets evicted mid-batch.")
+            .impact("Eviction mid-batch means the entire poll batch is re-delivered to the new owner, which takes even longer (cold cache, larger backlog) and times out itself. Rebalance loop. Symptoms: `last-rebalance-seconds-ago` constantly resetting; `CommitFailedException: ... group has already rebalanced` in logs; `records-lag-max` climbing.")
+            .whyMatters("Pick `max.poll.records` so that `max.poll.records × per-record-cost < max.poll.interval.ms` with margin. If records really are bulk-processable, raise both together (e.g. records=5000, interval=900000). Setting one without thinking about the other is the most common shape of this bug.")
+            .build());
+
+    public static final RuleId PRODUCER_DELIVERY_TIMEOUT_TOO_SMALL = register(builder("PRODUCER_DELIVERY_TIMEOUT_TOO_SMALL")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_DELIVERY_TIMEOUT_TOO_SMALL.md")
+            .message("delivery.timeout.ms < 30000 — too short for the producer's retry budget under any realistic broker outage.")
+            .tagline("`delivery.timeout.ms` is the producer's whole retry budget. Set it small and you turn 'broker hiccups' into 'callback errors'.")
+            .mechanism("`delivery.timeout.ms` (default 120000) is the wall-clock cap on `send()`-to-final-state for one record, covering `linger.ms` + `request.timeout.ms` + every retry. Setting it small forces the producer to give up early — before a typical leader-election or controller-failover can resolve.")
+            .impact("Records that would have been delivered by retry get failed callbacks instead. Application either drops the record or retries at the application layer with worse delivery semantics than the client would have provided. Discovered as 'TimeoutException: ... has passed since batch creation' bursts during routine cluster operations.")
+            .whyMatters("`delivery.timeout.ms` should be ≥ `request.timeout.ms` and large enough to absorb the longest expected broker availability dip (typically 60-120 s for a leader-election). The default is intentionally generous. Lower it only when you have a deliberate latency SLO and an upstream retry path that handles `TimeoutException`.")
+            .build());
+
     public static final RuleId PRODUCER_IDEMPOTENCE_DISABLED = register(builder("PRODUCER_IDEMPOTENCE_DISABLED")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/PRODUCER_IDEMPOTENCE_DISABLED.md")
