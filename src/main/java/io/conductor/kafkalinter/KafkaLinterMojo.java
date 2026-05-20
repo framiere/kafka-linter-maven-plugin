@@ -606,6 +606,12 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "retry.backoff.ms={value} — above 30 s. Producer waits this long between retries of retriable errors; routine leader-move recovery that the default (100 ms) handles in seconds now takes minutes."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_PARTITIONER_IGNORE_KEYS_TRUE, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_PARTITIONER_IGNORE_KEYS_TRUE, s, KafkaTypes.PARTITIONER_IGNORE_KEYS_KEY, "true",
+                "partitioner.ignore.keys=true — KIP-794 partitioner ignores record keys; two records with the same key route to different partitions. Compacted topics, joins and per-key ordering break silently."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT, s, KafkaTypes.CLIENT_DNS_LOOKUP_KEY, "default",
+                "client.dns.lookup=default — deprecated in 2.6 and removed in 3.0 (the client throws ConfigException at startup). Only the first A-record IP is used; multi-IP broker DNS reconnect-failover stops working. Remove the override (default is now use_all_dns_ips)."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -904,6 +910,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.max-poll-records",
                     v -> { try { long n = v == null ? 0 : Long.parseLong(v.trim()); return n >= 1 && n <= 5; } catch (NumberFormatException e) { return false; } },
                     "spring.kafka.consumer.max-poll-records={value} — at or below 5. Each KafkaListener poll returns at most a handful of records; per-poll listener-container overhead dominates and throughput collapses 50-100× vs the default 500.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_RECORD) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_ACK_MODE_RECORD, sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_RECORD),
+                    "spring.kafka.listener.ack-mode",
+                    v -> v != null && "record".equalsIgnoreCase(v.trim()),
+                    "spring.kafka.listener.ack-mode={value} — Spring commits the offset synchronously after every record. Per-record commit RTT (1-3 ms) becomes the dominant cost; throughput collapses 10-100× vs the default BATCH mode while the duplicate-on-crash window narrows by milliseconds. Use idempotent handlers instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {

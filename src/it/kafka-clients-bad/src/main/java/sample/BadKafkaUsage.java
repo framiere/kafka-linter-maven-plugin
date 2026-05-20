@@ -862,6 +862,26 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: PRODUCER_PARTITIONER_IGNORE_KEYS_TRUE.
+    public void producerPartitionerIgnoreKeysTrue() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("partitioner.ignore.keys", "true");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT.
+    public void producerClientDnsLookupDefault() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("client.dns.lookup", "default");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

@@ -63,6 +63,8 @@ public final class KafkaTypes {
     public static final String MAX_REQUEST_SIZE_KEY = "max.request.size";
     public static final String METADATA_MAX_AGE_MS_KEY = "metadata.max.age.ms";
     public static final String FETCH_MAX_WAIT_MS_KEY = "fetch.max.wait.ms";
+    public static final String PARTITIONER_IGNORE_KEYS_KEY = "partitioner.ignore.keys";
+    public static final String CLIENT_DNS_LOOKUP_KEY = "client.dns.lookup";
     public static final Set<String> PRODUCER_GENERIC_TRANSACTIONAL_IDS = Set.of(
             "tx", "txn", "transaction", "my-tx", "my-txn", "my-transaction",
             "test", "test-tx", "test-txn", "demo", "demo-tx",
