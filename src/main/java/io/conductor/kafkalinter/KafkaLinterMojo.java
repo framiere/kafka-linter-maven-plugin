@@ -493,6 +493,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "buffered.records.per.partition={value} — above 100k. Removes the back-pressure ceiling; one skewed partition can OOM the JVM. Default 1000 is right."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_HIGH, s, KafkaTypes.FETCH_MAX_BYTES_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 100L * 1024 * 1024; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "fetch.max.bytes={value} — above 100 MiB. A single FetchResponse can stall the consumer for seconds and pin that many bytes in heap per request; defaults around 50 MiB are safer."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -703,6 +711,12 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "outgoing", "waitForWriteCompletion", "false",
                     "mp.messaging.outgoing.{channel}.waitForWriteCompletion=false — channel acks upstream before the broker accepts the record. Broker failures become silent drops."));
         }
+        if (sev.get(RuleId.QK_FAIL_ON_DESERIALIZATION_FAILURE_FALSE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_FAIL_ON_DESERIALIZATION_FAILURE_FALSE, sev.get(RuleId.QK_FAIL_ON_DESERIALIZATION_FAILURE_FALSE),
+                    "incoming", "fail-on-deserialization-failure", "false",
+                    "mp.messaging.incoming.{channel}.fail-on-deserialization-failure=false — undeserializable records are logged once at WARN, replaced by null, and the offset advances. Silent data loss; configure a dead-letter-queue strategy instead."));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),
@@ -769,6 +783,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                         return KafkaTypes.PRODUCER_GENERIC_TRANSACTIONAL_IDS.contains(trimmed);
                     },
                     "spring.kafka.producer.transaction-id-prefix={value} — a generic placeholder. Two apps with this prefix will fence each other across restarts.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_GROUP_ID_GENERIC) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_GROUP_ID_GENERIC, sev.get(RuleId.SPRING_BOOT_CONSUMER_GROUP_ID_GENERIC),
+                    "spring.kafka.consumer.group-id",
+                    v -> v != null && KafkaTypes.CONSUMER_GENERIC_GROUP_IDS.contains(v.trim().toLowerCase()),
+                    "spring.kafka.consumer.group-id={value} — a generic placeholder. Two apps that share this group-id will collide on partition assignment and silently corrupt each other's offsets.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {
