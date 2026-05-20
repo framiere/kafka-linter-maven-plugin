@@ -1069,6 +1069,30 @@ public final class BadKafkaUsage {
         return mapper;
     }
 
+    // RULE: KAFKA_RETRY_BACKOFF_MAX_MS_TOO_LOW.
+    public Properties retryBackoffMaxMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("retry.backoff.max.ms", "200");
+        return p;
+    }
+
+    // RULE: PRODUCER_PARTITIONER_ADAPTIVE_PARTITIONING_DISABLED.
+    public Properties partitionerAdaptiveDisabled() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("partitioner.adaptive.partitioning.enable", "false");
+        return p;
+    }
+
+    // RULE: KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_LOW.
+    public Properties socketConnectionSetupTimeoutMaxMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("socket.connection.setup.timeout.max.ms", "5000");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

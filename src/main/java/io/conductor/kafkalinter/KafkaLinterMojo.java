@@ -658,6 +658,17 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_RETRY_BACKOFF_MAX_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_RETRY_BACKOFF_MAX_MS_TOO_LOW, s, KafkaTypes.RETRY_BACKOFF_MAX_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 1000; },
+                "retry.backoff.max.ms={value} — below the 1000 ms default. Collapses the KIP-580 exponential-backoff curve into a near-flat line at retry.backoff.ms; sustained retries pound the broker at the starting cadence. Raise to >=1000."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_PARTITIONER_ADAPTIVE_PARTITIONING_DISABLED, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_PARTITIONER_ADAPTIVE_PARTITIONING_DISABLED, s, KafkaTypes.PARTITIONER_ADAPTIVE_PARTITIONING_ENABLE_KEY, "false",
+                "partitioner.adaptive.partitioning.enable=false — opts out of KIP-794 adaptive partitioning. The built-in partitioner reverts to round-robin and keeps sending equal traffic to slow brokers, multiplying the impact of any single-broker degradation. Remove this line; the default (true) is strictly better."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_LOW, s, KafkaTypes.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 30000; },
+                "socket.connection.setup.timeout.max.ms={value} — below the 30 s default. Caps the exponential backoff between TCP+TLS+SASL setup retries too tight; clients re-handshake faster than the broker can complete prior negotiations. Raise to >=30000."));
         addIfEnabled(rules, sev, RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s -> new MethodCallRule(
                 RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s, Set.of(KafkaTypes.OBJECT_MAPPER),
                 Set.of(KafkaTypes.JACKSON_ENABLE_DEFAULT_TYPING_METHOD, KafkaTypes.JACKSON_ACTIVATE_DEFAULT_TYPING_METHOD),
