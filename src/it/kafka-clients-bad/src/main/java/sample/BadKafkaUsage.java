@@ -713,6 +713,26 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: PRODUCER_REQUEST_TIMEOUT_MS_TOO_HIGH.
+    public void producerRequestTimeoutMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("request.timeout.ms", "900000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_MAX_POLL_INTERVAL_MS_TOO_HIGH.
+    public void consumerMaxPollIntervalMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("max.poll.interval.ms", "3600000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

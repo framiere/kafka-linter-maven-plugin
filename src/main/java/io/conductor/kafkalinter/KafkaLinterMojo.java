@@ -469,6 +469,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "batch.size={value} — above 1 MiB. Per-partition pre-allocated buffers explode buffer.memory under fanout; send() stalls or throws BufferExhaustedException."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_REQUEST_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_REQUEST_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.REQUEST_TIMEOUT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 300_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "request.timeout.ms={value} — above 5 minutes. Sender thread stalls on a slow broker for the full window instead of retrying; cluster wobble cascades into app outages."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_MAX_POLL_INTERVAL_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_MAX_POLL_INTERVAL_MS_TOO_HIGH, s, KafkaTypes.MAX_POLL_INTERVAL_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 1_800_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.poll.interval.ms={value} — above 30 minutes. A hung consumer holds its partition assignment for the whole window; peers cannot pick up its work."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_HIGH, s, KafkaTypes.STREAMS_BUFFERED_RECORDS_PER_PARTITION_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 100_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "buffered.records.per.partition={value} — above 100k. Removes the back-pressure ceiling; one skewed partition can OOM the JVM. Default 1000 is right."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

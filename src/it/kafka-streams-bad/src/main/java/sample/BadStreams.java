@@ -222,4 +222,14 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_HIGH.
+    public Properties bufferedRecordsPerPartitionTooHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("buffered.records.per.partition", "1000000");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }
