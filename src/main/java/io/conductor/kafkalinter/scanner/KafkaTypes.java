@@ -65,6 +65,9 @@ public final class KafkaTypes {
     public static final String FETCH_MAX_WAIT_MS_KEY = "fetch.max.wait.ms";
     public static final String PARTITIONER_IGNORE_KEYS_KEY = "partitioner.ignore.keys";
     public static final String CLIENT_DNS_LOOKUP_KEY = "client.dns.lookup";
+    public static final String AUTO_INCLUDE_JMX_REPORTER_KEY = "auto.include.jmx.reporter";
+    public static final Set<String> CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES = Set.of("earliest", "latest", "none");
+    public static final Set<String> PRODUCER_ACKS_VALID_VALUES = Set.of("0", "1", "-1", "all");
     public static final Set<String> PRODUCER_GENERIC_TRANSACTIONAL_IDS = Set.of(
             "tx", "txn", "transaction", "my-tx", "my-txn", "my-transaction",
             "test", "test-tx", "test-txn", "demo", "demo-tx",

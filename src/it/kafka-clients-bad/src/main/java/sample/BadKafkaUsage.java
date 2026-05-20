@@ -882,6 +882,36 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: KAFKA_AUTO_INCLUDE_JMX_REPORTER_FALSE.
+    public void kafkaAutoIncludeJmxReporterFalse() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("auto.include.jmx.reporter", "false");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_AUTO_OFFSET_RESET_INVALID.
+    public void consumerAutoOffsetResetInvalid() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("auto.offset.reset", "earleist");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_ACKS_INVALID.
+    public void producerAcksInvalid() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("acks", "true");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

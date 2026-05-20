@@ -612,6 +612,27 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT, s, KafkaTypes.CLIENT_DNS_LOOKUP_KEY, "default",
                 "client.dns.lookup=default — deprecated in 2.6 and removed in 3.0 (the client throws ConfigException at startup). Only the first A-record IP is used; multi-IP broker DNS reconnect-failover stops working. Remove the override (default is now use_all_dns_ips)."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_AUTO_INCLUDE_JMX_REPORTER_FALSE, s -> ConfigKeyValueRule.literal(
+                RuleId.KAFKA_AUTO_INCLUDE_JMX_REPORTER_FALSE, s, KafkaTypes.AUTO_INCLUDE_JMX_REPORTER_KEY, "false",
+                "auto.include.jmx.reporter=false — disables the built-in JmxReporter. If metric.reporters is empty, every kafka-clients metric (consumer-lag, request-latency, in-flight) disappears from observability. Only set when a replacement reporter is verified end-to-end."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_OFFSET_RESET_INVALID, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_AUTO_OFFSET_RESET_INVALID, s, KafkaTypes.AUTO_OFFSET_RESET_KEY,
+                v -> {
+                    if (v == null) return false;
+                    String t = v.trim().toLowerCase();
+                    if (t.isEmpty()) return false;
+                    return !KafkaTypes.CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES.contains(t);
+                },
+                "auto.offset.reset={value} — not one of earliest/latest/none. The consumer throws ConfigException at construction; the pod crash-loops on first deploy."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_INVALID, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_ACKS_INVALID, s, KafkaTypes.ACKS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    String t = v.trim().toLowerCase();
+                    if (t.isEmpty()) return false;
+                    return !KafkaTypes.PRODUCER_ACKS_VALID_VALUES.contains(t);
+                },
+                "acks={value} — not one of 0/1/-1/all. The producer throws ConfigException at construction; the pod crash-loops on first deploy."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

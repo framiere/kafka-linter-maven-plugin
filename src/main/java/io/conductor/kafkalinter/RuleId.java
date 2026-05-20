@@ -1680,6 +1680,36 @@ public final class RuleId {
             .whyMatters("This is one of the few Kafka config keys whose default value was changed without a migration period — Kafka 2.0 defaulted to `default`, Kafka 2.1+ defaults to `use_all_dns_ips`. Any config file still pinning the old value was carried over from an earlier deployment. Remove the override; the modern default is unambiguously correct.")
             .build());
 
+    public static final RuleId KAFKA_AUTO_INCLUDE_JMX_REPORTER_FALSE = register(builder("KAFKA_AUTO_INCLUDE_JMX_REPORTER_FALSE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("observability")
+            .docPath("observability/KAFKA_AUTO_INCLUDE_JMX_REPORTER_FALSE.md")
+            .message("auto.include.jmx.reporter=false — the built-in JmxReporter is disabled and all client metrics (lag, in-flight, record-send-rate, request-latency) disappear unless a replacement reporter is wired via metric.reporters.")
+            .tagline("`auto.include.jmx.reporter=false` turns off the JmxReporter the Kafka client registers by default. The Kafka client emits dozens of metrics through the Metrics subsystem (records-lag-max, records-sent-rate, request-latency-avg, batch-size-avg, ...); they reach observability tooling via reporters. The JmxReporter is always wired by default — disabling it without configuring an alternative drops every client metric on the floor.")
+            .mechanism("Each Kafka client builds a `Metrics` instance and registers reporters from two sources: the comma-separated `metric.reporters` config, plus an implicit JmxReporter unless `auto.include.jmx.reporter=false` is set. JmxReporter exposes the metrics as MBeans under `kafka.producer:*`, `kafka.consumer:*`, `kafka.streams:*`. JMX-scraping agents (Prometheus jmx_exporter, Datadog Java agent, Dynatrace OneAgent) read these MBeans and ship them out. Setting the property to false skips the JmxReporter registration; if `metric.reporters` is empty, the metrics still tick internally but nothing exports them.")
+            .impact("Consumer-lag dashboards go flat-line; producer-latency alerts never fire; capacity planning loses every per-client signal. The Kafka client itself behaves identically — sends, polls and commits still work — so the regression is invisible from inside the app. Operators usually only notice during the next incident, when they reach for the dashboards and the data isn't there.")
+            .whyMatters("This setting is almost always a half-finished migration to push-based metrics. Someone adds an OTLP reporter to `metric.reporters`, sets `auto.include.jmx.reporter=false` to 'avoid double-counting', then realises the OTLP reporter never actually shipped to prod — and the observability gap is the only signal that something went wrong. Keep the JmxReporter on (the default) unless you have verified the replacement reporter end-to-end in the same environment.")
+            .build());
+
+    public static final RuleId CONSUMER_AUTO_OFFSET_RESET_INVALID = register(builder("CONSUMER_AUTO_OFFSET_RESET_INVALID")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_AUTO_OFFSET_RESET_INVALID.md")
+            .message("auto.offset.reset set to a value other than earliest/latest/none — the consumer throws ConfigException at startup and the pod crash-loops on first deploy.")
+            .tagline("Only `earliest`, `latest`, and `none` are valid values for `auto.offset.reset`. Anything else (typos like `earleist`, `lastest`, `oldest`, `newest`, `beginning`, `end`) is rejected by Kafka's `ConfigDef.ValidString` validator and the consumer fails to construct.")
+            .mechanism("During `new KafkaConsumer<>(props)`, the client runs `ConsumerConfig.validate()` which checks `auto.offset.reset` against a hard-coded allow-list. An invalid value triggers `org.apache.kafka.common.config.ConfigException: Invalid value <typo> for configuration auto.offset.reset: String must be one of: latest, earliest, none`. The exception propagates out of the constructor; the pod fails health checks; k8s restarts it on a loop with the same config; the alert page eventually fires on CrashLoopBackOff.")
+            .impact("First deploy after the typo: the new pod fails to start, the old pod handles the topic until it's drained, lag balloons. If the typo is introduced via env-var substitution at runtime, the binary that worked yesterday now crash-loops today with no code change visible. Because the error is at consumer construction, no records are processed at all — there is no partial-availability window.")
+            .whyMatters("Common typos this rule catches: `earleist`, `latests`, `eariest`, `beginning`, `end`, `oldest`, `newest`. Any of them turns into a 100% outage at first deploy. Catching it at lint time costs one regex; catching it in production costs a page-out.")
+            .build());
+
+    public static final RuleId PRODUCER_ACKS_INVALID = register(builder("PRODUCER_ACKS_INVALID")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_ACKS_INVALID.md")
+            .message("acks set to a value other than 0/1/-1/all — the producer throws ConfigException at construction and the pod crash-loops on first deploy.")
+            .tagline("Only `0`, `1`, `-1`, and `all` are valid values for `acks`. Anything else (`true`, `2`, `3`, `yes`, `enabled`, `quorum`) is rejected by Kafka's `ProducerConfig` validator and `new KafkaProducer<>(props)` throws.")
+            .mechanism("`acks` is validated by `ProducerConfig.acksValidator()`, which only accepts the four documented values. Any other value triggers `org.apache.kafka.common.config.ConfigException: Invalid value <typo> for configuration acks: Expected value to be one of [all, -1, 0, 1] but received <typo>`. The constructor never returns; no records can be sent; the pod fails liveness.")
+            .impact("Pod crash-loops at startup; rolling deploy stalls at the first replica. Because the error is at construction time, no producer-side metrics ever register — observability dashboards stay empty and the only signal is the k8s pod status. A common variant: someone reads 'acks should be all' as 'acks should be true' and ships `acks=true` — the producer never even sends a SYN.")
+            .whyMatters("Common typos this rule catches: `acks=true`, `acks=yes`, `acks=enable`, `acks=2`, `acks=quorum`. The producer config validator is unforgiving; catching the typo at lint time prevents a 100% startup-time outage of the next deploy.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")
