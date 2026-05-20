@@ -432,6 +432,26 @@ public final class RuleId {
     // quarkus-kafka/ — Quarkus / SmallRye Reactive Messaging
     // ────────────────────────────────────────────────────────────────────────
 
+    public static final RuleId QK_AUTO_COMMIT_ENABLED = register(builder("QK_AUTO_COMMIT_ENABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_AUTO_COMMIT_ENABLED.md")
+            .message("mp.messaging.incoming.{channel}.enable.auto.commit=true — hands offset management to Kafka's background committer and breaks at-least-once.")
+            .tagline("Let SmallRye commit. Don't hand the wheel to Kafka.")
+            .mechanism("SmallRye's Kafka connector defaults `enable.auto.commit` to false and drives commits via the channel's `commit-strategy` (throttled, latest, ignore). Setting `enable.auto.commit=true` flips the strategy to `ignore` and Kafka's own thread commits the polled position every `auto.commit.interval.ms` (5 s default) — regardless of whether the reactive pipeline acked the record.")
+            .impact("On crash, in-flight polled-but-not-yet-processed records are lost because their offsets were already committed by Kafka's timer. Looks healthy: `consumer_lag` marches forward on schedule. Data loss is invisible without a DLQ or nack signal.")
+            .whyMatters("Use `commit-strategy=throttled` (the connector default) and let SmallRye drive offset commits on ack. If at-most-once is the design (telemetry, metrics), pair with `@Acknowledgment(Strategy.NONE)` so the choice is explicit in code, not buried in properties.")
+            .build());
+
+    public static final RuleId QK_TRACING_DISABLED = register(builder("QK_TRACING_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_TRACING_DISABLED.md")
+            .message("mp.messaging.{direction}.{channel}.tracing-enabled=false — distributed traces stop at this channel. Producer/consumer correlation is lost.")
+            .tagline("tracing-enabled=false is \"I solemnly swear to debug from logs alone.\"")
+            .mechanism("Quarkus + SmallRye + the OpenTelemetry/MicroProfile-Tracing integration automatically inject and propagate `traceparent` headers across Kafka producer→consumer hops. The `tracing-enabled` channel knob switches that header propagation off for the channel in question.")
+            .impact("Trace propagation breaks at the disabled channel. A request that fans out producer→consumer→producer ends up as two disconnected traces, neither of which tells the operator where latency or errors came from. Discovered during incident response when 'why is this slow?' has no answer.")
+            .whyMatters("Leave `tracing-enabled` on (the default). Legitimate disables exist — very-high-volume telemetry streams where the per-record cost matters — but they should be rare and documented in the same change.")
+            .build());
+
     public static final RuleId QK_DEVSERVICES_IN_PROD = register(builder("QK_DEVSERVICES_IN_PROD")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("quarkus-kafka")
             .docPath("quarkus-kafka/QK_DEVSERVICES_IN_PROD.md")

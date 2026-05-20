@@ -249,6 +249,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "incoming", "auto.offset.reset", "latest",
                     "mp.messaging.incoming.{channel}.auto.offset.reset=latest — fresh consumer group skips existing backlog. Prefer 'earliest' for pipeline consumers."));
         }
+        if (sev.get(RuleId.QK_AUTO_COMMIT_ENABLED) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_AUTO_COMMIT_ENABLED, sev.get(RuleId.QK_AUTO_COMMIT_ENABLED),
+                    "incoming", "enable.auto.commit", "true",
+                    "mp.messaging.incoming.{channel}.enable.auto.commit=true — Kafka commits offsets on a timer regardless of ack. In-flight polled records are lost on crash."));
+        }
+        if (sev.get(RuleId.QK_TRACING_DISABLED) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_TRACING_DISABLED, sev.get(RuleId.QK_TRACING_DISABLED),
+                    null, "tracing-enabled", "false",
+                    "mp.messaging.{direction}.{channel}.tracing-enabled=false — traceparent header propagation off for this channel. Distributed traces will not cross this Kafka hop."));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),
