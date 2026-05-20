@@ -365,6 +365,16 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s -> ConfigKeyValueRule.literal(
                 RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s, KafkaTypes.SSL_ENDPOINT_ID_ALGO_KEY, "",
                 "ssl.endpoint.identification.algorithm=\"\" — hostname verification disabled. Any cert on the trusted chain is accepted regardless of CN/SAN (MITM vector)."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SSL_PROTOCOL_LEGACY, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_SSL_PROTOCOL_LEGACY, s, KafkaTypes.SSL_PROTOCOL_KEY,
+                v -> v != null && KafkaTypes.SSL_PROTOCOL_LEGACY_VALUES.contains(v.trim()),
+                "ssl.protocol={value} — legacy/broken TLS version. JDK 11+ disables these by default; remove the override and let JSSE negotiate ≥ TLSv1.2."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE, s, KafkaTypes.EXCLUDE_INTERNAL_TOPICS_KEY, "false",
+                "exclude.internal.topics=false — consumer can subscribe to __consumer_offsets/__transaction_state via regex. Almost always a leftover debug toggle."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_COMPRESSION_GZIP, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_COMPRESSION_GZIP, s, KafkaTypes.COMPRESSION_TYPE_KEY, "gzip",
+                "compression.type=gzip — slowest codec for the ratio. Prefer lz4 (throughput), zstd (best ratio, 2.1+) or snappy (cheapest CPU)."));
         addIfEnabled(rules, sev, RuleId.CRED_SASL_JAAS_LITERAL, s -> new ConfigKeyValueRule(
                 RuleId.CRED_SASL_JAAS_LITERAL, s, KafkaTypes.SASL_JAAS_CONFIG_KEY,
                 v -> isLiteralCredential(v) && v.toLowerCase().contains("password=") && !v.contains("password=\"${"),

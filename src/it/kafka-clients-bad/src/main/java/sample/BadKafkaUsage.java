@@ -529,6 +529,34 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: SECURITY_SSL_PROTOCOL_LEGACY.
+    public void sslProtocolLegacy() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("ssl.protocol", "TLSv1.1");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE.
+    public void consumerExcludeInternalTopicsFalse() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "consumer-internal-topics");
+        p.put("exclude.internal.topics", "false");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_COMPRESSION_GZIP.
+    public void producerCompressionGzip() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "gzip");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();

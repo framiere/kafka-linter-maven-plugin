@@ -1080,6 +1080,36 @@ public final class RuleId {
             .whyMatters("Pick a service-and-instance qualified value: `payments-fraud-pipeline-shard-3`, `audit-writer-v2-i07`. Treat the id like a database lease — it identifies a single producer instance, not a service. This rule catches the copy-paste-tutorial class of bug, where the placeholder ships to staging unchanged.")
             .build());
 
+    public static final RuleId SECURITY_SSL_PROTOCOL_LEGACY = register(builder("SECURITY_SSL_PROTOCOL_LEGACY")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SECURITY_SSL_PROTOCOL_LEGACY.md")
+            .message("ssl.protocol pinned to TLSv1 / TLSv1.1 / SSLv2 / SSLv3 — legacy/broken transport.")
+            .tagline("ssl.protocol selects the TLS handshake version. The legacy versions (TLS 1.0, 1.1, SSL 3.0/2.0) are known-broken and have been removed from JDK defaults — pinning them either ships a vulnerable client or fails the handshake entirely.")
+            .mechanism("The Kafka client passes `ssl.protocol` to the JSSE SSLContext factory. JDK 8u291+, JDK 11.0.11+ and JDK 17+ disable TLSv1 and TLSv1.1 by default; some JDK builds disable them via `jdk.tls.disabledAlgorithms` in `java.security`. SSLv2/v3 are removed entirely. Explicitly setting `ssl.protocol=TLSv1.1` either bypasses the disabled list (a security incident) or the SSL context refuses to initialise (a runtime failure).")
+            .impact("Best case: the application fails to start with `NoSuchAlgorithmException` or `SSLException: No appropriate protocol` — caught in QA but expensive to diagnose. Worst case (older JDK or an unwise `security.properties` override): the client connects with a cipher suite vulnerable to BEAST, POODLE, or the truncation attacks that retired TLS 1.0/1.1 in the first place. Compliance audits (PCI-DSS 3.2.1+, FedRAMP) explicitly forbid both.")
+            .whyMatters("There is no reason to pin a TLS version below 1.2 in 2026. If a broker only accepts TLS 1.0 or 1.1, the broker is the bug — upgrade it. Remove this setting entirely; the JDK will negotiate TLS 1.2 (or 1.3 on JDK 11+) as the floor, which is what every modern broker accepts.")
+            .build());
+
+    public static final RuleId CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE = register(builder("CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE.md")
+            .message("exclude.internal.topics=false — consumer can subscribe to __consumer_offsets / __transaction_state via regex.")
+            .tagline("exclude.internal.topics keeps Kafka's own bookkeeping topics out of regex-based subscriptions. Turning it off opens a regex match to __consumer_offsets and the rest of the internal namespace.")
+            .mechanism("When a consumer calls `subscribe(Pattern)` with a regex that would match an internal topic (any topic starting with `__`, e.g. `__consumer_offsets`, `__transaction_state`, `__schema_registry`), the consumer normally excludes them. Setting `exclude.internal.topics=false` removes that filter — the consumer joins those topics like any other.")
+            .impact("Reading `__consumer_offsets` directly leaks every consumer group's offset commits across the cluster — group names, topic names, position cursors. Reading `__transaction_state` leaks every transactional producer's in-flight transactions. Beyond the information leak, reading these topics under load adds non-trivial broker load and can interfere with the GroupCoordinator's normal compaction pace.")
+            .whyMatters("There is essentially no legitimate reason for an application to set this to `false`. The legitimate consumers of internal topics (the controller, schema registry, MirrorMaker's offset translation) all have dedicated code paths. If this is set in your config, either someone misread the docs while debugging or a debugging hack survived into production.")
+            .build());
+
+    public static final RuleId PRODUCER_COMPRESSION_GZIP = register(builder("PRODUCER_COMPRESSION_GZIP")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_COMPRESSION_GZIP.md")
+            .message("compression.type=gzip — outdated codec choice; lz4 (default), zstd (best ratio), or snappy (cheapest CPU) dominate the trade-off curve.")
+            .tagline("gzip is the slow corner of every modern compression benchmark. Today's three real choices are lz4, zstd, and snappy — gzip survives only in legacy configs.")
+            .mechanism("`compression.type` (default `none` on the producer, but Kafka chose `lz4` as the recommended setting since 2.1) controls how the producer compresses each record batch before sending. The codecs available are `none`, `gzip`, `snappy`, `lz4`, and (since 2.1) `zstd`. gzip is the oldest option and the slowest by a wide margin on every benchmark Confluent or Apache has published — typically 2-5x slower CPU per byte than lz4 for the same compression ratio, and worse ratio than zstd at every speed setting.")
+            .impact("On a producer at 100 MB/s, gzip can saturate a core on compression alone while lz4 or snappy stay under 20% CPU; zstd matches gzip's ratio at half the CPU. The cost is mostly invisible until traffic grows — you pay it in producer p99 latency (compression is on the send path), in container CPU bills, and in fewer records per producer instance.")
+            .whyMatters("Almost every gzip in a Kafka config today is a copy from a 2017-era tutorial. The reasonable replacements are: `lz4` for the throughput-leaning default, `zstd` if you want size and have kafka-clients ≥ 2.1 + broker ≥ 2.1, `snappy` if you want the cheapest CPU. This rule is INFO severity — it's a quality-of-life signal, not a correctness bug.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

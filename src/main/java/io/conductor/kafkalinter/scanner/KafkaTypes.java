@@ -85,6 +85,11 @@ public final class KafkaTypes {
     public static final String SSL_KEYSTORE_PASSWORD_KEY = "ssl.keystore.password";
     public static final String SSL_TRUSTSTORE_PASSWORD_KEY = "ssl.truststore.password";
     public static final String SSL_KEY_PASSWORD_KEY = "ssl.key.password";
+    public static final String SSL_PROTOCOL_KEY = "ssl.protocol";
+    public static final Set<String> SSL_PROTOCOL_LEGACY_VALUES = Set.of(
+            "TLSv1", "TLSv1.0", "TLSv1.1", "SSLv2", "SSLv3", "SSL"
+    );
+    public static final String EXCLUDE_INTERNAL_TOPICS_KEY = "exclude.internal.topics";
 
     // kafka-streams config keys
     public static final String STREAMS_APPLICATION_ID_KEY = "application.id";
