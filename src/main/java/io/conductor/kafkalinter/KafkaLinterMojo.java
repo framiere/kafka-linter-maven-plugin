@@ -1142,6 +1142,24 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "incoming", "fail-on-deserialization-failure", "false",
                     "mp.messaging.incoming.{channel}.fail-on-deserialization-failure=false — undeserializable records are logged once at WARN, replaced by null, and the offset advances. Silent data loss; configure a dead-letter-queue strategy instead."));
         }
+        if (sev.get(RuleId.QK_OUTGOING_MERGE_TRUE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_OUTGOING_MERGE_TRUE, sev.get(RuleId.QK_OUTGOING_MERGE_TRUE),
+                    "outgoing", "merge", "true",
+                    "mp.messaging.outgoing.{channel}.merge=true — multiple @Outgoing producers feed one channel without back-pressure coordination or per-key ordering across upstreams. Fast producer can starve slow one in buffer.memory."));
+        }
+        if (sev.get(RuleId.QK_INCOMING_PAUSE_IF_NO_REQUESTS_FALSE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_INCOMING_PAUSE_IF_NO_REQUESTS_FALSE, sev.get(RuleId.QK_INCOMING_PAUSE_IF_NO_REQUESTS_FALSE),
+                    "incoming", "pause-if-no-requests", "false",
+                    "mp.messaging.incoming.{channel}.pause-if-no-requests=false — smallrye no longer pauses kafka-clients when downstream Mutiny has zero requests. Decoded records accumulate in an unbounded in-memory queue; sustained downstream slowness OOMs the pod."));
+        }
+        if (sev.get(RuleId.QK_LAZY_CLIENT_TRUE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_LAZY_CLIENT_TRUE, sev.get(RuleId.QK_LAZY_CLIENT_TRUE),
+                    null, "lazy-client", "true",
+                    "mp.messaging.{direction}.{channel}.lazy-client=true — kafka-clients producer/consumer deferred to first subscribe. Broker connectivity, SASL, and topic-existence failures surface after the pod is already Ready instead of at boot."));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),
