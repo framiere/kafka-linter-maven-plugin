@@ -512,6 +512,36 @@ public final class RuleId {
     // quarkus-kafka/ — Quarkus / SmallRye Reactive Messaging
     // ────────────────────────────────────────────────────────────────────────
 
+    public static final RuleId SPRING_BOOT_PRODUCER_COMPRESSION_NONE = register(builder("SPRING_BOOT_PRODUCER_COMPRESSION_NONE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_PRODUCER_COMPRESSION_NONE.md")
+            .message("spring.kafka.producer.compression-type=none — explicitly disables compression on the producer.")
+            .tagline("Setting compression-type=none in Spring Boot config explicitly opts out of one of the cheapest broker-cost wins.")
+            .mechanism("`spring.kafka.producer.compression-type` flows through KafkaProperties → DefaultKafkaProducerFactory → the underlying KafkaProducer's `compression.type`. Setting it to `none` produces wire records with no compression even though every modern client and broker supports zstd/lz4 cheaply.")
+            .impact("Bytes-on-wire and bytes-on-disk for this app's traffic stay 3-5× larger than they need to be. Across a fleet of producers this dominates the broker's storage and cross-AZ network bill.")
+            .whyMatters("`zstd` is the modern default and adds essentially no CPU to a busy app's hot path. `lz4` if you're CPU-bound. `none` is almost always a copy from a sample that nobody updated.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_PRODUCER_RETRIES_ZERO = register(builder("SPRING_BOOT_PRODUCER_RETRIES_ZERO")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_PRODUCER_RETRIES_ZERO.md")
+            .message("spring.kafka.producer.retries=0 — turns transient broker errors into permanent send failures.")
+            .tagline("retries=0 on a Spring Boot producer makes every routine broker hiccup a record loss.")
+            .mechanism("`spring.kafka.producer.retries` is forwarded to the KafkaProducer's `retries` config. The kafka-clients default is `Integer.MAX_VALUE`, bounded by `delivery.timeout.ms`. Setting to 0 disables retry entirely — the producer fails the first time the broker returns a retriable error (leader-election, brief I/O hiccup, rolling restart).")
+            .impact("Any non-trivial broker maintenance window now produces a spike of record-loss in application metrics. The error surface in the app — typically a `Callback` that logs and drops — silently absorbs records that the producer-level retry chain would have handled.")
+            .whyMatters("Defaults are correct. Retries cost nothing if the broker isn't asking for them, and they save records when it is. Cargo-culted `retries=0` is one of the most common Spring Boot anti-patterns — usually copied from a 'fail fast' guide that confused retries with timeouts.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_LISTENER_CONCURRENCY_ZERO = register(builder("SPRING_BOOT_LISTENER_CONCURRENCY_ZERO")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_LISTENER_CONCURRENCY_ZERO.md")
+            .message("spring.kafka.listener.concurrency=0 — no listener container threads will be created.")
+            .tagline("Concurrency=0 produces a listener factory that creates zero consumers. The app starts without reading anything.")
+            .mechanism("`spring.kafka.listener.concurrency` sets the number of consumer threads `ConcurrentMessageListenerContainer` will spawn per listener. With `0`, the container creates no threads — the listener bean is registered, the @KafkaListener annotation processed, but no consumer is ever subscribed.")
+            .impact("The app starts cleanly, the broker shows no consumer-group members, lag grows on the topic, and there is no obvious error in the app logs. The bug is usually only spotted hours later when downstream metrics break or someone notices the topic.")
+            .whyMatters("This is almost always a typo or env-substitution bug (e.g. `${KAFKA_CONCURRENCY:0}` with the env var unset). Default of 1 is fine; explicit 0 has no legitimate use.")
+            .build());
+
     public static final RuleId QK_AUTO_COMMIT_ENABLED = register(builder("QK_AUTO_COMMIT_ENABLED")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
             .docPath("quarkus-kafka/QK_AUTO_COMMIT_ENABLED.md")

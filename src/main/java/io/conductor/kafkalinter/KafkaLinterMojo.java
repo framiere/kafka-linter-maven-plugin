@@ -411,6 +411,27 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.auto-offset-reset=latest — fresh consumer groups skip everything currently in the topic. Prefer 'earliest' for pipeline consumers.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_NONE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_NONE, sev.get(RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_NONE),
+                    "spring.kafka.producer.compression-type", "none",
+                    "spring.kafka.producer.compression-type=none — explicit opt-out of compression. Use zstd or lz4.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRIES_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_RETRIES_ZERO, sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRIES_ZERO),
+                    "spring.kafka.producer.retries", "0",
+                    "spring.kafka.producer.retries=0 — transient broker errors become permanent send failures. Remove the override; defaults are correct.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO, sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO),
+                    "spring.kafka.listener.concurrency", "0",
+                    "spring.kafka.listener.concurrency=0 — listener container creates zero consumer threads. Almost always a typo or env-substitution bug.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
