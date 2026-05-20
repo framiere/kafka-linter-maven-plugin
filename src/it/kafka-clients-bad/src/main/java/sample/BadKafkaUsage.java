@@ -1023,6 +1023,36 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER — unresolved ${...} reaches static-membership identity.
+    public void consumerGroupInstanceIdPlaceholder() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("group.instance.id", "${POD_NAME}");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: SECURITY_PROTOCOL_PLACEHOLDER — unresolved ${...} reaches security.protocol validator.
+    public void securityProtocolPlaceholder() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("security.protocol", "${KAFKA_SECURITY_PROTOCOL}");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_HIGH — above 600 000 ms exceeds broker default / LB idle timeouts.
+    public void connectionsMaxIdleMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("connections.max.idle.ms", "1800000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

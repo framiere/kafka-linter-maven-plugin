@@ -658,6 +658,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER, s, KafkaTypes.GROUP_INSTANCE_ID_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "group.instance.id={value} — unresolved ${...} placeholder. Every pod registers the same static-membership identity; the second pod's JoinGroup fences the first off the group with FencedInstanceIdException and rolling deploys ping-pong. Resolve via @Value/System.getenv before putting."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_PROTOCOL_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_PROTOCOL_PLACEHOLDER, s, KafkaTypes.SECURITY_PROTOCOL_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "security.protocol={value} — unresolved ${...} placeholder. Kafka's validator rejects any value outside {PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL}; the client throws ConfigException at construction and the pod crash-loops. Resolve before putting."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_HIGH, s, KafkaTypes.CONNECTIONS_MAX_IDLE_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n > 600_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "connections.max.idle.ms={value} — above the broker default (600 000 ms) and typical LB/NAT idle timeouts. The broker closes the socket on idle while the client keeps it pooled; the next request fails with DisconnectException at the broker-idle cadence. Stay ≤ 540 000 ms."));
         addIfEnabled(rules, sev, RuleId.KAFKA_METRICS_RECORDING_LEVEL_DEBUG, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_METRICS_RECORDING_LEVEL_DEBUG, s, KafkaTypes.METRICS_RECORDING_LEVEL_KEY,
                 v -> v != null && KafkaTypes.METRICS_RECORDING_LEVEL_VERBOSE_VALUES.contains(v.trim().toUpperCase()),
