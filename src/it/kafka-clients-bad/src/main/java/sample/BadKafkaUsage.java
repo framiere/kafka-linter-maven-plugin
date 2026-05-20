@@ -499,6 +499,36 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: KAFKA_METADATA_MAX_AGE_MS_TOO_LOW.
+    public void metadataMaxAgeMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("metadata.max.age.ms", "5000");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH.
+    public void consumerFetchMaxWaitMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "consumer-fetch-wait-test");
+        p.put("fetch.max.wait.ms", "30000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_TRANSACTIONAL_ID_GENERIC.
+    public void producerTransactionalIdGeneric() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("transactional.id", "txn");
+        p.put("enable.idempotence", "true");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();

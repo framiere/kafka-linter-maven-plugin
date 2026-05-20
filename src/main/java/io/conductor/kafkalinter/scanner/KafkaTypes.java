@@ -61,6 +61,13 @@ public final class KafkaTypes {
     public static final String RETRY_BACKOFF_MS_KEY = "retry.backoff.ms";
     public static final String AUTO_COMMIT_INTERVAL_MS_KEY = "auto.commit.interval.ms";
     public static final String MAX_REQUEST_SIZE_KEY = "max.request.size";
+    public static final String METADATA_MAX_AGE_MS_KEY = "metadata.max.age.ms";
+    public static final String FETCH_MAX_WAIT_MS_KEY = "fetch.max.wait.ms";
+    public static final Set<String> PRODUCER_GENERIC_TRANSACTIONAL_IDS = Set.of(
+            "tx", "txn", "transaction", "my-tx", "my-txn", "my-transaction",
+            "test", "test-tx", "test-txn", "demo", "demo-tx",
+            "app", "application", "default", "producer", "kafka-producer"
+    );
     public static final Set<String> CONSUMER_GENERIC_GROUP_IDS = Set.of(
             "group", "consumer", "consumer-group", "kafka-consumer",
             "my-group", "my-consumer", "test", "test-group", "demo", "demo-group",

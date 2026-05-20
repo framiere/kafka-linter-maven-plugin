@@ -1050,6 +1050,36 @@ public final class RuleId {
             .whyMatters("Large Kafka records are almost always the wrong tool — the right shape for blobs is to store them externally (S3, blob store) and put a reference on the topic. If you genuinely need bigger records, the broker `message.max.bytes` and consumer `fetch.max.bytes` must be raised in lockstep, with awareness of replica replication buffer and disk IO. This rule catches the half-done version of that work.")
             .build());
 
+    public static final RuleId KAFKA_METADATA_MAX_AGE_MS_TOO_LOW = register(builder("KAFKA_METADATA_MAX_AGE_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/KAFKA_METADATA_MAX_AGE_MS_TOO_LOW.md")
+            .message("metadata.max.age.ms below 30 s — forces a MetadataRequest every few seconds per client; broker-CPU drain at scale.")
+            .tagline("metadata.max.age.ms is the upper bound on cluster-metadata staleness inside the client. Cut it short and every client perpetually re-fetches the same data.")
+            .mechanism("Each producer/consumer holds a cached view of cluster metadata (which broker leads which partition, where the controller is). When the cached entry is older than `metadata.max.age.ms` (default 300_000 ms = 5 min), the client issues a MetadataRequest to refresh. The default is already aggressive enough to catch leader moves; lower values do not improve correctness — leader changes also push a stale-metadata error, which triggers an immediate refresh independently of this knob.")
+            .impact("With `metadata.max.age.ms=10000`, a fleet of 500 clients hits a single controller broker with one MetadataRequest every ~20 ms in steady state. The controller's request-handler thread spends meaningful CPU answering 'still the same as last time'. The cost is invisible from any single client; it shows up as 'why is the controller broker hot?' in the broker dashboards.")
+            .whyMatters("The default 5 minutes is the right value. People shorten it after a leader-move incident, thinking 'we want to react faster' — but the client *already* refreshes on leader-move errors, so this knob only affects how often it polls when nothing has happened. Anything below 30 s is almost certainly a misunderstanding.")
+            .build());
+
+    public static final RuleId CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH = register(builder("CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH.md")
+            .message("fetch.max.wait.ms above 5 s — every empty poll on a quiet topic blocks the consumer for that long.")
+            .tagline("fetch.max.wait.ms is how long the broker holds an empty FetchRequest before responding. Stretch it past a few seconds and idle topics turn into latency cliffs.")
+            .mechanism("On a FetchRequest, if the broker has less data than `fetch.min.bytes` for the consumer's partitions, it waits up to `fetch.max.wait.ms` (default 500 ms) for more data to arrive before responding. The wait blocks the consumer's poll() until either threshold trips.")
+            .impact("With `fetch.max.wait.ms=30000` on a periodically-busy topic, the consumer is idle for up to 30 s after each burst. End-to-end latency on the next record arrival can hit the full wait. Worse, if the consumer's `max.poll.interval.ms` is shorter than `fetch.max.wait.ms`, the consumer can blow its poll deadline and get evicted from the group without ever calling user code.")
+            .whyMatters("The default 500 ms is well-tuned for the throughput/latency trade-off. Raising this knob almost always reflects confusion with another setting (`request.timeout.ms`, `session.timeout.ms`). If you legitimately need huge batches, raise `fetch.min.bytes` and accept the default wait — never the other way round.")
+            .build());
+
+    public static final RuleId PRODUCER_TRANSACTIONAL_ID_GENERIC = register(builder("PRODUCER_TRANSACTIONAL_ID_GENERIC")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_TRANSACTIONAL_ID_GENERIC.md")
+            .message("transactional.id is a generic placeholder (tx, txn, my-tx, test, ...). Two producers with the same id will fence each other.")
+            .tagline("transactional.id is the unique identity of a transactional producer across the cluster. Two producers with the same id assume one of them is a zombie and fence the other.")
+            .mechanism("Kafka uses `transactional.id` to fence zombie producers across restarts: when a producer calls `initTransactions()`, the broker bumps the producer's epoch and rejects (`PRODUCER_FENCED`) any older producer using the same id. The model assumes the id is *unique per producer instance* — usually a tuple of service-name + partition-shard or service-name + instance-id.")
+            .impact("Two unrelated services both shipping with `transactional.id=tx` (or `my-tx`, `transaction`) end up fencing each other on every restart. Each restart bumps the epoch; the other service's next send fails with `ProducerFencedException`, the application restarts, fences the first one back, and the cluster oscillates. Symptoms look like 'random transactional producer crashes' that nobody can correlate.")
+            .whyMatters("Pick a service-and-instance qualified value: `payments-fraud-pipeline-shard-3`, `audit-writer-v2-i07`. Treat the id like a database lease — it identifies a single producer instance, not a service. This rule catches the copy-paste-tutorial class of bug, where the placeholder ships to staging unchanged.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

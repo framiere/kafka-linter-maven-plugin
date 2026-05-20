@@ -272,6 +272,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH, s, KafkaTypes.MAX_REQUEST_SIZE_KEY,
                 v -> parseLongOrZero(v) > 10_485_760L,
                 "max.request.size={value} — above 10 MiB. Without matching broker message.max.bytes and consumer fetch settings, oversize records die server-side."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_METADATA_MAX_AGE_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_METADATA_MAX_AGE_MS_TOO_LOW, s, KafkaTypes.METADATA_MAX_AGE_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 30000; },
+                "metadata.max.age.ms={value} — below 30 s. Stale-metadata refresh is already triggered by leader-move errors; this only adds idle broker load."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_FETCH_MAX_WAIT_MS_TOO_HIGH, s, KafkaTypes.FETCH_MAX_WAIT_MS_KEY,
+                v -> parseIntOrZero(v) > 5000,
+                "fetch.max.wait.ms={value} — above 5 s. Idle topics turn every poll() into a latency cliff; raise fetch.min.bytes instead if you want batching."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTIONAL_ID_GENERIC, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_TRANSACTIONAL_ID_GENERIC, s, KafkaTypes.TRANSACTIONAL_ID_KEY,
+                v -> v != null && KafkaTypes.PRODUCER_GENERIC_TRANSACTIONAL_IDS.contains(v.trim().toLowerCase()),
+                "transactional.id={value} — a generic placeholder. Two producers with this id will fence each other across restarts."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
