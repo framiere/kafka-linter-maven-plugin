@@ -525,6 +525,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "transaction.timeout.ms={value} — above 15 min. A crashed transactional producer blocks the LSO on every partition it wrote to for the full window; downstream read_committed consumers stall with zero error signal."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_MAX_POLL_RECORDS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_MAX_POLL_RECORDS_TOO_LOW, s, KafkaTypes.MAX_POLL_RECORDS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n >= 1 && n <= 5; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.poll.records={value} — at or below 5. Each poll round-trip returns at most a handful of records; per-poll overhead dominates and effective throughput collapses. Default 500 is right."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_REQUEST_SIZE_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_MAX_REQUEST_SIZE_TOO_LOW, s, KafkaTypes.MAX_REQUEST_SIZE_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) < 65536L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.request.size={value} — below 64 KiB. Defeats batching, and any single record above the cap throws RecordTooLargeException at send time with no retry."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_METADATA_MAX_AGE_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_METADATA_MAX_AGE_MS_TOO_HIGH, s, KafkaTypes.METADATA_MAX_AGE_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 600_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "metadata.max.age.ms={value} — above 10 min. Leader transitions and partition reassignments take that long to be noticed; sends to moved partitions retry against the stale leader until the cache refreshes."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

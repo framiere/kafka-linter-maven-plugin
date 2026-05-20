@@ -753,6 +753,36 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_MAX_POLL_RECORDS_TOO_LOW.
+    public void consumerMaxPollRecordsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("max.poll.records", "1");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_MAX_REQUEST_SIZE_TOO_LOW.
+    public void producerMaxRequestSizeTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "zstd");
+        p.put("max.request.size", "32768");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: KAFKA_METADATA_MAX_AGE_MS_TOO_HIGH.
+    public void kafkaMetadataMaxAgeMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("metadata.max.age.ms", "3600000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     // RULE: CONSUMER_HEARTBEAT_INTERVAL_MS_TOO_HIGH.
     public void consumerHeartbeatIntervalMsTooHigh() {
         Properties p = new Properties();
