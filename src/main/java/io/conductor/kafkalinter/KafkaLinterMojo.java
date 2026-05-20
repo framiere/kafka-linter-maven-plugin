@@ -549,6 +549,23 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "metadata.max.age.ms={value} — above 10 min. Leader transitions and partition reassignments take that long to be noticed; sends to moved partitions retry against the stale leader until the cache refreshes."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER, s, KafkaTypes.BOOTSTRAP_SERVERS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    String t = v.trim();
+                    if (t.isEmpty()) return false;
+                    if (t.contains("localhost") || t.contains("127.0.0.1") || t.contains("0.0.0.0")) return false;
+                    return !t.contains(",");
+                },
+                "bootstrap.servers={value} — one entry only. Any single broker outage during pod startup leaves the client unable to fetch cluster metadata. List 3+ brokers."));
+        addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_URL_LOCALHOST, s -> new ConfigKeyValueRule(
+                RuleId.SCHEMA_REGISTRY_URL_LOCALHOST, s, KafkaTypes.SCHEMA_REGISTRY_URL_KEY,
+                v -> v != null && (v.contains("localhost") || v.contains("127.0.0.1") || v.contains("0.0.0.0")),
+                "schema.registry.url={value} — points at the pod's loopback. Every (de)serializer call will fail with Connection refused in any non-local environment."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE, s, KafkaTypes.STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_KEY, "none",
+                "rack.aware.assignment.strategy=none — explicitly disables rack-aware task placement. Standby tasks may land in the same AZ as their active; an AZ outage kills both."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

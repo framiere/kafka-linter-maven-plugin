@@ -1560,6 +1560,36 @@ public final class RuleId {
             .whyMatters("The default (5 min, 300_000 ms) is tuned for the broker's leader-election frequency. The only legitimate reason to raise it is to reduce metadata-request load on the brokers — but that's a load problem worth profiling, not preempting. If you're worried about metadata churn, lower it, don't raise it.")
             .build());
 
+    public static final RuleId KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER = register(builder("KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER.md")
+            .message("bootstrap.servers contains a single host:port — no fallback if that broker is unreachable at startup; the client cannot discover the cluster.")
+            .tagline("`bootstrap.servers` is the comma-separated list of brokers the client contacts on startup to fetch cluster metadata. With only one entry, that one broker becoming unreachable (rolling restart, AZ outage, DNS hiccup) leaves the client unable to discover the cluster at all — startup fails or stalls.")
+            .mechanism("The client tries each entry in `bootstrap.servers` in turn until one responds with metadata. After that, the metadata response itself contains the full broker list, so steady-state operations work regardless of which bootstrap entry was used. The single-entry failure mode is at startup only — but every pod restart, every new consumer instance, every new producer goes through that startup. In a multi-broker cluster, listing 3+ brokers in bootstrap.servers means any single broker outage is invisible to clients spinning up during the outage. Listing one means the cluster has a per-broker SPOF that operators never see in steady state but always hits during incidents.")
+            .impact("On a rolling broker restart, pods restarting at the wrong moment fail their first metadata fetch, throw `TimeoutException`, and either crashloop or hang on startup. With a 3-entry bootstrap list, the same restart is invisible — one of the other two brokers responds.")
+            .whyMatters("The cost of adding more bootstrap entries is zero (the metadata cache supersedes them after first contact) and the benefit is real every time a broker is unreachable. The single-entry shape is almost always a leftover from a single-node dev cluster.")
+            .build());
+
+    public static final RuleId SCHEMA_REGISTRY_URL_LOCALHOST = register(builder("SCHEMA_REGISTRY_URL_LOCALHOST")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("schema-registry")
+            .docPath("schema-registry/SCHEMA_REGISTRY_URL_LOCALHOST.md")
+            .message("schema.registry.url points at localhost / 127.0.0.1 / 0.0.0.0 — every serializer/deserializer call hits the pod's loopback interface. Will fail in any non-local environment.")
+            .tagline("`schema.registry.url` configures the Confluent Schema Registry HTTP endpoint. A localhost address means each Avro/Protobuf/JSON-Schema serialize call tries to reach the pod's own loopback — fine on a developer laptop, broken everywhere else.")
+            .mechanism("The Confluent serializers (KafkaAvroSerializer, KafkaProtobufSerializer, KafkaJsonSchemaSerializer) call SR on every record they have not yet seen the schema for: GET /subjects/{topic}-value/versions/latest, POST /subjects/{topic}-value (if auto-register is on), GET /schemas/ids/{id}. Each call is HTTP. With `schema.registry.url=http://localhost:8081`, every one of those calls hits the loopback interface of the pod making the call; if SR is not running inside the pod (it never is in production), the calls fail with `IOException: Connection refused` and the serialize call throws `SerializationException`. The producer cannot send. The consumer cannot deserialize. Nothing moves.")
+            .impact("The bug is invisible on a dev laptop where SR happens to run locally. It surfaces as a hard producer/consumer failure the moment the artifact ships to staging or prod, often during the first record after deploy. The error message references SR — operators reach for the SR oncall before realizing it's a misconfigured client.")
+            .whyMatters("Mirrors the `KAFKA_BOOTSTRAP_SERVERS_LOCALHOST` shape exactly: a sensible dev default that must be overridden in real environments. Externalize via env var / Spring profile / Quarkus `%prod` override.")
+            .build());
+
+    public static final RuleId STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE = register(builder("STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE.md")
+            .message("rack.aware.assignment.strategy=none — explicitly disables rack-aware task assignment. Standby tasks may be placed in the same AZ as their active, defeating cross-AZ failover.")
+            .tagline("Kafka Streams 3.7+ defaults `rack.aware.assignment.strategy` to `min_traffic` (minimize cross-AZ traffic while preferring different racks for active/standby pairs). Setting it back to `none` reverts to pre-3.7 behavior: tasks land wherever the simple sticky assignor puts them, often colocating active and standby in the same AZ.")
+            .mechanism("Streams' StickyTaskAssignor (rack-aware variant) inspects the `client.rack` of each Streams instance and tries to: (a) keep active+standby pairs on different racks, and (b) minimize cross-rack repartition traffic. Setting `rack.aware.assignment.strategy=none` bypasses that logic entirely — the legacy strategy ignores rack and assigns tasks based on stickiness + load balance only. On a 3-AZ deployment with `num.standby.replicas=1`, you can easily end up with the active task and its sole standby in the same AZ; an AZ-wide outage then kills both, and the application has no warm replica to fail over to.")
+            .impact("In a Streams cluster relying on standbys for sub-second failover, accidentally colocating active+standby in one AZ turns a planned 30-second failover into a multi-minute cold start (rebuilding state from the changelog) when an AZ goes away. The bug only surfaces during the AZ outage you were preparing for.")
+            .whyMatters("The default since 3.7 (`min_traffic`) is correct for almost every multi-AZ deployment. Setting `none` is almost always either copy-pasted from a 3.6-or-older config or a leftover debug toggle. If you genuinely need to disable rack-aware assignment, the team needs to know — flag it.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

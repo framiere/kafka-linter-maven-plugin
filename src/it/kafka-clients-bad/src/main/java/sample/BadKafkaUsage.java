@@ -753,6 +753,25 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER.
+    public void bootstrapServersSingleBroker() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "broker-1.prod.example.com:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: SCHEMA_REGISTRY_URL_LOCALHOST.
+    public void schemaRegistryUrlLocalhost() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "broker-1.prod.example.com:9092,broker-2.prod.example.com:9092,broker-3.prod.example.com:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("schema.registry.url", "http://localhost:8081");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     // RULE: CONSUMER_MAX_POLL_RECORDS_TOO_LOW.
     public void consumerMaxPollRecordsTooLow() {
         Properties p = new Properties();

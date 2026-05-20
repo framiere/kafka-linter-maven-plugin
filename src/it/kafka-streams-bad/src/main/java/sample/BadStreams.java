@@ -232,4 +232,14 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE.
+    public Properties rackAwareAssignmentStrategyNone() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("rack.aware.assignment.strategy", "none");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }

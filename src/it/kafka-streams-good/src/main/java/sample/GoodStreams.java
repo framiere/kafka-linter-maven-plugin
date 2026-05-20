@@ -11,7 +11,7 @@ public final class GoodStreams {
     public Properties safeProperties() {
         Properties p = new Properties();
         p.put(StreamsConfig.APPLICATION_ID_CONFIG, "good-streams-pipeline-v1");
-        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka.prod.example.com:9092");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka-1.prod.example.com:9092,kafka-2.prod.example.com:9092,kafka-3.prod.example.com:9092");
         p.put("replication.factor", "3");
         p.put("state.dir", "/var/lib/streams");
         p.put("processing.guarantee", "exactly_once_v2");
