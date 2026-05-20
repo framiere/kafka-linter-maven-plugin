@@ -152,6 +152,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_POLL_LONG_DEPRECATED, s, KafkaTypes.CONSUMER_OWNERS, Set.of("poll"),
                 desc -> desc != null && desc.startsWith("(J)"),
                 "Consumer.poll(long) is deprecated since Kafka 2.0 (KIP-266) — replaced by poll(Duration). The long variant blocks indefinitely waiting for an initial group-coordinator assignment regardless of the timeout argument; the Duration variant returns an empty record set when the duration elapses, making coordinator-unavailability visible to the caller. The deprecated method is slated for removal in Kafka 4.x."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitSync"),
+                "()V"::equals,
+                "Consumer.commitSync() (no-arg) blocks indefinitely on coordinator unavailability — equivalent to commitSync(Duration.ofMillis(Long.MAX_VALUE)). Use commitSync(Duration) so coordinator outages surface as recoverable TimeoutException instead of silent stalls."));
 
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
@@ -1238,6 +1242,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.max-poll-records={value} — above 5000. Each poll hands the @KafkaListener a huge batch that must finish within max.poll.interval.ms (default 5 min) or the consumer is ejected from the group, triggering rolling rebalances and lag accumulation. Lower to <=2000 or raise max.poll.interval.ms in lock step.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_SESSION_TIMEOUT_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_SESSION_TIMEOUT_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_SESSION_TIMEOUT_TOO_HIGH),
+                    "spring.kafka.consumer.session-timeout",
+                    v -> parseSpringDurationMs(v) > 60_000L,
+                    "spring.kafka.consumer.session-timeout={value} — above 60 s. Most managed brokers cap this at 60 s (group.max.session.timeout.ms); past that the consumer's JoinGroup is rejected at startup with InvalidSessionTimeout and the application crashloops. Even when accepted, a crashed pod's partitions stay frozen for the full window before rebalancing. The right lever for slow-batch evictions is max.poll.interval.ms, not session-timeout.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_HEARTBEAT_INTERVAL_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_HEARTBEAT_INTERVAL_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_HEARTBEAT_INTERVAL_TOO_HIGH),
+                    "spring.kafka.consumer.heartbeat-interval",
+                    v -> parseSpringDurationMs(v) >= 15_000L,
+                    "spring.kafka.consumer.heartbeat-interval={value} — at/above session.timeout.ms / 3 (default session 45 s). One missed heartbeat (GC pause, network blip) now triggers eviction and a group-wide rebalance. Keep at the default 3 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
@@ -1537,6 +1557,41 @@ public class KafkaLinterMojo extends AbstractMojo {
     private static long parseLongOrZero(String s) {
         if (s == null) return 0L;
         try { return Long.parseLong(s.trim()); } catch (NumberFormatException e) { return 0L; }
+    }
+
+    /**
+     * Parse a Spring Boot Duration string to milliseconds. Accepts: bare digits (ms — Spring's
+     * default unit for Kafka duration properties via @DurationUnit(ChronoUnit.MILLIS)), the simple
+     * format used by DurationStyle.SIMPLE ("30s", "30000ms", "1m", "1h", "2d"), and ISO-8601 strings
+     * ("PT30S", "PT1H"). Returns 0 on any parse failure so callers' numeric predicates evaluate false.
+     */
+    private static long parseSpringDurationMs(String v) {
+        if (v == null) return 0L;
+        String t = v.trim();
+        if (t.isEmpty()) return 0L;
+        if (t.matches("\\d+")) {
+            try { return Long.parseLong(t); } catch (NumberFormatException e) { return 0L; }
+        }
+        String upper = t.toUpperCase(java.util.Locale.ROOT);
+        if (upper.startsWith("PT") || (upper.startsWith("P") && upper.indexOf('D') >= 0)) {
+            try { return java.time.Duration.parse(upper).toMillis(); } catch (Exception e) { /* fall through */ }
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^(\\d+)\\s*(ns|us|ms|s|m|h|d)$")
+                .matcher(t.toLowerCase(java.util.Locale.ROOT));
+        if (m.matches()) {
+            long n; try { n = Long.parseLong(m.group(1)); } catch (NumberFormatException e) { return 0L; }
+            switch (m.group(2)) {
+                case "ns": return n / 1_000_000L;
+                case "us": return n / 1_000L;
+                case "ms": return n;
+                case "s":  return n * 1_000L;
+                case "m":  return n * 60_000L;
+                case "h":  return n * 3_600_000L;
+                case "d":  return n * 86_400_000L;
+            }
+        }
+        return 0L;
     }
 
     /** True when v is a non-empty literal credential — not blank, not a ${...} placeholder. */

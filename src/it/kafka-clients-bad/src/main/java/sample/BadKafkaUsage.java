@@ -1271,6 +1271,17 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_COMMITSYNC_NO_TIMEOUT.
+    public void consumerCommitSyncNoTimeout() {
+        Properties p = consumerProps();
+        p.put("enable.auto.commit", "false");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.subscribe(java.util.List.of("topic"));
+        consumer.poll(Duration.ofMillis(500));
+        consumer.commitSync();
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

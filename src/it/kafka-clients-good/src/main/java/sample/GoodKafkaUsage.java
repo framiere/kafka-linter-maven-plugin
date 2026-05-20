@@ -16,7 +16,7 @@ import java.util.Properties;
  *  - compression.type set explicitly.
  *  - send() uses a callback.
  *  - poll() uses a non-zero Duration.
- *  - commitSync is called per BATCH (after the inner loop), still inside the outer poll loop.
+ *  - commitSync is called per BATCH (after the inner loop), still inside the outer poll loop, and uses a bounded Duration.
  *  - enable.auto.commit explicitly disabled.
  */
 public final class GoodKafkaUsage {
@@ -59,7 +59,7 @@ public final class GoodKafkaUsage {
             for (ConsumerRecord<String, String> r : records) {
                 handle(r);
             }
-            consumer.commitSync();
+            consumer.commitSync(Duration.ofSeconds(10));
         }
     }
 
