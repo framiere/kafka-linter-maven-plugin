@@ -443,6 +443,32 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "replication.factor={value} — above 5. Internal-topic disk and follower-fetch bandwidth scale linearly; RF=3 already survives any single AZ outage."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_LOW, s, KafkaTypes.AUTO_COMMIT_INTERVAL_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try {
+                        long n = Long.parseLong(v.trim());
+                        return n > 0 && n < 1000L;
+                    } catch (NumberFormatException e) { return false; }
+                },
+                "auto.commit.interval.ms={value} — below 1 s. Floods the group coordinator and inflates commit latency for every group sharing it. Default 5000 is right."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STANDBY_REPLICAS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_NUM_STANDBY_REPLICAS_TOO_HIGH, s, KafkaTypes.STREAMS_NUM_STANDBY_REPLICAS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Integer.parseInt(v.trim()) > 3; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "num.standby.replicas={value} — above 3. Each standby is a full RocksDB copy on a peer; disk and changelog bandwidth scale linearly with diminishing recovery benefit."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_BATCH_SIZE_TOO_LARGE, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_BATCH_SIZE_TOO_LARGE, s, KafkaTypes.BATCH_SIZE_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 1_048_576L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "batch.size={value} — above 1 MiB. Per-partition pre-allocated buffers explode buffer.memory under fanout; send() stalls or throws BufferExhaustedException."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
