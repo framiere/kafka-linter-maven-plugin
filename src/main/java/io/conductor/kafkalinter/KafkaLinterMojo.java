@@ -341,6 +341,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT, s, KafkaTypes.STREAMS_PROCESSING_GUARANTEE_KEY,
                 "at_least_once",
                 "processing.guarantee=at_least_once — explicit declaration of the default. On stateful topologies (joins, aggregations, windowed) this is almost always a regression: someone turned EOS off without leaving a paper trail. Set exactly_once_v2 explicitly or remove the override entirely."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_LOG_AND_CONTINUE, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_LOG_AND_CONTINUE, s, KafkaTypes.STREAMS_DEFAULT_DESER_HANDLER_KEY,
+                v -> v != null && v.contains("LogAndContinueExceptionHandler"),
+                "default.deserialization.exception.handler={value} — LogAndContinueExceptionHandler silently skips records that fail to deserialize, advances the source-offset, and produces zero diagnostics beyond a WARN log. A schema-incompatible upstream rollout turns into data loss with no DLQ; postmortems take hours longer than they should. Use LogAndFailExceptionHandler (the default) and let k8s restart the pod on poisoned input."));
         addIfEnabled(rules, sev, RuleId.STREAMS_COMMIT_INTERVAL_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_COMMIT_INTERVAL_TOO_LOW, s, KafkaTypes.STREAMS_COMMIT_INTERVAL_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 100; },
@@ -1276,6 +1280,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.auto-offset-reset=latest — fresh consumer groups skip everything currently in the topic. Prefer 'earliest' for pipeline consumers.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT, sev.get(RuleId.SPRING_BOOT_CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT),
+                    "spring.kafka.consumer.auto-offset-reset", "none",
+                    "spring.kafka.consumer.auto-offset-reset=none — on a fresh consumer group (first deploy, renamed group, new environment) the consumer raises NoOffsetForPartitionException and the listener container retries forever without ever reading a record. Use 'earliest' for replayable pipelines or 'latest' for subscribe-from-now.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_NONE) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_NONE, sev.get(RuleId.SPRING_BOOT_PRODUCER_COMPRESSION_NONE),
@@ -1588,6 +1599,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO, sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO),
                     "spring.kafka.listener.concurrency", "0",
                     "spring.kafka.listener.concurrency=0 — listener container creates zero consumer threads. Almost always a typo or env-substitution bug.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_TOO_HIGH),
+                    "spring.kafka.listener.concurrency",
+                    v -> { try { return Integer.parseInt(v.trim()) > 32; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.listener.concurrency={value} — above 32 threads in a single listener container. If the topic has fewer partitions, the surplus consumers join the group, get assigned zero partitions, and heartbeat forever while doing no work. Rebalances scale with group size; idle members make every rebalance slower for the whole group. Set concurrency × pod_count ≤ partitions; add partitions if you need more parallelism.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED) != Severity.OFF) {
