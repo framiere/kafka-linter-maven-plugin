@@ -974,6 +974,25 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: KAFKA_BOOTSTRAP_SERVERS_PLACEHOLDER.
+    public void bootstrapServersPlaceholder() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "${KAFKA_BROKERS}");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_TRANSACTIONAL_ID_PLACEHOLDER.
+    public void transactionalIdPlaceholder() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("transactional.id", "${POD_NAME}");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

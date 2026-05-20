@@ -658,6 +658,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_BOOTSTRAP_SERVERS_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_BOOTSTRAP_SERVERS_PLACEHOLDER, s, KafkaTypes.BOOTSTRAP_SERVERS_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "bootstrap.servers={value} — unresolved ${...} placeholder reaches ClientUtils.parseAndValidateAddresses; the client either throws ConfigException or DNS-fails on a literal hostname with brace characters. App crash-loops at startup. Resolve before putting."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTIONAL_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_TRANSACTIONAL_ID_PLACEHOLDER, s, KafkaTypes.TRANSACTIONAL_ID_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "transactional.id={value} — unresolved ${...} placeholder. Every pod registers the same literal transactional.id; rolling deploys fence each other with ProducerFencedException. The transactional.id must be unique per producer instance — resolve before putting."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_APPLICATION_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_APPLICATION_ID_PLACEHOLDER, s, KafkaTypes.STREAMS_APPLICATION_ID_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "application.id={value} — unresolved ${...} placeholder. Streams stamps the literal text on the consumer-group, every internal changelog/repartition topic and the EOS transactional.id. Two services with this bug share Kafka artifacts; data corruption follows. Resolve before constructing StreamsConfig."));
         addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_ID_PLACEHOLDER, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_CLIENT_ID_PLACEHOLDER, s, KafkaTypes.CLIENT_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
