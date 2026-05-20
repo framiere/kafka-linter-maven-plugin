@@ -1144,6 +1144,19 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "outgoing", "waitForWriteCompletion", "false",
                     "mp.messaging.outgoing.{channel}.waitForWriteCompletion=false — channel acks upstream before the broker accepts the record. Broker failures become silent drops."));
         }
+        if (sev.get(RuleId.QK_OUTGOING_PARTITIONER_CLASS_DEPRECATED) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_OUTGOING_PARTITIONER_CLASS_DEPRECATED, sev.get(RuleId.QK_OUTGOING_PARTITIONER_CLASS_DEPRECATED),
+                    "outgoing", "partitioner.class",
+                    v -> v != null && KafkaTypes.PARTITIONER_DEPRECATED_FQCNS.stream().anyMatch(v.trim()::equals),
+                    "mp.messaging.outgoing.{channel}.partitioner.class={value} — deprecated by KIP-794 (Kafka 3.3). Both DefaultPartitioner and UniformStickyPartitioner are superseded by the built-in queue-and-RTT-aware strategy. Delete the line; the new partitioner is strictly better under uneven broker load."));
+        }
+        if (sev.get(RuleId.QK_OUTGOING_COMPRESSION_TYPE_GZIP) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_OUTGOING_COMPRESSION_TYPE_GZIP, sev.get(RuleId.QK_OUTGOING_COMPRESSION_TYPE_GZIP),
+                    "outgoing", "compression.type", "gzip",
+                    "mp.messaging.outgoing.{channel}.compression.type=gzip — gzip has 2-5× the CPU cost of lz4/zstd at the same or worse ratio on Kafka batch sizes. Use zstd (best ratio, fast) or lz4 (lowest CPU)."));
+        }
         if (sev.get(RuleId.QK_FAIL_ON_DESERIALIZATION_FAILURE_FALSE) != Severity.OFF) {
             rules.add(SmallRyeChannelConfigRule.literal(
                     RuleId.QK_FAIL_ON_DESERIALIZATION_FAILURE_FALSE, sev.get(RuleId.QK_FAIL_ON_DESERIALIZATION_FAILURE_FALSE),
@@ -1653,6 +1666,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO),
                     "spring.kafka.producer.properties.linger.ms", "0",
                     "spring.kafka.producer.properties.linger.ms=0 — explicit no-batching. Even linger.ms=5 keeps p99 latency flat while restoring batch efficiency.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_PARTITIONER_CLASS_DEPRECATED) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_PARTITIONER_CLASS_DEPRECATED, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_PARTITIONER_CLASS_DEPRECATED),
+                    "spring.kafka.producer.properties.partitioner.class",
+                    v -> v != null && KafkaTypes.PARTITIONER_DEPRECATED_FQCNS.stream().anyMatch(v.trim()::equals),
+                    "spring.kafka.producer.properties.partitioner.class={value} — deprecated by KIP-794 (Kafka 3.3). Both DefaultPartitioner and UniformStickyPartitioner are superseded by the built-in queue-and-RTT-aware strategy. Delete the line; the new partitioner is strictly better under uneven broker load.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
