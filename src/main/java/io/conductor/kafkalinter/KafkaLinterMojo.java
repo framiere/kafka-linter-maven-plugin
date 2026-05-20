@@ -359,6 +359,28 @@ public class KafkaLinterMojo extends AbstractMojo {
                     null, "tracing-enabled", "false",
                     "mp.messaging.{direction}.{channel}.tracing-enabled=false — traceparent header propagation off for this channel. Distributed traces will not cross this Kafka hop."));
         }
+        if (sev.get(RuleId.QK_HEALTH_DISABLED) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_HEALTH_DISABLED, sev.get(RuleId.QK_HEALTH_DISABLED),
+                    null, "health-enabled", "false",
+                    "mp.messaging.{direction}.{channel}.health-enabled=false — channel excluded from health checks; k8s won't see it as unhealthy."));
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_HEALTH_DISABLED, sev.get(RuleId.QK_HEALTH_DISABLED),
+                    null, "health-readiness-enabled", "false",
+                    "mp.messaging.{direction}.{channel}.health-readiness-enabled=false — channel excluded from readiness; pod will stay Ready while the channel is broken."));
+        }
+        if (sev.get(RuleId.QK_GRACEFUL_SHUTDOWN_DISABLED) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_GRACEFUL_SHUTDOWN_DISABLED, sev.get(RuleId.QK_GRACEFUL_SHUTDOWN_DISABLED),
+                    "incoming", "graceful-shutdown", "false",
+                    "mp.messaging.incoming.{channel}.graceful-shutdown=false — pod termination drops in-flight polled records; rolling deploys produce duplicates."));
+        }
+        if (sev.get(RuleId.QK_RETRIES_ZERO) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_RETRIES_ZERO, sev.get(RuleId.QK_RETRIES_ZERO),
+                    "outgoing", "retries", "0",
+                    "mp.messaging.outgoing.{channel}.retries=0 — transient broker errors become permanent send failures. Default (effectively unbounded, capped by delivery.timeout.ms) is right."));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),

@@ -532,6 +532,36 @@ public final class RuleId {
             .whyMatters("Leave `tracing-enabled` on (the default). Legitimate disables exist — very-high-volume telemetry streams where the per-record cost matters — but they should be rare and documented in the same change.")
             .build());
 
+    public static final RuleId QK_HEALTH_DISABLED = register(builder("QK_HEALTH_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_HEALTH_DISABLED.md")
+            .message("SmallRye channel health-enabled=false or health-readiness-enabled=false — k8s won't see this channel as unhealthy.")
+            .tagline("Disabling channel health turns the readiness probe into a lie: pod stays Ready while Kafka is broken.")
+            .mechanism("SmallRye Reactive Messaging contributes per-channel checks into Quarkus' MicroProfile Health (liveness + readiness). When `health-enabled=false` (or `health-readiness-enabled=false`) the channel is omitted from the aggregate check. The HTTP endpoint stays green even when the channel can't connect, can't deserialize, or has fallen permanently behind.")
+            .impact("Kubernetes never restarts the pod, the upstream load balancer never routes around it, and the on-call gets paged hours later by a downstream symptom (queue depth growing, dependent service timing out). The fact that the channel is dead is invisible at the platform layer.")
+            .whyMatters("Almost the only legitimate reason to disable channel health is when the channel is genuinely optional (e.g. an analytics tap whose unavailability shouldn't unschedule the pod). For business-critical channels, leave it enabled. If a startup race is the problem, fix that, don't silence the probe.")
+            .build());
+
+    public static final RuleId QK_GRACEFUL_SHUTDOWN_DISABLED = register(builder("QK_GRACEFUL_SHUTDOWN_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_GRACEFUL_SHUTDOWN_DISABLED.md")
+            .message("SmallRye channel graceful-shutdown=false — pod termination drops in-flight records.")
+            .tagline("Without graceful shutdown the consumer cuts off mid-poll. Polled-but-unacked records are reprocessed on the next instance.")
+            .mechanism("When `graceful-shutdown=true` (the default), the SmallRye consumer waits for in-flight records to be acked before unsubscribing — so the next instance starts cleanly from the committed offset. Setting it to `false` skips that wait: the consumer leaves the group immediately, and any records already returned from `poll()` but not yet acked are processed twice.")
+            .impact("On rolling deploys you get a steady drip of duplicate records exactly equal in count to the in-flight window times the number of pod restarts. For idempotent consumers it's noise; for any side-effect with cost (HTTP call, DB write, downstream produce) it's a real-world bug.")
+            .whyMatters("Set this to `false` only if you have an external way to recover (transactional EOS, idempotent processor with a dedupe store). Most apps don't, and the default is correct. Almost always this flag is flipped during a debugging session and never put back.")
+            .build());
+
+    public static final RuleId QK_RETRIES_ZERO = register(builder("QK_RETRIES_ZERO")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_RETRIES_ZERO.md")
+            .message("SmallRye outgoing channel retries=0 — transient Kafka errors become permanent send failures.")
+            .tagline("retries=0 on a SmallRye outgoing channel disables the underlying producer's retry chain. One blip = one lost record.")
+            .mechanism("`retries` on a SmallRye outgoing channel is forwarded to the underlying KafkaProducer config. The default is `Integer.MAX_VALUE` (bounded by `delivery.timeout.ms`), which means routine errors — leader-election, brief network hiccup, rolling-broker-restart — get retried transparently. Setting it to 0 surfaces every such error to the application.")
+            .impact("The channel's outgoing call returns a failure for every transient broker error. The downstream handler (which typically logs and drops or NACKs) sees the failure rate spike during any broker maintenance window. If the channel feeds a critical event stream, you lose events on every deploy.")
+            .whyMatters("There's almost never a reason to set `retries=0` on an outgoing channel — the producer-level retry chain is one of the strongest correctness affordances in Kafka. The fix is the one-line removal of the override.")
+            .build());
+
     public static final RuleId QK_DEVSERVICES_IN_PROD = register(builder("QK_DEVSERVICES_IN_PROD")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("quarkus-kafka")
             .docPath("quarkus-kafka/QK_DEVSERVICES_IN_PROD.md")
