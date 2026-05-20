@@ -607,6 +607,40 @@ public final class RuleId {
             .build());
 
     // ────────────────────────────────────────────────────────────────────────
+    // security/ — transport & authentication hygiene
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId SECURITY_PROTOCOL_PLAINTEXT = register(builder("SECURITY_PROTOCOL_PLAINTEXT")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SECURITY_PROTOCOL_PLAINTEXT.md")
+            .message("security.protocol=PLAINTEXT — Kafka traffic (records + offsets + metadata) travels in clear over the wire.")
+            .tagline("PLAINTEXT means no TLS and no authentication. Anyone on the path can read and inject records.")
+            .mechanism("`security.protocol=PLAINTEXT` (the default when no security is configured) disables both TLS encryption and any SASL handshake. Every produce/fetch request, every offset commit, every consumer-group heartbeat is wire-readable.")
+            .impact("On any network that isn't a fully-isolated VPC: payloads (including PII), headers (including auth tokens passed via headers), and credentials in record values are visible to anyone running tcpdump. The connection is also unauthenticated — a rogue producer can write to any topic.")
+            .whyMatters("PLAINTEXT is fine for `docker compose up` and laptop tests, never for shared/staging/prod brokers. Use `SASL_SSL` (the realistic default for managed brokers like Confluent Cloud or MSK) or at minimum `SSL`. Setting this once in shared config is one line; auditing a leak after the fact is not.")
+            .build());
+
+    public static final RuleId SECURITY_PROTOCOL_SASL_PLAINTEXT = register(builder("SECURITY_PROTOCOL_SASL_PLAINTEXT")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SECURITY_PROTOCOL_SASL_PLAINTEXT.md")
+            .message("security.protocol=SASL_PLAINTEXT — SASL credentials (and all record bytes) travel in clear.")
+            .tagline("SASL_PLAINTEXT authenticates but doesn't encrypt. The username/password are visible on the wire.")
+            .mechanism("With `SASL_PLAINTEXT`, the client does a SASL handshake (PLAIN, SCRAM, GSSAPI…) over an un-encrypted TCP socket. PLAIN puts the password on the wire literally; SCRAM puts a salted hash, but record bytes are clear regardless.")
+            .impact("Anyone capturing traffic between the client and the broker — a misconfigured load balancer, a side-car proxy, a malicious node on the path — can read records and, with PLAIN, lift credentials directly. With SCRAM they can still see all messages, just not the password.")
+            .whyMatters("The fix is one character: `SASL_SSL`. The TLS layer wraps the SASL handshake and the record stream. SASL_PLAINTEXT is almost always a mis-copy from a lab guide that nobody fixed before going to prod.")
+            .build());
+
+    public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")
+            .message("ssl.endpoint.identification.algorithm set to empty — disables hostname verification (MITM vector).")
+            .tagline("Empty endpoint-identification algorithm turns off hostname check. TLS becomes 'encrypted to anyone who has any cert'.")
+            .mechanism("By default the Kafka client requires the broker's certificate CN/SAN to match the hostname it connected to (`https`-style verification). Setting `ssl.endpoint.identification.algorithm=` (empty) skips that check — the client accepts any cert signed by a trusted CA, regardless of which host presents it.")
+            .impact("A MITM with a cert valid for some other host on the same CA chain (or a compromised internal CA) can transparently intercept all Kafka traffic. The TLS handshake succeeds, the client is happy, every record flows through the attacker.")
+            .whyMatters("Almost always set to empty as a workaround for self-signed certs or hostname mismatches during testing — then never reverted. The correct fix is to issue a cert with the right SAN, or to use the broker's internal hostname. Setting this to empty is equivalent to disabling TLS for any security purpose.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
     // Plumbing
     // ────────────────────────────────────────────────────────────────────────
 

@@ -228,6 +228,33 @@ public final class BadKafkaUsage {
         c.close();
     }
 
+    // RULE: SECURITY_PROTOCOL_PLAINTEXT.
+    public void securityProtocolPlaintext() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("security.protocol", "PLAINTEXT");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: SECURITY_PROTOCOL_SASL_PLAINTEXT.
+    public void securityProtocolSaslPlaintext() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("security.protocol", "SASL_PLAINTEXT");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: SSL_ENDPOINT_IDENTIFICATION_DISABLED.
+    public void sslEndpointIdentificationDisabled() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("ssl.endpoint.identification.algorithm", "");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

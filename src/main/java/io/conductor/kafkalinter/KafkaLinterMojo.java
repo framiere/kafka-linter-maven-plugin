@@ -225,6 +225,15 @@ public class KafkaLinterMojo extends AbstractMojo {
         // ── observability/security ─────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.DESER_JSON_TYPE_INFO_NO_ALLOWLIST, JacksonDefaultTypingRule::new);
         addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_URL_MISSING, SchemaRegistryUrlMissingRule::new);
+        addIfEnabled(rules, sev, RuleId.SECURITY_PROTOCOL_PLAINTEXT, s -> ConfigKeyValueRule.literal(
+                RuleId.SECURITY_PROTOCOL_PLAINTEXT, s, KafkaTypes.SECURITY_PROTOCOL_KEY, "PLAINTEXT",
+                "security.protocol=PLAINTEXT — records, headers and offset commits travel unencrypted and the broker connection is unauthenticated. Use SASL_SSL on shared brokers."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT, s -> ConfigKeyValueRule.literal(
+                RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT, s, KafkaTypes.SECURITY_PROTOCOL_KEY, "SASL_PLAINTEXT",
+                "security.protocol=SASL_PLAINTEXT — SASL handshake (and record bytes) run over an unencrypted socket. Switch to SASL_SSL."));
+        addIfEnabled(rules, sev, RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s -> ConfigKeyValueRule.literal(
+                RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s, KafkaTypes.SSL_ENDPOINT_ID_ALGO_KEY, "",
+                "ssl.endpoint.identification.algorithm=\"\" — hostname verification disabled. Any cert on the trusted chain is accepted regardless of CN/SAN (MITM vector)."));
 
         return rules;
     }
@@ -335,6 +344,39 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.auto-offset-reset", "latest",
                     "spring.kafka.consumer.auto-offset-reset=latest — fresh consumer groups skip everything currently in the topic. Prefer 'earliest' for pipeline consumers.",
                     "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
+                    "spring.kafka.properties.security.protocol", "PLAINTEXT",
+                    "spring.kafka.properties.security.protocol=PLAINTEXT — Kafka traffic is unencrypted and unauthenticated. Use SASL_SSL on shared brokers.",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
+                    null, "security.protocol", "PLAINTEXT",
+                    "mp.messaging.{direction}.{channel}.security.protocol=PLAINTEXT — channel speaks unencrypted Kafka. Use SASL_SSL."));
+        }
+        if (sev.get(RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT),
+                    "spring.kafka.properties.security.protocol", "SASL_PLAINTEXT",
+                    "spring.kafka.properties.security.protocol=SASL_PLAINTEXT — SASL credentials and records ride an unencrypted socket. Switch to SASL_SSL.",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_SASL_PLAINTEXT),
+                    null, "security.protocol", "SASL_PLAINTEXT",
+                    "mp.messaging.{direction}.{channel}.security.protocol=SASL_PLAINTEXT — channel uses SASL over plaintext. Switch to SASL_SSL."));
+        }
+        if (sev.get(RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, sev.get(RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED),
+                    "spring.kafka.properties.ssl.endpoint.identification.algorithm", "",
+                    "spring.kafka.properties.ssl.endpoint.identification.algorithm=\"\" — hostname verification turned off (MITM vector).",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, sev.get(RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED),
+                    null, "ssl.endpoint.identification.algorithm", "",
+                    "mp.messaging.{direction}.{channel}.ssl.endpoint.identification.algorithm=\"\" — hostname verification turned off (MITM vector)."));
         }
         return rules;
     }
