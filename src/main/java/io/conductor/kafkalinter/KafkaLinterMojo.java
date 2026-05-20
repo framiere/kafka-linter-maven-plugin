@@ -497,6 +497,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "buffered.records.per.partition={value} — above 100k. Removes the back-pressure ceiling; one skewed partition can OOM the JVM. Default 1000 is right."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_LOW, s, KafkaTypes.STREAMS_BUFFERED_RECORDS_PER_PARTITION_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n > 0 && n < 100L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "buffered.records.per.partition={value} — below 100. Task pauses partitions almost immediately; pause/resume churn dominates the processing loop. Default 1000 is right."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_HIGH, s -> new ConfigKeyValueRule(
                 RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_HIGH, s, KafkaTypes.FETCH_MAX_BYTES_KEY,
                 v -> {
@@ -1271,6 +1279,26 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.idle-between-polls",
                     v -> parseLongOrZero(v) > 1_000L,
                     "spring.kafka.listener.idle-between-polls={value} — Spring inserts an artificial sleep between consecutive consumer polls. Throughput drops, and idle time pushes toward max.poll.interval.ms (5 min) so a slow batch on top fences the consumer. Remove the override or stay under 1000 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_POLL_TIMEOUT_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_POLL_TIMEOUT_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_LISTENER_POLL_TIMEOUT_TOO_HIGH),
+                    "spring.kafka.listener.poll-timeout",
+                    v -> parseLongOrZero(v) > 30_000L,
+                    "spring.kafka.listener.poll-timeout={value} — above 30s. The listener thread blocks inside consumer.poll() for that long, so container shutdown, rebalances, and lifecycle events stall by the same amount. Leave at the default 5000 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_NO_POLL_THRESHOLD_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_NO_POLL_THRESHOLD_TOO_LOW, sev.get(RuleId.SPRING_BOOT_LISTENER_NO_POLL_THRESHOLD_TOO_LOW),
+                    "spring.kafka.listener.no-poll-threshold",
+                    v -> {
+                        if (v == null) return false;
+                        try { double d = Double.parseDouble(v.trim()); return d > 0 && d < 2.0; }
+                        catch (NumberFormatException e) { return false; }
+                    },
+                    "spring.kafka.listener.no-poll-threshold={value} — below 2.0. The NonResponsiveConsumerEvent fires inside the natural variance of poll-timeout, flooding logs and tripping false-positive alerts. Default 3.0 is right.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_LOW) != Severity.OFF) {

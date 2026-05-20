@@ -241,6 +241,16 @@ public final class BadStreams {
         return p;
     }
 
+    // RULE: STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_LOW.
+    public Properties bufferedRecordsPerPartitionTooLow() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("buffered.records.per.partition", "10");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
     // RULE: STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE.
     public Properties rackAwareAssignmentStrategyNone() {
         Properties p = new Properties();
