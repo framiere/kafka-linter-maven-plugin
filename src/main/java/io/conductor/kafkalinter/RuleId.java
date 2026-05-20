@@ -1050,6 +1050,16 @@ public final class RuleId {
             .whyMatters("Inject at runtime (`${KAFKA_KEYSTORE_PASS}`) and pair it with secret-store-mounted keystore files. Lint accepts placeholder-style values; non-empty literals are flagged.")
             .build());
 
+    public static final RuleId CRED_SR_BEARER_AUTH_TOKEN_LITERAL = register(builder("CRED_SR_BEARER_AUTH_TOKEN_LITERAL")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/CRED_SR_BEARER_AUTH_TOKEN_LITERAL.md")
+            .message("bearer.auth.token set to a literal — Schema Registry bearer token shipped in source/properties.")
+            .tagline("A bearer token in `bearer.auth.token` is a static credential just like a password — leaking it gives full Schema Registry access until the token is revoked.")
+            .mechanism("Confluent's Schema Registry client supports `bearer.auth.credentials.source=STATIC_TOKEN` paired with `bearer.auth.token=<jwt>`. The token is forwarded verbatim in an `Authorization: Bearer <jwt>` header on every Schema Registry request. There is no env-resolution layer; whatever string is in the config is the live token.")
+            .impact("Same threat model as `basic.auth.user.info`: the token sits in git history, CI logs, and container image layers forever. Bearer tokens often outlive the developer who created them — a leaked one can read and write subjects until somebody notices it in an audit and revokes it, which can be months.")
+            .whyMatters("Either inject the token at runtime via `${SR_BEARER_TOKEN}` and rotate frequently, or switch to `bearer.auth.credentials.source=OAUTHBEARER` so tokens are fetched per-request from an IdP and live in memory only. Lint accepts placeholder-style values; non-empty literals are flagged.")
+            .build());
+
     public static final RuleId SR_AUTO_REGISTER_SCHEMAS_TRUE = register(builder("SR_AUTO_REGISTER_SCHEMAS_TRUE")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SR_AUTO_REGISTER_SCHEMAS_TRUE.md")
@@ -1148,6 +1158,26 @@ public final class RuleId {
             .mechanism("The Kafka client passes `ssl.protocol` to the JSSE SSLContext factory. JDK 8u291+, JDK 11.0.11+ and JDK 17+ disable TLSv1 and TLSv1.1 by default; some JDK builds disable them via `jdk.tls.disabledAlgorithms` in `java.security`. SSLv2/v3 are removed entirely. Explicitly setting `ssl.protocol=TLSv1.1` either bypasses the disabled list (a security incident) or the SSL context refuses to initialise (a runtime failure).")
             .impact("Best case: the application fails to start with `NoSuchAlgorithmException` or `SSLException: No appropriate protocol` — caught in QA but expensive to diagnose. Worst case (older JDK or an unwise `security.properties` override): the client connects with a cipher suite vulnerable to BEAST, POODLE, or the truncation attacks that retired TLS 1.0/1.1 in the first place. Compliance audits (PCI-DSS 3.2.1+, FedRAMP) explicitly forbid both.")
             .whyMatters("There is no reason to pin a TLS version below 1.2 in 2026. If a broker only accepts TLS 1.0 or 1.1, the broker is the bug — upgrade it. Remove this setting entirely; the JDK will negotiate TLS 1.2 (or 1.3 on JDK 11+) as the floor, which is what every modern broker accepts.")
+            .build());
+
+    public static final RuleId SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY = register(builder("SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY.md")
+            .message("ssl.enabled.protocols includes TLSv1 / TLSv1.1 / SSLv2 / SSLv3 — legacy/broken TLS version in the accept list.")
+            .tagline("ssl.enabled.protocols is the *list* of TLS versions the client is willing to negotiate. Whatever is in this list can be downgraded to — keep it strictly modern.")
+            .mechanism("`ssl.enabled.protocols` is the JSSE `SSLEngine.setEnabledProtocols(...)` input. Default is the JDK floor (`TLSv1.2,TLSv1.3` on JDK 11+). Adding `TLSv1.1` or `TLSv1` to the list re-enables those handshakes for *this* client even when the JDK has globally disabled them via `jdk.tls.disabledAlgorithms`. A misconfigured broker that still accepts TLS 1.0 will gladly negotiate down.")
+            .impact("Re-enabling legacy TLS versions opens BEAST (CBC blockwise chosen-plaintext, TLS 1.0), POODLE (SSL 3.0 padding oracle), Lucky 13 (TLS 1.0/1.1 MAC-then-encrypt timing) and the CRIME family of downgrade attacks. PCI-DSS 3.2.1+, FedRAMP, FIPS 140-3 and CIS Kafka benchmark explicitly forbid TLS < 1.2 — a finding here is a direct audit fail, not a 'best practice' note.")
+            .whyMatters("Leave `ssl.enabled.protocols` unset (the JDK default is correct) or pin it explicitly to `TLSv1.2,TLSv1.3`. If a broker can't negotiate that, the broker is the bug — fix the broker side, never the client side, because clients run in larger numbers and live longer than any individual broker.")
+            .build());
+
+    public static final RuleId SECURITY_SSL_CIPHER_SUITES_LEGACY = register(builder("SECURITY_SSL_CIPHER_SUITES_LEGACY")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SECURITY_SSL_CIPHER_SUITES_LEGACY.md")
+            .message("ssl.cipher.suites contains a weak cipher (RC4 / MD5 / DES / 3DES / NULL / EXPORT / anon).")
+            .tagline("ssl.cipher.suites lets you list which cipher suites the client will offer. Putting a known-broken cipher in that list re-enables it for this client even when the JDK has disabled it system-wide.")
+            .mechanism("`ssl.cipher.suites` is passed to `SSLEngine.setEnabledCipherSuites(...)`. The JDK's `jdk.tls.disabledAlgorithms` in `java.security` disables families like `RC4`, `MD5withRSA`, `DES`, `3DES_EDE_CBC`, `NULL`, `EXPORT`, and `anon` (DH_anon / ECDH_anon) by default. Adding e.g. `TLS_RSA_WITH_RC4_128_SHA` to the Kafka config re-enables that suite *for this client* — the JDK honours the explicit list over the global disable.")
+            .impact("RC4 has practical key-recovery attacks (Bar-Mitzvah, NOMORE) since 2015; export-grade ciphers fall to FREAK; anon suites have no peer authentication so they enable trivial MITM; NULL suites encrypt nothing. A handshake completed with any of these is a compliance and confidentiality failure even though TLS 'works' from the application's perspective. PCI-DSS 4.0, FedRAMP, FIPS 140-3 list these as forbidden — auditors run `nmap --script ssl-enum-ciphers` and the broker fails.")
+            .whyMatters("Almost no operational reason exists to pin `ssl.cipher.suites` in 2026. Leave it unset and let the JDK negotiate from its modern defaults (TLS 1.3 picks AEAD-only AES-GCM/ChaCha20-Poly1305 automatically; TLS 1.2 falls back to strong AES-GCM suites). If you must pin (regulated environment, FIPS mode), build the list from `Cipher.getInstance(...)` allow-tests, not by copying a stack-overflow answer that includes RC4 'for compatibility'.")
             .build());
 
     public static final RuleId CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE = register(builder("CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE")

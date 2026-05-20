@@ -1224,6 +1224,33 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY.
+    public Properties sslEnabledProtocolsLegacy() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("ssl.enabled.protocols", "TLSv1.2,TLSv1.1");
+        return p;
+    }
+
+    // RULE: SECURITY_SSL_CIPHER_SUITES_LEGACY.
+    public Properties sslCipherSuitesLegacy() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("ssl.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_RC4_128_SHA");
+        return p;
+    }
+
+    // RULE: CRED_SR_BEARER_AUTH_TOKEN_LITERAL.
+    public Properties srBearerAuthTokenLiteral() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("bearer.auth.token", "eyJhbGciOiJIUzI1NiJ9.fakejwt.payload");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

@@ -878,6 +878,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.SECURITY_SSL_PROTOCOL_LEGACY, s, KafkaTypes.SSL_PROTOCOL_KEY,
                 v -> v != null && KafkaTypes.SSL_PROTOCOL_LEGACY_VALUES.contains(v.trim()),
                 "ssl.protocol={value} — legacy/broken TLS version. JDK 11+ disables these by default; remove the override and let JSSE negotiate ≥ TLSv1.2."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY, s, KafkaTypes.SSL_ENABLED_PROTOCOLS_KEY,
+                KafkaLinterMojo::sslEnabledProtocolsContainsLegacy,
+                "ssl.enabled.protocols={value} — legacy TLS version in the accept list. Pin to TLSv1.2,TLSv1.3 or leave unset; PCI-DSS / FedRAMP / FIPS forbid TLS < 1.2."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY, s, KafkaTypes.SSL_CIPHER_SUITES_KEY,
+                KafkaLinterMojo::sslCipherSuitesContainsLegacy,
+                "ssl.cipher.suites={value} — weak cipher in the list (RC4/MD5/DES/3DES/NULL/EXPORT/anon). Leave unset; the JDK picks modern AEAD suites."));
+        addIfEnabled(rules, sev, RuleId.CRED_SR_BEARER_AUTH_TOKEN_LITERAL, s -> new ConfigKeyValueRule(
+                RuleId.CRED_SR_BEARER_AUTH_TOKEN_LITERAL, s, KafkaTypes.SR_BEARER_AUTH_TOKEN_KEY,
+                KafkaLinterMojo::isLiteralCredential,
+                "bearer.auth.token={value} — Schema Registry bearer token in source/config. Inject via ${ENV_VAR} or switch to credentials.source=OAUTHBEARER."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE, s -> ConfigKeyValueRule.literal(
                 RuleId.CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE, s, KafkaTypes.EXCLUDE_INTERNAL_TOPICS_KEY, "false",
                 "exclude.internal.topics=false — consumer can subscribe to __consumer_offsets/__transaction_state via regex. Almost always a leftover debug toggle."));
@@ -1413,6 +1425,40 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.ssl.key-password={value} — private key password in source/config. Inject via ${ENV_VAR}.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY, sev.get(RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY),
+                    "spring.kafka.properties.ssl.enabled.protocols",
+                    KafkaLinterMojo::sslEnabledProtocolsContainsLegacy,
+                    "spring.kafka.properties.ssl.enabled.protocols={value} — legacy TLS version in the accept list. Pin to TLSv1.2,TLSv1.3 or leave unset.",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY, sev.get(RuleId.SECURITY_SSL_ENABLED_PROTOCOLS_LEGACY),
+                    null, "ssl.enabled.protocols",
+                    KafkaLinterMojo::sslEnabledProtocolsContainsLegacy,
+                    "mp.messaging.{direction}.{channel}.ssl.enabled.protocols={value} — legacy TLS version in the accept list. Pin to TLSv1.2,TLSv1.3 or leave unset."));
+        }
+        if (sev.get(RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY, sev.get(RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY),
+                    "spring.kafka.properties.ssl.cipher.suites",
+                    KafkaLinterMojo::sslCipherSuitesContainsLegacy,
+                    "spring.kafka.properties.ssl.cipher.suites={value} — weak cipher in the list (RC4/MD5/DES/3DES/NULL/EXPORT/anon). Leave unset.",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY, sev.get(RuleId.SECURITY_SSL_CIPHER_SUITES_LEGACY),
+                    null, "ssl.cipher.suites",
+                    KafkaLinterMojo::sslCipherSuitesContainsLegacy,
+                    "mp.messaging.{direction}.{channel}.ssl.cipher.suites={value} — weak cipher in the list (RC4/MD5/DES/3DES/NULL/EXPORT/anon). Leave unset."));
+        }
+        if (sev.get(RuleId.CRED_SR_BEARER_AUTH_TOKEN_LITERAL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.CRED_SR_BEARER_AUTH_TOKEN_LITERAL, sev.get(RuleId.CRED_SR_BEARER_AUTH_TOKEN_LITERAL),
+                    "spring.kafka.properties.bearer.auth.token",
+                    KafkaLinterMojo::isLiteralCredential,
+                    "spring.kafka.properties.bearer.auth.token={value} — Schema Registry bearer token in source/config. Inject via ${ENV_VAR}.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SCHEMA_REGISTRY_URL_HTTP) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SCHEMA_REGISTRY_URL_HTTP, sev.get(RuleId.SCHEMA_REGISTRY_URL_HTTP),
@@ -1456,5 +1502,38 @@ public class KafkaLinterMojo extends AbstractMojo {
         if (open < 0) return false;
         int close = v.indexOf('}', open + 2);
         return close > open + 2;
+    }
+
+    /** True when ssl.enabled.protocols (comma-separated) lists any legacy TLS/SSL version. */
+    private static boolean sslEnabledProtocolsContainsLegacy(String v) {
+        if (v == null) return false;
+        for (String token : v.split(",")) {
+            if (KafkaTypes.SSL_PROTOCOL_LEGACY_VALUES.contains(token.trim())) return true;
+        }
+        return false;
+    }
+
+    /** True when ssl.cipher.suites (comma-separated) references a known-weak cipher family. */
+    private static boolean sslCipherSuitesContainsLegacy(String v) {
+        if (v == null) return false;
+        String upper = v.toUpperCase(java.util.Locale.ROOT);
+        for (String token : KafkaTypes.SSL_CIPHER_SUITES_LEGACY_TOKENS) {
+            if (containsAsWord(upper, token)) return true;
+        }
+        return false;
+    }
+
+    /** Word-boundary contains: needle must be surrounded by non-alphanumerics (so "RC4" matches in "TLS_RSA_WITH_RC4_128_SHA" but "ANON" doesn't match "CANON"). */
+    private static boolean containsAsWord(String haystack, String needle) {
+        int from = 0;
+        while (true) {
+            int i = haystack.indexOf(needle, from);
+            if (i < 0) return false;
+            boolean leftOk = (i == 0) || !Character.isLetterOrDigit(haystack.charAt(i - 1));
+            int end = i + needle.length();
+            boolean rightOk = (end == haystack.length()) || !Character.isLetterOrDigit(haystack.charAt(end));
+            if (leftOk && rightOk) return true;
+            from = i + 1;
+        }
     }
 }

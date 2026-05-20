@@ -126,6 +126,12 @@ public final class KafkaTypes {
     public static final Set<String> SSL_PROTOCOL_LEGACY_VALUES = Set.of(
             "TLSv1", "TLSv1.0", "TLSv1.1", "SSLv2", "SSLv3", "SSL"
     );
+    public static final String SSL_ENABLED_PROTOCOLS_KEY = "ssl.enabled.protocols";
+    public static final String SSL_CIPHER_SUITES_KEY = "ssl.cipher.suites";
+    public static final Set<String> SSL_CIPHER_SUITES_LEGACY_TOKENS = Set.of(
+            "RC4", "MD5", "DES", "3DES", "NULL", "EXPORT", "ANON"
+    );
+    public static final String SR_BEARER_AUTH_TOKEN_KEY = "bearer.auth.token";
     public static final String EXCLUDE_INTERNAL_TOPICS_KEY = "exclude.internal.topics";
     public static final String PARTITION_ASSIGNMENT_STRATEGY_KEY = "partition.assignment.strategy";
     public static final Set<String> LEGACY_PARTITION_ASSIGNORS = Set.of(
