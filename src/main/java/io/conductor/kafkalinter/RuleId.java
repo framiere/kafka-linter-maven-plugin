@@ -136,6 +136,56 @@ public final class RuleId {
             .whyMatters("The default is `acks=all` (since Kafka 3.0) and that's almost always what you want. `acks=1` is a tunable middle ground; `acks=0` is for benchmarks and metrics shippers where loss is acceptable. If you're not certain that's you, don't use it.")
             .build());
 
+    public static final RuleId PRODUCER_ACKS_ONE = register(builder("PRODUCER_ACKS_ONE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_ACKS_ONE.md")
+            .message("Producer configured with acks=1 — record durability depends only on the partition leader.")
+            .tagline("acks=1 means 'the leader saw it' — and then the leader died.")
+            .mechanism("With `acks=1`, the producer waits for the leader to write to its local log but does NOT wait for replication to ISR followers. If the leader crashes before the follower catches up, the un-replicated record is gone.")
+            .impact("Window of data loss equal to the leader's replication lag — typically tens of milliseconds, but unbounded during follower outages. Looks like working durability on the happy path, fails open during the failure modes that matter.")
+            .whyMatters("`acks=all` (the default since Kafka 3.0) waits for `min.insync.replicas` followers — that's the threshold the operator already configured. Choosing `acks=1` is a deliberate trade of durability for ~1ms latency; only valid if you've measured both and accept the loss budget.")
+            .build());
+
+    public static final RuleId PRODUCER_RETRIES_ZERO = register(builder("PRODUCER_RETRIES_ZERO")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_RETRIES_ZERO.md")
+            .message("Producer configured with retries=0 — every transient broker error becomes a permanent send failure.")
+            .tagline("retries=0 means every transient network blip is a permanent failure.")
+            .mechanism("Most broker-side errors during produce are transient: leader election in progress (`NOT_LEADER_FOR_PARTITION`), follower out of sync (`NOT_ENOUGH_REPLICAS`), broker GC (`REQUEST_TIMED_OUT`). The producer's retry loop handles all of them transparently when `retries > 0`.")
+            .impact("With retries=0 every retryable error surfaces to the caller's Callback as a hard failure. Application code is forced to re-implement Kafka's own retry logic — usually badly, often with broken ordering guarantees.")
+            .whyMatters("Default is `Integer.MAX_VALUE` for a reason. The relevant upper bound is `delivery.timeout.ms` (default 120s), not the retry count itself. If you're tempted to set retries=0 because of ordering, the right answer is `enable.idempotence=true` instead.")
+            .build());
+
+    public static final RuleId PRODUCER_COMPRESSION_NONE_EXPLICIT = register(builder("PRODUCER_COMPRESSION_NONE_EXPLICIT")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_COMPRESSION_NONE_EXPLICIT.md")
+            .message("Producer explicitly sets compression.type=none — 3-5× more bytes on the wire than zstd/lz4.")
+            .tagline("compression.type=none isn't a default — it's a choice. Make sure you meant it.")
+            .mechanism("Setting `compression.type=none` opts out of the producer's per-batch compression. Every record-batch travels uncompressed to the broker, is replicated uncompressed across the ISR, and is stored uncompressed in the log segments.")
+            .impact("Typical JSON/Avro payloads grow 3-5× compared to `zstd` or `lz4`. At scale this dominates the broker's storage cost, cross-AZ network bill, and consumer-side fetch latency.")
+            .whyMatters("The CPU cost of compression lives in the producer's sender thread, not on the caller's hot path. The only sane reason to choose `none` is that your payload is already compressed (parquet, protobuf-binary with a snappy outer layer, etc.) — and you should add a comment saying so.")
+            .build());
+
+    public static final RuleId PRODUCER_LINGER_ZERO_NO_BATCH = register(builder("PRODUCER_LINGER_ZERO_NO_BATCH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_LINGER_ZERO_NO_BATCH.md")
+            .message("Producer sets linger.ms=0 — sender thread sends every record immediately, no batching.")
+            .tagline("linger.ms=0 with default batch.size means every record is a network round trip.")
+            .mechanism("`linger.ms` is the maximum time the producer's accumulator waits before sending a partial batch. With `linger.ms=0` (the default!), partial batches are sent as soon as the sender thread sees them.")
+            .impact("On a steady stream of small records this means one ProduceRequest per record — same throughput collapse as `send().get()`. Bandwidth efficiency drops by 10-100× because the per-batch overhead amortises across one record instead of hundreds.")
+            .whyMatters("The fix is `linger.ms=5` (or 10, or 20 — pick the latency budget you can spare). Five milliseconds of added latency typically doubles throughput; 20 ms quadruples it for high-fanout workloads.")
+            .build());
+
+    public static final RuleId CONSUMER_AUTO_OFFSET_RESET_LATEST = register(builder("CONSUMER_AUTO_OFFSET_RESET_LATEST")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_AUTO_OFFSET_RESET_LATEST.md")
+            .message("Consumer sets auto.offset.reset=latest — a fresh group will skip everything produced before it started.")
+            .tagline("auto.offset.reset=latest is \"skip the backlog you didn't know you had.\"")
+            .mechanism("`auto.offset.reset` only fires when the consumer's group has NO committed offset for a partition (fresh group, or new partition, or after retention pruning). `latest` jumps to the end; `earliest` reads from the beginning.")
+            .impact("A new deployment of a fresh consumer group silently skips every record produced before deployment. Looks like data loss but is actually intentional in the config. Discovered by 'why didn't we get message X?' tickets.")
+            .whyMatters("`earliest` is almost always the right default for analytics, replay, and any system that processes historical data. `latest` is right for monitoring/health/heartbeat consumers where stale records are useless. Pick deliberately, document the reason, and consider `none` (fail loud) if neither is acceptable.")
+            .build());
+
     public static final RuleId PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE = register(builder("PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE.md")

@@ -148,6 +148,21 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
                 "acks=0 — producer does not wait for broker acknowledgement. Records may be silently lost on any broker hiccup."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ONE, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_ACKS_ONE, s, KafkaTypes.ACKS_KEY, "1",
+                "acks=1 — only the partition leader has acknowledged. A leader failover before replication loses the record."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RETRIES_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_RETRIES_ZERO, s, KafkaTypes.RETRIES_KEY, "0",
+                "retries=0 — transient broker errors become permanent send failures. The default Integer.MAX_VALUE + delivery.timeout.ms bound is almost always correct."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_COMPRESSION_NONE_EXPLICIT, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_COMPRESSION_NONE_EXPLICIT, s, KafkaTypes.COMPRESSION_TYPE_KEY, "none",
+                "compression.type=none — explicitly opting out of compression. 3-5× more bytes on wire/disk than zstd or lz4."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_LINGER_ZERO_NO_BATCH, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_LINGER_ZERO_NO_BATCH, s, KafkaTypes.LINGER_MS_KEY, "0",
+                "linger.ms=0 — sender thread sends every record immediately, no accumulator batching. One ProduceRequest per record under steady load."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_OFFSET_RESET_LATEST, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_AUTO_OFFSET_RESET_LATEST, s, KafkaTypes.AUTO_OFFSET_RESET_KEY, "latest",
+                "auto.offset.reset=latest — fresh consumer groups skip every record produced before they started. Prefer 'earliest' unless this is a heartbeat/health consumer."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s -> ConfigKeyValueRule.literal(
                 RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s, KafkaTypes.ALLOW_AUTO_CREATE_TOPICS_KEY, "true",
                 "allow.auto.create.topics=true — a typo can permanently create a one-partition, default-RF topic."));

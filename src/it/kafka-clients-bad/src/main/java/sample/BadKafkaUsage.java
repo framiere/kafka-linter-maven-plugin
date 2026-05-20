@@ -142,6 +142,55 @@ public final class BadKafkaUsage {
         c.assign(List.of(new org.apache.kafka.common.TopicPartition("t", 0)));
     }
 
+    // RULE: PRODUCER_ACKS_ONE.
+    public void producerAcksOne() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("acks", "1");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_RETRIES_ZERO.
+    public void producerRetriesZero() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("retries", "0");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_COMPRESSION_NONE_EXPLICIT.
+    public void producerCompressionNoneExplicit() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("compression.type", "none");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_LINGER_ZERO_NO_BATCH.
+    public void producerLingerZero() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("linger.ms", "0");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_AUTO_OFFSET_RESET_LATEST.
+    public void consumerAutoOffsetResetLatest() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        p.put("group.id", "g");
+        p.put("auto.offset.reset", "latest");
+        KafkaConsumer<String, String> c = new KafkaConsumer<>(p);
+        c.close();
+    }
+
     // RULE: KAFKA_CLIENT_TYPO_GROUP_ID.
     public void typoGroupId() {
         Properties p = new Properties();

@@ -36,6 +36,10 @@ public final class KafkaTypes {
     public static final String ALLOW_AUTO_CREATE_TOPICS_KEY = "allow.auto.create.topics";
     public static final String GROUP_ID_KEY = "group.id";
     public static final String SCHEMA_REGISTRY_URL_KEY = "schema.registry.url";
+    public static final String AUTO_OFFSET_RESET_KEY = "auto.offset.reset";
+    public static final String RETRIES_KEY = "retries";
+    public static final String LINGER_MS_KEY = "linger.ms";
+    public static final String ISOLATION_LEVEL_KEY = "isolation.level";
 
     // kafka-streams config keys
     public static final String STREAMS_REPLICATION_FACTOR_KEY = "replication.factor";
