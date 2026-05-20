@@ -1,5 +1,7 @@
 package sample;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -1051,6 +1053,20 @@ public final class BadKafkaUsage {
         p.put("connections.max.idle.ms", "1800000");
         KafkaProducer<String, String> producer = new KafkaProducer<>(p);
         producer.close();
+    }
+
+    // RULE: JACKSON_DEFAULT_TYPING_ENABLED — both legacy enableDefaultTyping and modern activateDefaultTyping forms.
+    @SuppressWarnings("deprecation")
+    public ObjectMapper jacksonDefaultTypingEnabled() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.enableDefaultTyping();
+        return mapper;
+    }
+
+    public ObjectMapper jacksonActivateDefaultTypingLaissezFaire() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance);
+        return mapper;
     }
 
     private Properties props() {

@@ -658,6 +658,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s -> new MethodCallRule(
+                RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s, Set.of(KafkaTypes.OBJECT_MAPPER),
+                Set.of(KafkaTypes.JACKSON_ENABLE_DEFAULT_TYPING_METHOD, KafkaTypes.JACKSON_ACTIVATE_DEFAULT_TYPING_METHOD),
+                "ObjectMapper.enableDefaultTyping()/activateDefaultTyping() — RCE gadget. Inbound JSON with @class names an arbitrary class to instantiate; Jackson runs its constructor/setter graph. Use @JsonTypeInfo with @JsonSubTypes (closed-world) or a strict BasicPolymorphicTypeValidator allowlist; never LaissezFaireSubTypeValidator."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_LOCAL_THREADS_METADATA_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_LOCAL_THREADS_METADATA_DEPRECATED, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("localThreadsMetadata"),
+                "KafkaStreams.localThreadsMetadata() is deprecated since Kafka Streams 3.0 — replaced by KafkaStreams.metadataForLocalThreads() (same return type Set<ThreadMetadata>, mechanical rename)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_TRANSFORM_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_FLAT_TRANSFORM_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("flatTransform", "flatTransformValues"),
                 "KStream.flatTransform()/flatTransformValues() are deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) / processValues(FixedKeyProcessorSupplier) where fan-out is the default (call context.forward zero, one, or many times)."));

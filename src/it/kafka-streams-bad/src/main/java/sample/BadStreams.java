@@ -342,4 +342,12 @@ public final class BadStreams {
     public void joinWindowsOfDeprecated() {
         JoinWindows w = JoinWindows.of(Duration.ofMinutes(1));
     }
+
+    // RULE: STREAMS_LOCAL_THREADS_METADATA_DEPRECATED — renamed to metadataForLocalThreads in 3.0.
+    @SuppressWarnings("deprecation")
+    public void localThreadsMetadataDeprecated() {
+        StreamsBuilder b = new StreamsBuilder();
+        KafkaStreams streams = new KafkaStreams(b.build(), replicationFactorOne());
+        streams.localThreadsMetadata();
+    }
 }
