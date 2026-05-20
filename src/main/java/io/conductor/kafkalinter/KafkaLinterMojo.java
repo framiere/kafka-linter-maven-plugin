@@ -193,6 +193,17 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_SESSION_TIMEOUT_TOO_LOW, s, KafkaTypes.SESSION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
                 "session.timeout.ms={value} — below 10 s. Routine GC pauses will trigger spurious rebalances. Default 45 s is almost always right."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
+                "transaction.timeout.ms={value} — below 10 s. Routine processing pauses will fence the producer. Default 60 s is the right starting point."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_TXN_TIMEOUT_TOO_HIGH, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
+                v -> parseIntOrZero(v) > 900000,
+                "transaction.timeout.ms={value} — above the broker default cap of 900000. initTransactions() will fail with INVALID_TRANSACTION_TIMEOUT."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT, s, KafkaTypes.ISOLATION_LEVEL_KEY, "read_uncommitted",
+                "isolation.level=read_uncommitted — consumer reads aborted/in-flight transactional records. On a transactional topic, use read_committed."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE, ProducerTxnIdWithoutIdempotenceRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, ProducerMaxInFlightTooHighRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ASSIGN_AND_SUBSCRIBE, ConsumerAssignAndSubscribeRule::new);

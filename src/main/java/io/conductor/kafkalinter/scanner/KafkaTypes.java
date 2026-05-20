@@ -47,6 +47,7 @@ public final class KafkaTypes {
     public static final String BUFFER_MEMORY_KEY = "buffer.memory";
     public static final String REQUEST_TIMEOUT_MS_KEY = "request.timeout.ms";
     public static final String SESSION_TIMEOUT_MS_KEY = "session.timeout.ms";
+    public static final String TRANSACTION_TIMEOUT_MS_KEY = "transaction.timeout.ms";
     public static final String SECURITY_PROTOCOL_KEY = "security.protocol";
     public static final String SSL_ENDPOINT_ID_ALGO_KEY = "ssl.endpoint.identification.algorithm";
 

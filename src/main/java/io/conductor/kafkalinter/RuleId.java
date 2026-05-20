@@ -582,6 +582,36 @@ public final class RuleId {
             .whyMatters("If the listener does any blocking work, mark the method `@Blocking` (or `@Blocking(\"my-pool\")` for isolation). SmallRye then dispatches it on a worker thread and the event loop stays responsive.")
             .build());
 
+    public static final RuleId PRODUCER_TXN_TIMEOUT_TOO_LOW = register(builder("PRODUCER_TXN_TIMEOUT_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_TXN_TIMEOUT_TOO_LOW.md")
+            .message("transaction.timeout.ms below 10 s — the broker aborts the transaction before the producer can commit on a normal trip.")
+            .tagline("Setting transaction.timeout.ms shorter than 10 s turns routine processing into routine InvalidProducerEpoch.")
+            .mechanism("`transaction.timeout.ms` (default 60 s) is how long the broker keeps a producer's transactional state alive between `beginTransaction()` and `commitTransaction()`. If the producer doesn't commit/abort within that window, the broker fences the transactional id — subsequent operations get ProducerFencedException.")
+            .impact("On the consume-process-produce pattern (Streams' EOS, or hand-rolled exactly-once), any pause longer than the timeout aborts the transaction: a slow downstream call, a GC pause, a brief broker hiccup. The app sees a ProducerFencedException, has to recreate the producer, and the records since `beginTransaction()` are rolled back — even though the producer thought they were fine.")
+            .whyMatters("Default 60 s is the right starting point. Cut it only with very tight latency requirements AND a known-fast processing budget, and bound the upstream call to roughly half the timeout. Below 10 s is almost always a cargo-culted 'fail fast' setting.")
+            .build());
+
+    public static final RuleId PRODUCER_TXN_TIMEOUT_TOO_HIGH = register(builder("PRODUCER_TXN_TIMEOUT_TOO_HIGH")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_TXN_TIMEOUT_TOO_HIGH.md")
+            .message("transaction.timeout.ms above 900 s — exceeds the broker's transaction.max.timeout.ms default. InitProducerId will fail.")
+            .tagline("Brokers cap transaction.timeout.ms at transaction.max.timeout.ms (default 15 min). Going above is a startup error.")
+            .mechanism("On `initTransactions()`, the producer sends its requested `transaction.timeout.ms` to the transaction coordinator. The coordinator validates it against the broker-side `transaction.max.timeout.ms` (default 900000). If higher, the broker returns `INVALID_TRANSACTION_TIMEOUT` and the producer constructor throws.")
+            .impact("Application fails at boot. The error message is clear once you read it, but the symptom — 'producer constructor failed' — looks like a connectivity issue and is often misdiagnosed for a long time.")
+            .whyMatters("Either keep the request below the broker cap, or coordinate with cluster ops to raise `transaction.max.timeout.ms` (which has its own cost — long-running transactions tie up __transaction_state log). Going to 30 min just to 'be safe' is the most common cause.")
+            .build());
+
+    public static final RuleId CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT = register(builder("CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT.md")
+            .message("isolation.level=read_uncommitted explicitly set — consumer reads aborted/in-flight transactional records.")
+            .tagline("read_uncommitted on a transactional topic exposes records that were never committed.")
+            .mechanism("The consumer's `isolation.level` controls whether it sees records from in-flight or aborted transactions. `read_uncommitted` (the default) returns all records as they're written, including those that the producer later rolled back. `read_committed` skips them.")
+            .impact("On a topic produced transactionally, `read_uncommitted` causes downstream consumers to process records that don't exist from the producer's perspective. Counts diverge, duplicates appear, and the bug is invisible from the topic-level lag metric.")
+            .whyMatters("On non-transactional topics the setting is irrelevant — both values do the same thing. But seeing `isolation.level=read_uncommitted` explicitly set in a transactional pipeline is almost always a copy-paste from a non-transactional config. Either remove the override (the default is fine for non-transactional flows) or set it to `read_committed`.")
+            .build());
+
     public static final RuleId PRODUCER_BUFFER_MEMORY_TOO_SMALL = register(builder("PRODUCER_BUFFER_MEMORY_TOO_SMALL")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
             .docPath("kafka-clients/PRODUCER_BUFFER_MEMORY_TOO_SMALL.md")

@@ -310,6 +310,36 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: PRODUCER_TXN_TIMEOUT_TOO_LOW.
+    public void producerTxnTimeoutTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("transactional.id", "tx");
+        p.put("transaction.timeout.ms", "5000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: PRODUCER_TXN_TIMEOUT_TOO_HIGH.
+    public void producerTxnTimeoutTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("transactional.id", "tx");
+        p.put("transaction.timeout.ms", "1800000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT.
+    public void consumerIsolationLevelReadUncommitted() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("isolation.level", "read_uncommitted");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
