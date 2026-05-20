@@ -17,6 +17,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
 import io.conductor.kafkalinter.rules.clients.ProducerTxnIdWithoutIdempotenceRule;
 import io.conductor.kafkalinter.rules.config.ConfigKeyValueRule;
 import io.conductor.kafkalinter.rules.config.MethodCallRule;
+import io.conductor.kafkalinter.rules.config.PropertyFileRule;
 import io.conductor.kafkalinter.rules.observability.JacksonDefaultTypingRule;
 import io.conductor.kafkalinter.rules.observability.SchemaRegistryUrlMissingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkBlockingMissingOnIncomingRule;
@@ -247,6 +248,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.QK_AUTO_OFFSET_RESET_LATEST, sev.get(RuleId.QK_AUTO_OFFSET_RESET_LATEST),
                     "incoming", "auto.offset.reset", "latest",
                     "mp.messaging.incoming.{channel}.auto.offset.reset=latest — fresh consumer group skips existing backlog. Prefer 'earliest' for pipeline consumers."));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),
+                    "spring.kafka.producer.acks",
+                    v -> "0".equals(v) || "1".equals(v),
+                    "spring.kafka.producer.acks={value} — durability is partial. Use 'all' (or omit and rely on the kafka-clients default since 3.0).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST, sev.get(RuleId.SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST),
+                    "spring.kafka.bootstrap-servers",
+                    v -> v != null && (v.contains("localhost") || v.contains("127.0.0.1") || v.contains("0.0.0.0")),
+                    "spring.kafka.bootstrap-servers={value} — points at localhost. Externalize via env var or profile-suffixed override.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE, sev.get(RuleId.SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE),
+                    "spring.kafka.consumer.enable-auto-commit", "true",
+                    "spring.kafka.consumer.enable-auto-commit=true — disables the listener container's ack-mode commit machinery. Set to false and use manual ack-mode.",
+                    "org.springframework.kafka", "spring-kafka"));
         }
         return rules;
     }

@@ -388,6 +388,36 @@ public final class RuleId {
             .whyMatters("The delegate property is the second half of the configuration; missing it is a copy-paste accident from the docs. The error-handling deserializer pattern is foundational for Spring Kafka error-recovery — get it right.")
             .build());
 
+    public static final RuleId SPRING_BOOT_PRODUCER_ACKS_NOT_ALL = register(builder("SPRING_BOOT_PRODUCER_ACKS_NOT_ALL")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_PRODUCER_ACKS_NOT_ALL.md")
+            .message("spring.kafka.producer.acks set to 0 or 1 — durability is partial; prefer 'all'.")
+            .tagline("`spring.kafka.producer.acks=1` ships durability away one record at a time.")
+            .mechanism("Spring Boot's `spring.kafka.producer.acks` key feeds directly into the underlying `acks` producer config. With `1`, only the leader has the record at the time of ACK; with `0`, the producer doesn't wait at all.")
+            .impact("Same failure shape as raw kafka-clients `acks=1`/`acks=0`: lost records on leader failover (acks=1) or on any broker hiccup (acks=0). Discovered as 'missing records' tickets.")
+            .whyMatters("Production deployments should set `acks=all`. The framework default is `1` for Boot < 3.0 (Boot 3+ defers to the kafka-clients default which is `all` since Kafka 3.0). Set it explicitly so the property reads as a deliberate decision rather than an inherited default.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST = register(builder("SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST.md")
+            .message("spring.kafka.bootstrap-servers points at localhost — bound to be wrong for any non-local deployment.")
+            .tagline("`bootstrap-servers: localhost:9092` shipped to prod is a Friday-evening pager.")
+            .mechanism("`spring.kafka.bootstrap-servers` is the comma-separated list of broker addresses the Kafka client uses to bootstrap metadata. A `localhost` value means the application will attempt to reach a broker on the same machine as itself.")
+            .impact("On a deployed app this fails closed: `KafkaProducer` / consumer constructors block on metadata fetch and then time out, often only after the container starts taking traffic. Discovered as cold-start errors at deploy time.")
+            .whyMatters("Externalize via `${KAFKA_BOOTSTRAP_SERVERS}` or a profile-conditional override. A literal `localhost` belongs only in profile-suffixed properties (`application-dev.properties`) — and even then it should be obvious that this is the local-dev value, not the deployed one.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE = register(builder("SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_ENABLE_AUTO_COMMIT_VS_MANUAL_ACK.md")
+            .message("spring.kafka.consumer.enable-auto-commit=true — same failure shape as kafka-clients auto-commit. Use Spring's manual-ack mode instead.")
+            .tagline("Spring's manual-ack story only works when auto-commit is off. Turning it on quietly disables the listener's commit machinery.")
+            .mechanism("Spring's listener container has three ack modes: RECORD, BATCH, MANUAL (and friends). All of them require `enable.auto.commit=false` so that the container — not the Kafka client's timer — controls offset commits.")
+            .impact("With auto-commit on, the Kafka client commits every `auto.commit.interval.ms` (5s default) regardless of whether the listener has acknowledged. Same failure shapes as the raw kafka-clients rule: skip on crash, double-process on retry.")
+            .whyMatters("Set `spring.kafka.consumer.enable-auto-commit=false` and rely on the listener container's ack-mode. The default in Spring Boot 3+ is already false, but legacy projects and explicit overrides do still set it to true — easy to miss in code review.")
+            .build());
+
     // ────────────────────────────────────────────────────────────────────────
     // quarkus-kafka/ — Quarkus / SmallRye Reactive Messaging
     // ────────────────────────────────────────────────────────────────────────
