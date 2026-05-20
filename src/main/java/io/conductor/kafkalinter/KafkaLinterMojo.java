@@ -826,6 +826,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_MAX_WARMUP_REPLICAS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_MAX_WARMUP_REPLICAS_ZERO, s, KafkaTypes.STREAMS_MAX_WARMUP_REPLICAS_KEY, "0",
                 "max.warmup.replicas=0 — Streams cannot warm up tasks on new instances. Every scale-up freezes those partitions for the full changelog-restore duration (often 10-60 s per task). Default 2 bounds restore bandwidth; leave it."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_ACCEPTABLE_RECOVERY_LAG_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_ACCEPTABLE_RECOVERY_LAG_ZERO, s, KafkaTypes.STREAMS_ACCEPTABLE_RECOVERY_LAG_KEY, "0",
+                "acceptable.recovery.lag=0 — warm-standbys are never promoted to active because exact catch-up to the live tip is unreachable while the active task is still writing. Tasks pin to their current owner, probing rebalances fire every probing.rebalance.interval.ms forever, scale-up never completes. Default 10000 is correct; change probing.rebalance.interval.ms if you need faster promotion."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED, s -> new ConfigKeyValueRule(
                 RuleId.CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED, s, KafkaTypes.PARTITION_ASSIGNMENT_STRATEGY_KEY,
                 v -> {
@@ -1062,6 +1065,12 @@ public class KafkaLinterMojo extends AbstractMojo {
                     v -> { if (v == null) return false; try { return Long.parseLong(v.trim()) > 10_000L; } catch (NumberFormatException e) { return false; } },
                     "mp.messaging.outgoing.{channel}.max-inflight-messages={value} — above 10000. The connector relaxes backpressure to the upstream Mutiny stream; during broker slowness the in-memory queue grows unbounded, leading to producer-pod OOM. Default 1024 is right; raise kafka-clients buffer.memory / max.in.flight.requests.per.connection if you need more in-flight."));
         }
+        if (sev.get(RuleId.QK_INCOMING_BROADCAST_TRUE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_INCOMING_BROADCAST_TRUE, sev.get(RuleId.QK_INCOMING_BROADCAST_TRUE),
+                    "incoming", "broadcast", "true",
+                    "mp.messaging.incoming.{channel}.broadcast=true — every record fans out in-process to every subscriber of the channel; the slowest subscriber pins the channel's throughput, at-least-once semantics break per-subscriber, and a stuck subscriber turns into producer-side OOM. Use a second consumer group instead."));
+        }
         if (sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(SmallRyeChannelConfigRule.predicate(
                     RuleId.QK_OUTGOING_ACKS_NOT_ALL, sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL),
@@ -1217,6 +1226,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.ack-mode",
                     v -> v != null && "record".equalsIgnoreCase(v.trim()),
                     "spring.kafka.listener.ack-mode={value} — Spring commits the offset synchronously after every record. Per-record commit RTT (1-3 ms) becomes the dominant cost; throughput collapses 10-100× vs the default BATCH mode while the duplicate-on-crash window narrows by milliseconds. Use idempotent handlers instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_MISSING_TOPICS_FATAL_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_LISTENER_MISSING_TOPICS_FATAL_FALSE, sev.get(RuleId.SPRING_BOOT_LISTENER_MISSING_TOPICS_FATAL_FALSE),
+                    "spring.kafka.listener.missing-topics-fatal", "false",
+                    "spring.kafka.listener.missing-topics-fatal=false — the app boots even when a configured @KafkaListener topic doesn't exist; the listener attaches to nothing and silently processes zero records. Set to true so topic typos / missing-topic situations become loud boot failures instead of silent consumption gaps.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {

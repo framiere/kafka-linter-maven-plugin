@@ -291,6 +291,16 @@ public final class BadStreams {
         return p;
     }
 
+    // RULE: STREAMS_ACCEPTABLE_RECOVERY_LAG_ZERO.
+    public Properties acceptableRecoveryLagZero() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("acceptable.recovery.lag", "0");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
     // RULE: STREAMS_APPLICATION_ID_PLACEHOLDER.
     public Properties applicationIdPlaceholder() {
         Properties p = new Properties();

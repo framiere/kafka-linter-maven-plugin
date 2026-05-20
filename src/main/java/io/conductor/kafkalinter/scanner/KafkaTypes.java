@@ -74,6 +74,7 @@ public final class KafkaTypes {
     public static final String STREAMS_APPLICATION_SERVER_KEY = "application.server";
     public static final Set<String> LOCALHOST_HOST_TOKENS = Set.of("localhost", "127.0.0.1", "0.0.0.0", "::1");
     public static final String STREAMS_MAX_WARMUP_REPLICAS_KEY = "max.warmup.replicas";
+    public static final String STREAMS_ACCEPTABLE_RECOVERY_LAG_KEY = "acceptable.recovery.lag";
     public static final String METRICS_RECORDING_LEVEL_KEY = "metrics.recording.level";
     public static final Set<String> METRICS_RECORDING_LEVEL_VERBOSE_VALUES = Set.of("DEBUG", "TRACE");
     public static final String RECONNECT_BACKOFF_MAX_MS_KEY = "reconnect.backoff.max.ms";
