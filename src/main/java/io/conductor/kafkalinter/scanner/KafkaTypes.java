@@ -84,6 +84,9 @@ public final class KafkaTypes {
     public static final String SASL_LOGIN_CONNECT_TIMEOUT_MS_KEY = "sasl.login.connect.timeout.ms";
     public static final String SASL_LOGIN_READ_TIMEOUT_MS_KEY = "sasl.login.read.timeout.ms";
     public static final String SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL_KEY = "sasl.oauthbearer.token.endpoint.url";
+    public static final String STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_KEY = "global.consumer.auto.offset.reset";
+    public static final String STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_KEY = "restore.consumer.auto.offset.reset";
+    public static final String STREAMS_DEFAULT_DSL_STORE_KEY = "default.dsl.store";
     public static final Set<String> CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES = Set.of("earliest", "latest", "none");
     public static final Set<String> PRODUCER_ACKS_VALID_VALUES = Set.of("0", "1", "-1", "all");
     public static final String STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY = "probing.rebalance.interval.ms";

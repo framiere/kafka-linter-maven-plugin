@@ -343,6 +343,36 @@ public final class BadStreams {
         JoinWindows w = JoinWindows.of(Duration.ofMinutes(1));
     }
 
+    // RULE: STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST.
+    public Properties globalConsumerAutoOffsetResetLatest() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("global.consumer.auto.offset.reset", "latest");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
+    // RULE: STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_LATEST.
+    public Properties restoreConsumerAutoOffsetResetLatest() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("restore.consumer.auto.offset.reset", "latest");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
+    // RULE: STREAMS_DEFAULT_DSL_STORE_INMEMORY.
+    public Properties defaultDslStoreInmemory() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("default.dsl.store", "in_memory");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
     // RULE: STREAMS_LOCAL_THREADS_METADATA_DEPRECATED — renamed to metadataForLocalThreads in 3.0.
     @SuppressWarnings("deprecation")
     public void localThreadsMetadataDeprecated() {

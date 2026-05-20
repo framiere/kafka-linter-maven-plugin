@@ -658,6 +658,15 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST, s, KafkaTypes.STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_KEY, "latest",
+                "global.consumer.auto.offset.reset=latest — GlobalKTable bootstrap consumer skips to tail instead of reading from beginning. The global store is permanently incomplete; every join against missing keys silently returns null. There is no production reason for this override — remove it."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_LATEST, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_LATEST, s, KafkaTypes.STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_KEY, "latest",
+                "restore.consumer.auto.offset.reset=latest — changelog-replay consumer skips to tail instead of replaying the full changelog. State stores start empty; aggregations, joins, and KTables silently produce wrong results after every rebalance. Remove this override."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_DSL_STORE_INMEMORY, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_DEFAULT_DSL_STORE_INMEMORY, s, KafkaTypes.STREAMS_DEFAULT_DSL_STORE_KEY, "in_memory",
+                "default.dsl.store=in_memory — every materialized DSL store lives entirely in heap. State growth bounded by -Xmx; restore times 5-10x slower than RocksDB. Almost always copy-pasted from a benchmark/test config — remove it and use the default (rocksDB)."));
         addIfEnabled(rules, sev, RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SASL_LOGIN_CONNECT_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 5000; },
