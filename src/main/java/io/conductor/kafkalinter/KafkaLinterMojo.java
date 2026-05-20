@@ -272,6 +272,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.enable-auto-commit=true — disables the listener container's ack-mode commit machinery. Set to false and use manual ack-mode.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_AUTO_OFFSET_RESET_LATEST) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_AUTO_OFFSET_RESET_LATEST, sev.get(RuleId.SPRING_BOOT_AUTO_OFFSET_RESET_LATEST),
+                    "spring.kafka.consumer.auto-offset-reset", "latest",
+                    "spring.kafka.consumer.auto-offset-reset=latest — fresh consumer groups skip everything currently in the topic. Prefer 'earliest' for pipeline consumers.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         return rules;
     }
 

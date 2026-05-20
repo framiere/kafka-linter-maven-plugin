@@ -408,6 +408,16 @@ public final class RuleId {
             .whyMatters("Externalize via `${KAFKA_BOOTSTRAP_SERVERS}` or a profile-conditional override. A literal `localhost` belongs only in profile-suffixed properties (`application-dev.properties`) — and even then it should be obvious that this is the local-dev value, not the deployed one.")
             .build());
 
+    public static final RuleId SPRING_BOOT_AUTO_OFFSET_RESET_LATEST = register(builder("SPRING_BOOT_AUTO_OFFSET_RESET_LATEST")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_AUTO_OFFSET_RESET_LATEST.md")
+            .message("spring.kafka.consumer.auto-offset-reset=latest — fresh consumer groups skip the existing backlog. Prefer 'earliest' for pipeline consumers.")
+            .tagline("`auto-offset-reset: latest` means 'lose every record produced before the first deploy'.")
+            .mechanism("`auto.offset.reset` controls what happens when a consumer group has no committed offset for an assigned partition. `latest` (the kafka-clients default) seeks to the high-water-mark; `earliest` seeks to the log start. Spring Boot's `spring.kafka.consumer.auto-offset-reset` writes straight into that config.")
+            .impact("First deploy of a new group, an operator-driven offset reset, a topic recreated, or a group expired past `offsets.retention.minutes` (7 days) all hit the 'no committed offset' path. With `latest` the consumer reports caught-up while everything still on disk is silently skipped. Downstream sees gaps centred on the deploy timestamp.")
+            .whyMatters("For event-sourcing, audit, or replay topics — almost always pipeline consumers — `earliest` is what you want. `latest` is correct for ephemeral metric streams or CDC replicas where catch-up is meaningless. The linter can't know your intent; make the choice explicit and align with the topic's purpose.")
+            .build());
+
     public static final RuleId SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE = register(builder("SPRING_BOOT_ENABLE_AUTO_COMMIT_TRUE")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
             .docPath("spring-kafka/SPRING_BOOT_ENABLE_AUTO_COMMIT_VS_MANUAL_ACK.md")
