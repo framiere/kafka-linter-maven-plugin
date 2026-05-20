@@ -69,6 +69,8 @@ public final class KafkaTypes {
     public static final String ENABLE_METRICS_PUSH_KEY = "enable.metrics.push";
     public static final String GROUP_PROTOCOL_KEY = "group.protocol";
     public static final String GROUP_PROTOCOL_CLASSIC_VALUE = "classic";
+    public static final String STREAMS_APPLICATION_SERVER_KEY = "application.server";
+    public static final Set<String> LOCALHOST_HOST_TOKENS = Set.of("localhost", "127.0.0.1", "0.0.0.0", "::1");
     public static final Set<String> CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES = Set.of("earliest", "latest", "none");
     public static final Set<String> PRODUCER_ACKS_VALID_VALUES = Set.of("0", "1", "-1", "all");
     public static final String STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY = "probing.rebalance.interval.ms";

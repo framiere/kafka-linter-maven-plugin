@@ -654,6 +654,25 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.KAFKA_ENABLE_METRICS_PUSH_FALSE, s -> ConfigKeyValueRule.literal(
                 RuleId.KAFKA_ENABLE_METRICS_PUSH_FALSE, s, KafkaTypes.ENABLE_METRICS_PUSH_KEY, "false",
                 "enable.metrics.push=false — disables KIP-714 client telemetry to the broker. Cluster operators lose visibility into this client's latency/throughput/error metrics during incidents. Default true; only disable when explicitly required."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED, s, KafkaTypes.PARTITION_ASSIGNMENT_STRATEGY_KEY,
+                v -> {
+                    if (v == null) return false;
+                    boolean hasEager = KafkaTypes.LEGACY_PARTITION_ASSIGNORS.stream().anyMatch(v::contains);
+                    boolean hasCooperative = v.contains(KafkaTypes.COOPERATIVE_STICKY_ASSIGNOR_FQCN);
+                    return hasEager && hasCooperative;
+                },
+                "partition.assignment.strategy={value} — mixes eager (Range/RoundRobin/Sticky) and cooperative (CooperativeSticky) assignors. KIP-429 migration is two-step: deploy with both lists, then remove the eager one. Keeping both forever traps the group in eager rebalances or, with heterogeneous member lists, deadlocks JoinGroup."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_APPLICATION_SERVER_LOCALHOST, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_APPLICATION_SERVER_LOCALHOST, s, KafkaTypes.STREAMS_APPLICATION_SERVER_KEY,
+                v -> {
+                    if (v == null) return false;
+                    String host = v.trim().toLowerCase();
+                    int colon = host.indexOf(':');
+                    if (colon > 0) host = host.substring(0, colon);
+                    return KafkaTypes.LOCALHOST_HOST_TOKENS.contains(host);
+                },
+                "application.server={value} — interactive queries from peer Streams instances dial localhost on their own host instead of this instance. Cross-instance state-store lookups time out silently. Resolve the advertised hostname at startup (k8s downward API or InetAddress.getLocalHost())."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -959,6 +978,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE, sev.get(RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE),
                     "spring.kafka.producer.properties.enable.idempotence", "false",
                     "spring.kafka.producer.properties.enable.idempotence=false — explicit opt-out of the idempotent producer (default since kafka-clients 3.0). Retries can write duplicates and reorder records. Remove the override.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_AUTO_STARTUP_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_LISTENER_AUTO_STARTUP_FALSE, sev.get(RuleId.SPRING_BOOT_LISTENER_AUTO_STARTUP_FALSE),
+                    "spring.kafka.listener.auto-startup", "false",
+                    "spring.kafka.listener.auto-startup=false — every @KafkaListener container is constructed but idle until application code calls KafkaListenerEndpointRegistry.start(). Records pile up on Kafka with no consumer activity and no error logged. Usually a leaked test config.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_RECORD) != Severity.OFF) {

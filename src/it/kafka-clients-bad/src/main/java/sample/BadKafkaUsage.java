@@ -943,6 +943,18 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: CONSUMER_PARTITION_ASSIGNMENT_STRATEGY_MIXED.
+    public void partitionAssignmentStrategyMixed() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("partition.assignment.strategy",
+                "org.apache.kafka.clients.consumer.RangeAssignor,"
+                + "org.apache.kafka.clients.consumer.CooperativeStickyAssignor");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
