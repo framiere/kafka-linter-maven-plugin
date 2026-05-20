@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: CONTEXT
-**Detection**: combination
+**Detection**: bytecode + config-file + pom-dependency
 **Tagline**: Kafka exposes 100+ metrics. Configure one reporter, or you publish to /dev/null.
 
 ## TL;DR

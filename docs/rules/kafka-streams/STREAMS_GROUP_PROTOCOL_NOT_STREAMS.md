@@ -1,7 +1,7 @@
 # STREAMS_GROUP_PROTOCOL_NOT_STREAMS
 **Severity**: WARNING
 **Confidence**: CONTEXT
-**Detection**: combination (config-file + pom-dependency)
+**Detection**: config-file + pom-dependency
 **Tagline**: On AK 4.2+ / CP 8.2+, classic rebalancing is 50-80% slower for no reason.
 **Source**: Confluent agent-skills — kafka-streams-programming/SKILL.md preamble § Invariant Checklist #3 and kafka-streams-programming/references/topology-patterns.md § Assignment Strategy.
 

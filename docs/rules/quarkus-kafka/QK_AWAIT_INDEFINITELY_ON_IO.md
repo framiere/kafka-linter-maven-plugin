@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: bytecode + annotation
+**Detection**: annotation + bytecode
 **Tagline**: await().indefinitely() in a reactive pipeline is a deadlock waiting for tomorrow.
 
 ## TL;DR

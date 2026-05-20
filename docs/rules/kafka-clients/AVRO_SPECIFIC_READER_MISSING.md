@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: Generic Avro on a specific topic gives you back GenericRecord — and a ClassCastException later.
 
 ## TL;DR

@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: bytecode + pom-dependency
 **Tagline**: `EmbeddedKafkaBroker` is a test fixture. It does not belong in `src/main`.
 
 ## TL;DR

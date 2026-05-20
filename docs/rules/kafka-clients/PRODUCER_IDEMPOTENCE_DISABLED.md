@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: Turning idempotence off in 2026 is undoing five years of work the client did for you.
 
 ## TL;DR
@@ -48,6 +48,13 @@ props.put(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
 
 - Config: key `enable.idempotence` (or `spring.kafka.producer.properties.enable.idempotence`, `mp.messaging.outgoing.*.enable.idempotence`) literal `false`. HIGH.
 - Bytecode: `Properties.put("enable.idempotence", "false")` or `ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG`. HIGH when both arguments are constant.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Removing `enable.idempotence=false` looks like a one-line fix, but the silent-disable rules in KIP-679 mean the producer's *actual* runtime config depends on three other knobs you may also be setting.
+> - Is `max.in.flight.requests.per.connection > 5`, `retries=0`, or `acks != all` set anywhere in the same Properties? If yes, flipping idempotence on without fixing those silently turns it back off (KAFKA-13673) and the diff looks like a win.
+> - If this producer also has a `transactional.id`, idempotence is already implicitly required — and going from "silently off" to "on" means the next deploy gets a fresh PID and any in-flight transaction from the previous instance gets fenced. Is your deploy strategy compatible with that fence?
+> - Kafka Connect producers and pre-2.8 brokers without `IDEMPOTENT_WRITE` ACL are the legitimate exceptions — confirm you're neither before merging.
 
 ## References
 

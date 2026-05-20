@@ -56,6 +56,13 @@ Detector should suppress this when the same module also injects `KafkaTransactio
 - Bytecode: search for `Lio/smallrye/reactive/messaging/kafka/transactions/KafkaTransactions;` field injections to suppress.
 - Confidence: HIGH unless a KafkaTransactions injection is found in the same module.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** `commit-strategy=ignore` is *correct* when the offset commit is happening inside a `KafkaTransactions<T>` transaction — and *catastrophic* when it isn't. The fix depends entirely on which case you're in.
+> - Does the same module inject `KafkaTransactions<T>` and call `sendOffsetsToTransaction` (or `withTransaction(...)`) in every code path? If yes, `commit-strategy=ignore` is required — switching to `throttled` causes double commits that race with the transactional one and break EOS.
+> - If no transactional emitter is present, the offset has *never* been committed. On the first restart since deploy, the consumer either replays the entire topic (`auto.offset.reset=earliest`) or skips everything since deploy (`latest`). Which is it, and is the handler idempotent enough to survive that replay?
+> - `kafka_consumer_lag` has been growing since the misconfiguration shipped — alerts hooked to lag have been firing or have been muted. Either way, the team needs to know lag will *snap back to zero* the moment commits start happening, not gradually.
+
 ## References
 
 - https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/

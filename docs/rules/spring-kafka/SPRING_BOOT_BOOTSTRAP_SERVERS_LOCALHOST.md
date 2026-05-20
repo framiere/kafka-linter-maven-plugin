@@ -1,7 +1,7 @@
 # SPRING_BOOT_BOOTSTRAP_SERVERS_LOCALHOST
 
-**Severity**: WARNING
-**Confidence**: MEDIUM
+**Severity**: ERROR (suppress under dev/local/test profile)
+**Confidence**: HIGH
 **Detection**: config-file
 **Tagline**: `bootstrap-servers: localhost:9092` shipped to prod is a Friday-evening pager.
 

@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: retries=0 means every transient network blip is a permanent failure.
 
 ## TL;DR
@@ -53,6 +53,13 @@ The right knob to bound retry effort is `delivery.timeout.ms`, not `retries`.
 - Config: key `retries` literal `0`. MEDIUM confidence.
 - Bytecode: `Properties.put("retries", "0")`. MEDIUM confidence.
 - HIGH confidence when paired with `enable.idempotence=true` in the same config (this is a `ConfigException` at runtime).
+
+## Consult a friend?
+
+> 🤝 **Slow down.** `retries=0` was almost always set because someone hit "duplicate messages" once and assumed retries were the culprit. Removing it without fixing the actual duplicate-detection knobs trades one bug for another.
+> - Was `retries=0` added to "stop duplicates"? If yes: idempotence (default-true since 3.0) is what prevents duplicates — but `retries=0` silently disabled idempotence (KAFKA-13673). Removing `retries=0` re-enables it; the team needs to verify the original duplicate problem is actually gone, not just papered over.
+> - Does any caller treat a `send()` failure as "this record is lost, log it and move on"? With `retries=Integer.MAX_VALUE` + `delivery.timeout.ms=120000`, that handler now fires only after 2 minutes of blocking on the callback thread — confirm the calling code can wait that long.
+> - If the application has its own DLT / retry logic on top, set `delivery.timeout.ms` short enough that the surfaced failure still arrives within the application's SLO. Don't leave both retry layers at their default — they compound.
 
 ## References
 

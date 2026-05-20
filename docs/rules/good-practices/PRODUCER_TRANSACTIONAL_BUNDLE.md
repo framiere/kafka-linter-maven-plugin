@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: bytecode + config-file
 **Tagline**: A `transactional.id` is a contract with the broker. Sign it properly or don't sign it.
 
 ## TL;DR

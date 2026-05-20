@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: bytecode + config-file + pom-dependency
 **Tagline**: Durability is a five-key chord. Miss one note and the whole song goes flat.
 
 ## TL;DR

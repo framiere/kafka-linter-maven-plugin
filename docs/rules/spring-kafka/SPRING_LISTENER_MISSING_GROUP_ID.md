@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: A listener with no group is just a private subscription nobody else knows about.
 
 ## TL;DR

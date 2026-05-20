@@ -1,6 +1,6 @@
 # SPRING_LISTENER_DIRECT_PRODUCER
 
-**Severity**: WARNING
+**Severity**: ERROR
 **Confidence**: HIGH
 **Detection**: bytecode
 **Tagline**: `new KafkaProducer(...)` inside a Spring app is a memory leak with delivery guarantees.
@@ -72,6 +72,13 @@ If you need multiple producer configurations (e.g., different transactional id p
 - Bytecode: scan for `INVOKESPECIAL org/apache/kafka/clients/producer/KafkaProducer <init>` and `NEW org/apache/kafka/clients/producer/KafkaProducer`.
 - Higher signal: when the enclosing method is a `@KafkaListener` or the enclosing class is annotated `@Component`/`@Service`/`@Configuration`. Outside those, lower the severity.
 - Confidence: HIGH inside `@KafkaListener` methods; MEDIUM elsewhere.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Replacing a hand-rolled `new KafkaProducer(...)` with `KafkaTemplate` injection is correct, but the two have *different* semantics for transactional containers — and the listener's behavior on rollback changes.
+> - Is the listener container configured with a `KafkaTransactionManager`? If yes, `kafkaTemplate.send(...)` inside the listener method joins the same transaction — meaning a downstream rollback now also discards the send the hand-rolled producer used to commit independently. Is that the intended new behavior, or did the team rely on the side-effect surviving the rollback?
+> - The hand-rolled producer's config (acks, retries, transactional.id) is being replaced by the Spring-Boot-auto-configured one. Are *those* properties set correctly via `spring.kafka.producer.*`, or did the hand-rolled config diverge for a reason?
+> - If the goal of the inline producer was "send to a different cluster", `KafkaTemplate` injection still works — but you need a second `ProducerFactory` bean. Don't fix the leak by accidentally sending audit records to the wrong cluster.
 
 ## References
 

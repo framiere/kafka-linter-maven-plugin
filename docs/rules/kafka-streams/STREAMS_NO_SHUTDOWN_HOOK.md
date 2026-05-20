@@ -63,6 +63,13 @@ In Kubernetes, set `terminationGracePeriodSeconds` larger than `close(Duration)`
 - Suppress when the class is in a Spring `@Configuration` returning a `StreamsBuilderFactoryBean`, or annotated `@ApplicationScoped` with Quarkus.
 - Confidence: MEDIUM.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** A clean shutdown hook is necessary *and* tricky — Kubernetes' grace period, the hook's close timeout, and the broker's `transaction.timeout.ms` all have to line up, or the hook is theatre.
+> - Is `terminationGracePeriodSeconds` (or systemd's `TimeoutStopSec`) strictly greater than the `close(Duration)` you pass to the hook? If not, SIGKILL preempts the flush — same outcome as no hook.
+> - Under EOS, an unclean shutdown leaves a transaction open until `transaction.timeout.ms` (default 10 min) elapses on the broker. During that window, any downstream `read_committed` consumer stalls on the LSO. Is the team aware that "fast pod restart" is gated by broker-side abort, not by k8s?
+> - If a framework (Spring `StreamsBuilderFactoryBean`, Quarkus `@KafkaStreams`) is already in play, the framework's hook will fight a hand-rolled one — confirm there's exactly one closer for each `KafkaStreams` instance.
+
 ## References
 
 - KafkaStreams.close javadoc: https://kafka.apache.org/40/javadoc/org/apache/kafka/streams/KafkaStreams.html#close-java.time.Duration-

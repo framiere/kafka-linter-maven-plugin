@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: bytecode + config-file
 **Tagline**: Reading from a transactional producer with the default isolation is reading drafts.
 
 ## TL;DR

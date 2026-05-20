@@ -70,6 +70,14 @@ builder.stream(List.of("orders-eu", "orders-us"), Consumed.with(...));
 - Bytecode: `group.protocol=streams` AND a call to `builder.stream(Ljava/util/regex/Pattern;...)` or `KStream.subscribe(Ljava/util/regex/Pattern;)`.
 - Confidence: HIGH for the config combinations (mechanical); MEDIUM for the regex bytecode case (Pattern arg may be a constant in a different class).
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Choosing between `group.protocol=streams` (KIP-1071) and the classic protocol is a one-way door: removing static membership or standby replicas changes the rebalance and failover story permanently for this app.
+> - If standby replicas (`num.standby.replicas > 0`) are currently set and you keep `group.protocol=streams`, the value is silently ignored — failover means a full state restore. For a multi-GB RocksDB store, that's hours, not seconds. Is that acceptable for this app's SLO?
+> - If static membership (`group.instance.id`) is currently set and you keep KIP-1071, the app refuses to start. Pick a direction *before* the deploy — don't discover it from a crash loop.
+> - KIP-1071 is broker-side: is your cluster on AK 4.2+ (or CP equivalent) where the new assignor is GA, or are you about to ship a config the brokers will reject?
+> - Read the unsupported-features table in `topology-patterns.md` with the operations team — the silent-ignore cases (standby / warm-up) are the dangerous ones.
+
 ## References
 
 - KIP-1071 — Streams Rebalance Protocol: https://cwiki.apache.org/confluence/display/KAFKA/KIP-1071

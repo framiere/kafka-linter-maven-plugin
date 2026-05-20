@@ -1,7 +1,7 @@
 # STREAMS_NO_HEALTH_ENDPOINT
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination (bytecode + pom-dependency)
+**Detection**: bytecode + pom-dependency
 **Tagline**: Without a `/health/ready` probe, Kubernetes restarts your Streams app during normal rebalances.
 **Source**: Confluent agent-skills — kafka-streams-programming/references/production-hardening.md § Health Checks.
 

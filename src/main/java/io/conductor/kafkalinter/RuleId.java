@@ -1,38 +1,492 @@
 package io.conductor.kafkalinter;
 
-public enum RuleId {
-    PRODUCER_IN_LOOP(Severity.ERROR,
-        "KafkaProducer instantiated inside a loop or iterating lambda — producers must be long-lived (singleton-style)."),
-    CONSUMER_IN_LOOP(Severity.ERROR,
-        "KafkaConsumer instantiated inside a loop or iterating lambda — consumers must be long-lived."),
-    PRODUCER_NO_COMPRESSION(Severity.ERROR,
-        "KafkaProducer constructed without setting 'compression.type' — uncompressed throughput is wasteful and often a footgun."),
-    PRODUCER_SEND_BLOCKING_GET(Severity.ERROR,
-        "producer.send(record).get() — defeats async batching. Use a Callback instead."),
-    PRODUCER_SEND_NO_CALLBACK(Severity.WARNING,
-        "producer.send(record) without a Callback and result discarded — send errors will be silently swallowed."),
-    PRODUCER_FLUSH_IN_LOOP(Severity.ERROR,
-        "producer.flush() called inside a loop — defeats batching."),
-    CONSUMER_AUTO_COMMIT_TRUE(Severity.WARNING,
-        "KafkaConsumer configured with enable.auto.commit=true — risks message loss or double-processing."),
-    CONSUMER_COMMIT_PER_RECORD(Severity.ERROR,
-        "commitSync() called inside the per-record loop of a poll() — kills consumer throughput."),
-    CONSUMER_POLL_ZERO(Severity.ERROR,
-        "consumer.poll(0) / poll(Duration.ZERO) — busy-loops the consumer thread.");
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 
+/**
+ * Identity + didactic metadata for a single lint rule.
+ *
+ * <p>This is a value class, not an enum: the documented catalog (see
+ * {@code docs/rules/_CATALOG.md}) has hundreds of rule IDs while the plugin
+ * implements a curated, high-confidence subset. Each constant below registers
+ * itself in a process-wide registry so that {@link #valueOf(String)} and
+ * {@link #values()} keep working from the call sites that the previous enum
+ * form had.
+ *
+ * <p>Equality is by {@link #id()} — two {@code RuleId} instances with the same
+ * id compare equal regardless of metadata.
+ *
+ * <p>Each rule carries a four-paragraph didactic block that the verbose
+ * reporter prints:
+ * <ul>
+ *   <li>{@link #tagline()} — the one-line takeaway.</li>
+ *   <li>{@link #mechanism()} — what's actually happening at the protocol / runtime level.</li>
+ *   <li>{@link #impact()} — the concrete operational consequence (broker load, message loss, etc).</li>
+ *   <li>{@link #whyMatters()} — why this is easy to miss in code review and what makes the fix worth it.</li>
+ * </ul>
+ */
+public final class RuleId {
+
+    private static final Map<String, RuleId> REGISTRY = new LinkedHashMap<>();
+
+    // ────────────────────────────────────────────────────────────────────────
+    // kafka-clients — producer / consumer hot-path & lifecycle
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId PRODUCER_IN_LOOP = register(builder("PRODUCER_IN_LOOP")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_IN_LOOP.md")
+            .message("KafkaProducer instantiated inside a loop or iterating lambda — producers must be long-lived.")
+            .tagline("Producers are heavy objects. Build once, share across the app.")
+            .mechanism("Constructing a KafkaProducer opens TCP connections to bootstrap servers, fetches cluster metadata, allocates the record-accumulator buffer (32 MB by default), and starts the sender thread.")
+            .impact("Per-iteration creation thrashes the broker (one metadata-fetch and TCP handshake per loop iteration), exhausts file descriptors, and prevents any batching. End-to-end throughput collapses by 100–1000x.")
+            .whyMatters("Looks innocent in code review (just `new KafkaProducer(...)`), but the cost shape is invisible from the call site. The right shape is a singleton-style producer owned by the application lifecycle.")
+            .build());
+
+    public static final RuleId CONSUMER_IN_LOOP = register(builder("CONSUMER_IN_LOOP")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_IN_LOOP.md")
+            .message("KafkaConsumer instantiated inside a loop or iterating lambda — consumers must be long-lived.")
+            .tagline("Consumers carry group membership and fetch state. Don't recreate them.")
+            .mechanism("KafkaConsumer construction joins the consumer group (rebalance), establishes coordinator + fetcher connections, and seeks to the committed offset. None of this is cheap.")
+            .impact("Looping the constructor triggers a group rebalance every iteration — every other group member pauses while the join completes. Throughput drops to zero for the whole group, not just this app.")
+            .whyMatters("The rebalance storm shows up as broker-side CPU and group-coordinator overload, not as a clear app-side error. Singletons are the only shape that scales.")
+            .build());
+
+    public static final RuleId PRODUCER_NO_COMPRESSION = register(builder("PRODUCER_NO_COMPRESSION")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_NO_COMPRESSION.md")
+            .message("KafkaProducer constructed without setting 'compression.type'.")
+            .tagline("Uncompressed Kafka traffic is 3-5× more bandwidth, disk, and replication cost than it needs to be.")
+            .mechanism("Without explicit `compression.type`, the producer defaults to `none`: every record-batch travels uncompressed to the broker and is replicated uncompressed across the ISR.")
+            .impact("Bytes-on-wire and bytes-on-disk both grow 3-5× for typical JSON/Avro payloads. At scale this dominates the broker's storage cost and cross-AZ network bill.")
+            .whyMatters("Compression is one config key (`zstd` is the modern default; `lz4` if CPU-bound). The producer absorbs the CPU cost in the background sender thread, not on the user's hot path.")
+            .build());
+
+    public static final RuleId PRODUCER_SEND_BLOCKING_GET = register(builder("PRODUCER_SEND_BLOCKING_GET")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_SEND_BLOCKING_GET.md")
+            .message("producer.send(record).get() — defeats async batching. Use a Callback instead.")
+            .tagline("Calling .get() collapses the producer to one record at a time. No batching, no pipelining.")
+            .mechanism("The producer batches records in the accumulator and the sender thread drains them in async ProduceRequests. `.get()` on the returned Future blocks the caller until this specific record's ACK lands.")
+            .impact("Throughput drops from tens-of-thousands of records/sec to roughly `1 / RTT`. On a 5 ms cross-AZ RTT, that's ~200 records/sec — three orders of magnitude worse.")
+            .whyMatters("The async API is a contract: the Future is for completion notification, not for waiting. Use a `Callback` (or future composition) so the sender thread keeps batching while your code moves on.")
+            .build());
+
+    public static final RuleId PRODUCER_SEND_NO_CALLBACK = register(builder("PRODUCER_SEND_NO_CALLBACK")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_SEND_NO_CALLBACK.md")
+            .message("producer.send(record) without a Callback and result discarded — send errors will be silently swallowed.")
+            .tagline("Discarding the Future from send() drops broker-side errors on the floor.")
+            .mechanism("send() returns a Future<RecordMetadata>. If you ignore it AND don't pass a Callback, exceptions raised in the sender thread (serialization, broker NACK, timeout) never reach your code.")
+            .impact("Failures appear as missing records downstream — no log line, no metric, no exception. Debugging requires comparing producer-side counts against consumer-side counts.")
+            .whyMatters("A `Callback` of two lines (log on `exception != null`, increment a metric) turns the silent-loss class of bugs into a noisy, observable one.")
+            .build());
+
+    public static final RuleId PRODUCER_FLUSH_IN_LOOP = register(builder("PRODUCER_FLUSH_IN_LOOP")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_FLUSH_IN_LOOP.md")
+            .message("producer.flush() called inside a loop — defeats batching.")
+            .tagline("flush() forces every accumulator drain. Inside a loop, that's one ProduceRequest per record.")
+            .mechanism("flush() blocks until all queued records have been ACKed. The sender thread sends out partial batches immediately instead of waiting for `batch.size` or `linger.ms`.")
+            .impact("Same shape as `.send().get()` in the limit: throughput pinned at `1/RTT`. You also pay an extra context switch per record.")
+            .whyMatters("flush() has exactly one correct call site: just before close(), to make sure in-flight records get a chance to land. Anywhere else, it's a bug.")
+            .build());
+
+    public static final RuleId CONSUMER_AUTO_COMMIT_TRUE = register(builder("CONSUMER_AUTO_COMMIT_TRUE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_AUTO_COMMIT_TRUE.md")
+            .message("KafkaConsumer configured with enable.auto.commit=true — risks message loss or double-processing.")
+            .tagline("Auto-commit fires on a timer regardless of whether processing actually succeeded.")
+            .mechanism("With `enable.auto.commit=true`, the consumer commits offsets every `auto.commit.interval.ms` (5 s default) from the last poll, independent of what your code did with those records.")
+            .impact("Two failure shapes: (a) commit fires before processing finishes → records re-processed on restart (at-least-once is fine; but if your processing isn't idempotent it's double-billing). (b) commit fires after processing succeeded but the next batch fails → uncommitted records reprocessed.")
+            .whyMatters("The right shape is `enable.auto.commit=false` + explicit `commitSync()` after the per-batch processing block. That ties commit to *completed work*, not to a wall-clock timer.")
+            .build());
+
+    public static final RuleId CONSUMER_COMMIT_PER_RECORD = register(builder("CONSUMER_COMMIT_PER_RECORD")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_COMMIT_PER_RECORD.md")
+            .message("commitSync() called inside the per-record loop of a poll() — kills consumer throughput.")
+            .tagline("commitSync per record means one synchronous round-trip per record.")
+            .mechanism("commitSync() is a network call to the group coordinator. In the per-record loop, every record incurs a coordinator RTT before the next one is processed.")
+            .impact("Effective throughput pinned at `1/RTT_to_coordinator` — same order of magnitude as `.send().get()`. A consumer that could do 50k records/sec ends up doing ~200.")
+            .whyMatters("Commit per batch (after the for-each on `poll()`'s result), or commit asynchronously with `commitAsync(callback)` and reconcile with a final `commitSync()` on close. The cost-vs-correctness tradeoff is real but the per-record shape is the worst of both worlds.")
+            .build());
+
+    public static final RuleId CONSUMER_POLL_ZERO = register(builder("CONSUMER_POLL_ZERO")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_POLL_ZERO.md")
+            .message("consumer.poll(0) / poll(Duration.ZERO) — busy-loops the consumer thread.")
+            .tagline("poll(0) returns immediately whether records are available or not.")
+            .mechanism("`poll(Duration)` is the consumer's wait-or-fetch primitive. With `Duration.ZERO`, the consumer returns immediately on an empty fetcher — no records, no wait.")
+            .impact("The consumer thread spins at 100% CPU pulling on an empty fetcher. On idle topics this is invisible in functional tests and shows up only as 'why is the box hot?' in production.")
+            .whyMatters("Use a real timeout (typically `Duration.ofMillis(100-500)`). The consumer needs the wait window to deliver records efficiently; instantaneous polls defeat the fetcher's prefetch.")
+            .build());
+
+    public static final RuleId PRODUCER_ACKS_ZERO = register(builder("PRODUCER_ACKS_ZERO")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_ACKS_ZERO.md")
+            .message("Producer configured with acks=0 — fire-and-forget. Any broker failure during send is silent message loss.")
+            .tagline("acks=0 means the producer does NOT wait for any broker acknowledgement. Records can be lost without any error.")
+            .mechanism("With `acks=0`, the producer writes to its TCP socket and returns success immediately. The broker may never receive the record (network drop, broker GC, leader election in progress) and the producer never learns of it.")
+            .impact("Silent data loss during any broker hiccup. The producer's success metrics lie — they report send-attempts, not durable writes.")
+            .whyMatters("The default is `acks=all` (since Kafka 3.0) and that's almost always what you want. `acks=1` is a tunable middle ground; `acks=0` is for benchmarks and metrics shippers where loss is acceptable. If you're not certain that's you, don't use it.")
+            .build());
+
+    public static final RuleId PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE = register(builder("PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE.md")
+            .message("Producer sets transactional.id but enable.idempotence is false — transactional producers REQUIRE idempotence.")
+            .tagline("transactional.id without enable.idempotence=true is a configuration contradiction the broker will reject.")
+            .mechanism("A transactional producer relies on idempotent semantics for its EOS guarantee — the producer ID + sequence number that the broker dedupes on is part of the idempotence machinery.")
+            .impact("Application fails at producer initialization with a `ConfigException` (Kafka 3.0+) or silently downgrades semantics (older versions). Either way, EOS is not what the code claims.")
+            .whyMatters("Idempotence is the floor; transactions are built on top. Always set `enable.idempotence=true` explicitly when you set `transactional.id`, even though it's the default on 3.0+. Future-you reading the config will thank present-you.")
+            .build());
+
+    public static final RuleId PRODUCER_MAX_IN_FLIGHT_TOO_HIGH = register(builder("PRODUCER_MAX_IN_FLIGHT_TOO_HIGH")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_MAX_IN_FLIGHT_TOO_HIGH.md")
+            .message("max.in.flight.requests.per.connection > 5 with idempotence enabled — broker rejects this combination.")
+            .tagline("Idempotent producers cap in-flight at 5. Higher values are rejected at start-up.")
+            .mechanism("The idempotent producer dedupes by (PID, sequence). To dedupe correctly the broker must be able to reorder up to N in-flight batches per partition; that bound is hard-coded at 5.")
+            .impact("Producer construction throws `ConfigException` and the app never starts. Easy to miss in dev (default is fine) and explode in production where someone has tuned the config.")
+            .whyMatters("If you need higher in-flight for throughput, the answer is `batch.size` and `linger.ms`, not `max.in.flight`. The default of 5 is a contract, not a tunable.")
+            .build());
+
+    public static final RuleId CONSUMER_ASSIGN_AND_SUBSCRIBE = register(builder("CONSUMER_ASSIGN_AND_SUBSCRIBE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_ASSIGN_AND_SUBSCRIBE.md")
+            .message("KafkaConsumer.assign() and .subscribe() called on the same consumer — these are mutually exclusive modes.")
+            .tagline("A consumer is either in group mode (subscribe) or manual mode (assign). Mixing them throws at runtime.")
+            .mechanism("subscribe() registers the consumer with the group coordinator (dynamic assignment, rebalance). assign() bypasses the coordinator and pins specific partitions (no group, no rebalance). The Java client throws `IllegalStateException` if you call the other after one is set.")
+            .impact("Runtime crash on the second call, often after the consumer has already polled for a while — discovered in production, not in tests.")
+            .whyMatters("Pick one model up front. Manual assignment is for stateful single-consumer cases (CDC, replays, debug tools). Everything else is `subscribe()`.")
+            .build());
+
+    public static final RuleId CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE = register(builder("CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE.md")
+            .message("Consumer has allow.auto.create.topics=true — typos create real topics with default config.")
+            .tagline("Auto-create-on-subscribe turns a typo into a permanent topic with one-partition, default-replication config.")
+            .mechanism("With `allow.auto.create.topics=true` (the default!), subscribing to a nonexistent topic causes the broker to create it on the fly with cluster-default settings.")
+            .impact("Production gets a 'shadow' topic with replication-factor=1 and partition-count=1 that you never intended to operate. Real traffic might land there and be invisible to the alerting on the canonical topic.")
+            .whyMatters("Explicit topic provisioning (Terraform, AdminClient, ops platform) is the only shape that survives audits. Set `allow.auto.create.topics=false` on every consumer.")
+            .build());
+
+    public static final RuleId KAFKA_CLIENT_TYPO_GROUP_ID = register(builder("KAFKA_CLIENT_TYPO_GROUP_ID")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/KAFKA_CLIENT_TYPO_GROUP_ID.md")
+            .message("Consumer config uses 'groupId' / 'group_id' instead of 'group.id' — Kafka silently ignores unknown keys.")
+            .tagline("Kafka clients silently ignore unknown config keys. A typo on 'group.id' leaves the consumer in random-group-on-each-restart mode.")
+            .mechanism("The Kafka client validates *known* keys but logs at WARN for unrecognized ones. With no `group.id` set, the consumer generates a random UUID-style group on each construction.")
+            .impact("Each restart joins a new group with no committed offsets — the consumer re-reads from `auto.offset.reset` (latest by default) and skips everything in between. Looks like 'lost messages'.")
+            .whyMatters("The dot-separated form is the contract. `group.id`, `bootstrap.servers`, `enable.auto.commit` — not camelCase, not snake_case. The Spring / Quarkus property bindings translate; raw config maps do not.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
+    // versions/ — pom-dependency rules (no bytecode needed)
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId KAFKA_CLIENTS_EOL = register(builder("KAFKA_CLIENTS_EOL")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/KAFKA_CLIENTS_EOL.md")
+            .message("kafka-clients dependency is end-of-life — upgrade is required for support and security.")
+            .tagline("kafka-clients < 3.5 is past EOL. No more security fixes; broker compatibility erodes.")
+            .mechanism("Apache Kafka follows a release-window policy: the latest two minor versions get patches. Older minors stop receiving fixes — including CVE backports.")
+            .impact("Known CVEs (JNDI/LDAP, OAuthBearer, ConfigProvider) accumulate without patches. Broker upgrades on the cluster side eventually break wire compatibility.")
+            .whyMatters("Bumping kafka-clients is usually a non-event — the wire protocol is stable across minors. The cost of staying current is a quarterly bump; the cost of falling behind is an emergency upgrade under CVE pressure.")
+            .build());
+
+    public static final RuleId KAFKA_CLIENTS_CVE_JNDI_LDAP = register(builder("KAFKA_CLIENTS_CVE_JNDI_LDAP")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/KAFKA_CLIENTS_CVE_JNDI_LDAP.md")
+            .message("kafka-clients version is vulnerable to a known JNDI/LDAP RCE — upgrade immediately.")
+            .tagline("CVE-class: a malicious bootstrap URL or SASL handshake can trigger remote class loading.")
+            .mechanism("Older kafka-clients SASL handlers / config providers performed unsanitized JNDI lookups (Log4Shell-shape). A crafted broker URL or auth response triggers a JNDI call out to an attacker-controlled LDAP server, which serves a malicious class.")
+            .impact("Remote code execution in the client JVM with the privileges of the running app. Network egress to LDAP ports (389/636) is the only requirement.")
+            .whyMatters("Upgrade kafka-clients to a patched version. This is not a defense-in-depth fix — it's a 'don't run this version in production' fix.")
+            .build());
+
+    public static final RuleId KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER = register(builder("KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER.md")
+            .message("kafka-clients version has a known SASL/OAUTHBEARER token-validation flaw — upgrade.")
+            .tagline("Older OAUTHBEARER login modules accept tokens without verifying scope/audience.")
+            .mechanism("The SASL OAUTHBEARER login module historically did not validate the token's `aud` / `scope` claims by default. A token issued for a different audience could be accepted.")
+            .impact("Auth bypass between services that share an IdP — a token for service A authenticates as service A's Kafka identity.")
+            .whyMatters("Upgrade kafka-clients AND ensure the OAuthBearerValidatorCallbackHandler is configured with explicit audience checks. The fix is partly version, partly config — the lint catches the version half.")
+            .build());
+
+    public static final RuleId JAVA_VERSION_TOO_LOW = register(builder("JAVA_VERSION_TOO_LOW")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/JAVA_VERSION_TOO_LOW.md")
+            .message("Project targets Java < 11 — modern kafka-clients (3.x+) require Java 11 minimum.")
+            .tagline("kafka-clients 3.x dropped Java 8 support. Targeting Java 8 will fail at class-load time.")
+            .mechanism("kafka-clients 3.0+ is compiled to Java 11 bytecode. Loading those classes in a Java 8 JVM raises `UnsupportedClassVersionError` at first reference.")
+            .impact("App fails to start. Discovered at deployment, not at compile (the consuming app may still target Java 8 in its own bytecode).")
+            .whyMatters("Java 11 is the new floor for the JVM Kafka ecosystem. Many ancillary libraries (Avro, Spring Boot 3, Quarkus 3) also require 17+. Plan a single bump rather than chasing dependencies one at a time.")
+            .build());
+
+    public static final RuleId QUARKUS_KAFKA_EXTENSION_RENAMED = register(builder("QUARKUS_KAFKA_EXTENSION_RENAMED")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/QUARKUS_KAFKA_EXTENSION_RENAMED.md")
+            .message("Quarkus project uses deprecated 'quarkus-kafka' or 'quarkus-smallrye-reactive-messaging-kafka' artifact name — use 'quarkus-messaging-kafka'.")
+            .tagline("Quarkus 3 renamed the Kafka extension. Old artifact names still resolve but silently miss config bindings.")
+            .mechanism("Quarkus 3.x consolidated the messaging extensions under `io.quarkus:quarkus-messaging-*`. The old `quarkus-smallrye-reactive-messaging-kafka` artifact is a redirect for back-compat but does not pick up the new config paths.")
+            .impact("Configs like `mp.messaging.outgoing.*` may not be processed; the app starts but no channels are wired. The failure is silent at start-up and shows as 'my channels don't fire' in tests.")
+            .whyMatters("On a Quarkus 3 upgrade, the extension rename is a five-character pom edit. Easy to miss because the build still resolves; the regression shows only at runtime.")
+            .build());
+
+    public static final RuleId SPRING_KAFKA_BOOT_MISMATCH = register(builder("SPRING_KAFKA_BOOT_MISMATCH")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/SPRING_KAFKA_BOOT_MISMATCH.md")
+            .message("spring-kafka version doesn't match the Spring Boot BOM — auto-configuration may not wire correctly.")
+            .tagline("spring-kafka and Spring Boot are tightly coupled. Mismatched versions produce silent auto-config gaps.")
+            .mechanism("Spring Boot's BOM pins a specific spring-kafka version that its auto-configuration is tested against. Overriding spring-kafka with a different minor disconnects the `KafkaAutoConfiguration` from the version actually on the classpath.")
+            .impact("`KafkaTemplate`, `ConcurrentKafkaListenerContainerFactory` and related beans may not be created, or are created with the wrong defaults. App starts but listeners silently don't fire.")
+            .whyMatters("Either upgrade Spring Boot to the version whose BOM matches, or accept the BOM's pin. Hand-rolled version overrides are a maintenance trap.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
+    // kafka-streams/ — Streams-specific config rules
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId STREAMS_REPLICATION_FACTOR_ONE = register(builder("STREAMS_REPLICATION_FACTOR_ONE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_REPLICATION_FACTOR_ONE.md")
+            .message("Kafka Streams configured with replication.factor=1 — internal topics (changelog, repartition) become single-points-of-failure.")
+            .tagline("Streams internal topics with replication-factor=1 mean one broker reboot loses your state stores.")
+            .mechanism("Streams creates changelog topics (for materialized state) and repartition topics (for keyed re-grouping) under the hood. `replication.factor` applies to these internal topics, not to your input topic.")
+            .impact("A single broker outage during processing drops a partition of the changelog. The state store can't recover; the next rebalance re-bootstraps from input — slow at best, data-loss at worst.")
+            .whyMatters("Set `replication.factor=3` in production. The default of 1 is a dev-only convenience; if the topic is gone, the state machinery is gone with it. Streams gives no warning on its own.")
+            .build());
+
+    public static final RuleId STREAMS_STATE_DIR_TMP = register(builder("STREAMS_STATE_DIR_TMP")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_STATE_DIR_TMP.md")
+            .message("Streams state.dir points at /tmp or a container ephemeral path — state is lost on restart.")
+            .tagline("/tmp is wiped on reboot. RocksDB state stores live there at your peril.")
+            .mechanism("Streams persists RocksDB state under `state.dir`. The directory survives only as long as its filesystem — `/tmp` is wiped by systemd-tmpfiles, containers wipe the writable layer on restart.")
+            .impact("Every restart triggers a full state rebuild from the changelog topic. For a non-trivial store that's minutes of cold-start; until then, joins / aggregations return empty results.")
+            .whyMatters("Mount a persistent volume (`/var/lib/<app>/streams`, a PVC on K8s). The few-megabytes-per-second of RocksDB writes are not the bottleneck; the cold-start cost of losing them is.")
+            .build());
+
+    public static final RuleId STREAMS_EOS_V1_DEPRECATED = register(builder("STREAMS_EOS_V1_DEPRECATED")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_EOS_V1_DEPRECATED.md")
+            .message("Streams processing.guarantee uses deprecated 'exactly_once' / 'exactly_once_beta' — use 'exactly_once_v2'.")
+            .tagline("EOS-v1 was deprecated by KIP-732 (Kafka 3.0) and removed in 4.0. Use exactly_once_v2.")
+            .mechanism("Original EOS-v1 used one producer per task (per-partition transactional state). KIP-447 introduced a thread-producer that handles multiple tasks per transaction. KIP-732 deprecated the v1 names; 4.0 removes them.")
+            .impact("On Kafka 4.x: the app refuses to start (`ConfigException: 'exactly_once' is not a valid value`). On 3.x: deprecation warning at start-up plus broker-side `(tasks × partitions)` transactional state growth instead of just `tasks`.")
+            .whyMatters("One-line change: `processing.guarantee=exactly_once_v2`. Required broker minimum is 2.5+, which is almost certainly already true. Migrate before the next Kafka upgrade window.")
+            .build());
+
+    public static final RuleId STREAMS_CLEANUP_IN_PROD = register(builder("STREAMS_CLEANUP_IN_PROD")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_CLEANUP_IN_PROD.md")
+            .message("KafkaStreams.cleanUp() called in non-test code — wipes the local state store, forcing full rebuild from changelog.")
+            .tagline("cleanUp() deletes the local state directory. Run it in tests; never in production code paths.")
+            .mechanism("cleanUp() removes everything under `state.dir` for this application.id. On the next `start()`, Streams must replay the entire changelog topic to rebuild RocksDB.")
+            .impact("Cold-start time grows from seconds to minutes-or-hours, proportional to changelog size. During the rebuild, the topology is paused — no records consumed, no records produced.")
+            .whyMatters("cleanUp() exists for the test pattern of 'fresh state for each test run'. In production, even a small bug that triggers it on a hot path is a multi-hour outage.")
+            .build());
+
+    public static final RuleId STREAMS_THROUGH_DEPRECATED = register(builder("STREAMS_THROUGH_DEPRECATED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_THROUGH_DEPRECATED.md")
+            .message("KStream.through() is deprecated — use repartition() (or split it into to() + stream()) for clarity.")
+            .tagline("through() is deprecated since Kafka 2.6. Use repartition() or an explicit to/stream pair.")
+            .mechanism("`through(topic)` was a write-and-read primitive that quietly created an intermediate topic. KIP-221 split it into the explicit `repartition()` (with auto-managed internal topic) and the to/stream pair (with user-managed topic).")
+            .impact("The deprecated method still works but will be removed. More importantly, the implicit intermediate topic is hard to discover during operations — it's not in your topic inventory.")
+            .whyMatters("Migrate to `repartition()` if you want Streams to manage the internal topic; or to `.to(\"x\")` then `streamsBuilder.stream(\"x\")` if you want the topic in your inventory. The code becomes self-describing.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
+    // spring-kafka/ — Spring auto-magic detection
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId SPRING_LISTENER_ASYNC_ANNOTATION = register(builder("SPRING_LISTENER_ASYNC_ANNOTATION")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_LISTENER_ASYNC_ANNOTATION.md")
+            .message("@KafkaListener method also annotated @Async — container thread returns immediately, offset committed before processing.")
+            .tagline("@Async on a @KafkaListener method breaks the at-least-once contract. The container commits before processing completes.")
+            .mechanism("The Kafka listener container invokes the listener method and commits the offset (manual or auto) based on whether the method returned successfully. `@Async` makes the method return immediately by dispatching to a TaskExecutor — Kafka thinks processing succeeded the moment the dispatch happened.")
+            .impact("Offsets commit before the actual work runs. If the async task fails (exception, container shutdown), the record is silently dropped — no DLT, no retry, no log.")
+            .whyMatters("The Spring 'one of these makes things async' magic is bound to bite somewhere. Listener methods must run on the container thread. If you need async work downstream of the listener, dispatch *after* doing the durable acknowledgement step yourself.")
+            .build());
+
+    public static final RuleId SPRING_RETRYABLE_TOPIC_NO_KAFKA_TEMPLATE = register(builder("SPRING_RETRYABLE_TOPIC_NO_KAFKA_TEMPLATE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_RETRYABLE_TOPIC_NO_KAFKA_TEMPLATE.md")
+            .message("@RetryableTopic in use but no KafkaTemplate bean is exposed for the retry topics — retry/DLT publication will silently fail.")
+            .tagline("@RetryableTopic uses an injected KafkaTemplate to publish to retry/DLT topics. No template → no retries.")
+            .mechanism("Spring's `@RetryableTopic` machinery routes failures to versioned retry topics (`-retry-0`, `-retry-1`, …) and finally to a DLT. The mechanism publishes via a `KafkaTemplate<?, ?>` from the application context. Without one, the publisher path can't initialize.")
+            .impact("In some configurations the listener fails to start; in others, retries silently fall through to direct DLT publish or are dropped. Either way, the retry topology you wrote is not the topology that runs.")
+            .whyMatters("If you're using `@RetryableTopic`, expose an explicit `@Bean public KafkaTemplate<String, Object> kafkaTemplate(...)`. Spring auto-config provides one in some setups but not all — make it explicit so the wiring is obvious.")
+            .build());
+
+    public static final RuleId SPRING_ERROR_HANDLING_DESERIALIZER_NO_DELEGATES = register(builder("SPRING_ERROR_HANDLING_DESERIALIZER_NO_DELEGATES")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_ERROR_HANDLING_DESERIALIZER_NO_DELEGATES.md")
+            .message("ErrorHandlingDeserializer configured without spring.deserializer.value.delegate.class / key.delegate.class — every record fails to deserialize.")
+            .tagline("ErrorHandlingDeserializer is a wrapper. Without a delegate.class, it has nothing to delegate TO.")
+            .mechanism("`ErrorHandlingDeserializer` wraps a real deserializer and converts deserialization exceptions into a header the listener can inspect. It needs `spring.deserializer.value.delegate.class` (FQCN of the underlying deserializer) to know what to wrap.")
+            .impact("Without the delegate property, every record raises `ConfigException` at construction time, or fails to deserialize at runtime. The 'no records consumed' shape is hard to root-cause.")
+            .whyMatters("The delegate property is the second half of the configuration; missing it is a copy-paste accident from the docs. The error-handling deserializer pattern is foundational for Spring Kafka error-recovery — get it right.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
+    // quarkus-kafka/ — Quarkus / SmallRye Reactive Messaging
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId QK_DEVSERVICES_IN_PROD = register(builder("QK_DEVSERVICES_IN_PROD")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_DEVSERVICES_IN_PROD.md")
+            .message("Quarkus DevServices for Kafka enabled in the %prod profile — production will try to start a container.")
+            .tagline("DevServices spawns a Kafka container for dev. Leaving it on in %prod means production starts a container and ignores your bootstrap.servers.")
+            .mechanism("Quarkus DevServices intercepts the absence of a `kafka.bootstrap.servers` setting in dev/test profiles and starts a Testcontainers-based broker. The `%prod.quarkus.kafka.devservices.enabled` knob exists to make absolutely sure this doesn't happen in production.")
+            .impact("Production app boots a container, points itself at the container's broker, and runs disconnected from the real Kafka cluster. Discovered only when downstream wonders why no traffic appears.")
+            .whyMatters("Set `%prod.quarkus.kafka.devservices.enabled=false` explicitly. The default is on-when-no-bootstrap-servers, and prod environments do sometimes start without their config injected. Belt and braces.")
+            .build());
+
+    public static final RuleId QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER = register(builder("QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER.md")
+            .message("@Incoming method does blocking I/O (JPA / RestClient / Thread.sleep) but is not annotated @Blocking — runs on the event loop.")
+            .tagline("SmallRye Reactive Messaging @Incoming methods run on the event loop unless @Blocking moves them off.")
+            .mechanism("Quarkus / SmallRye dispatches incoming records on Vert.x event-loop threads. A blocking call on that thread (DB query, HTTP, sleep) stalls the entire loop — every other consumer, HTTP endpoint, and timer goes silent until the call returns.")
+            .impact("Tail-latency spikes, health-checks failing, sometimes outright deadlocks. The signal looks like 'the whole app got slow' rather than 'this listener is slow'.")
+            .whyMatters("If the listener does any blocking work, mark the method `@Blocking` (or `@Blocking(\"my-pool\")` for isolation). SmallRye then dispatches it on a worker thread and the event loop stays responsive.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
+    // observability/ — security & deserialization
+    // ────────────────────────────────────────────────────────────────────────
+
+    public static final RuleId DESER_JSON_TYPE_INFO_NO_ALLOWLIST = register(builder("DESER_JSON_TYPE_INFO_NO_ALLOWLIST")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("observability")
+            .docPath("observability/DESER_JSON_TYPE_INFO_NO_ALLOWLIST.md")
+            .message("Jackson polymorphic deserialization (@JsonTypeInfo / default typing) without an allowlist — RCE-class footgun.")
+            .tagline("Polymorphic JSON deserialization with no allow-list lets a malicious record instantiate arbitrary classes on the classpath.")
+            .mechanism("Jackson's `@JsonTypeInfo` and `ObjectMapper.activateDefaultTyping()` embed a type-name in the JSON. The deserializer reflects on the type-name to pick a class to instantiate. With no allow-list, the type-name can name any class — and Jackson will call its no-arg constructor or setters.")
+            .impact("Same shape as the Java deserialization CVE family: a crafted Kafka record triggers loading of a 'gadget' class (e.g. one whose setter executes shell). RCE in the consumer's JVM with its full privileges.")
+            .whyMatters("Either set `PolymorphicTypeValidator` explicitly with an allow-list, or — strongly preferred — don't use default typing at all. Use explicit `@JsonSubTypes` enumerations. Kafka topics are an untrusted input from a security perspective.")
+            .build());
+
+    public static final RuleId SCHEMA_REGISTRY_URL_MISSING = register(builder("SCHEMA_REGISTRY_URL_MISSING")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("observability")
+            .docPath("observability/SCHEMA_REGISTRY_URL_MISSING.md")
+            .message("Avro/Protobuf/JSON Schema serializer in use but schema.registry.url is not configured — serializer cannot register / lookup schemas.")
+            .tagline("Confluent SR serializers fail at construction without schema.registry.url. The error is a deep ClassCastException, not an obvious 'missing config'.")
+            .mechanism("Confluent's `KafkaAvroSerializer` / `KafkaProtobufSerializer` / `KafkaJsonSchemaSerializer` look up schemas at the URL in `schema.registry.url`. Without it, the serializer either fails at config-time or attempts to use a null URL with confusing downstream errors.")
+            .impact("Producer / consumer fails to construct, or fails on the first record. In Spring/Quarkus the failure cascades through auto-config and the root cause is buried in the stack trace.")
+            .whyMatters("Set `schema.registry.url` (and `basic.auth.user.info` if your registry is auth'd). The lint catches the missing key; the real source of bugs is the URL being right but the credentials wrong.")
+            .build());
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Plumbing
+    // ────────────────────────────────────────────────────────────────────────
+
+    private final String id;
     private final Severity defaultSeverity;
+    private final Confidence confidence;
+    private final String category;
+    private final String docPath;
     private final String message;
+    private final String tagline;
+    private final String mechanism;
+    private final String impact;
+    private final String whyMatters;
 
-    RuleId(Severity defaultSeverity, String message) {
-        this.defaultSeverity = defaultSeverity;
-        this.message = message;
+    private RuleId(Builder b) {
+        this.id = Objects.requireNonNull(b.id, "id");
+        this.defaultSeverity = Objects.requireNonNull(b.defaultSeverity, "defaultSeverity");
+        this.confidence = Objects.requireNonNull(b.confidence, "confidence");
+        this.category = Objects.requireNonNull(b.category, "category");
+        this.docPath = Objects.requireNonNull(b.docPath, "docPath");
+        this.message = Objects.requireNonNull(b.message, "message");
+        this.tagline = Objects.requireNonNull(b.tagline, "tagline");
+        this.mechanism = Objects.requireNonNull(b.mechanism, "mechanism");
+        this.impact = Objects.requireNonNull(b.impact, "impact");
+        this.whyMatters = Objects.requireNonNull(b.whyMatters, "whyMatters");
     }
 
-    public Severity defaultSeverity() {
-        return defaultSeverity;
+    private static Builder builder(String id) {
+        return new Builder().id(id);
     }
 
-    public String message() {
-        return message;
+    private static RuleId register(RuleId rule) {
+        RuleId prev = REGISTRY.putIfAbsent(rule.id, rule);
+        if (prev != null) {
+            throw new IllegalStateException("Duplicate RuleId registration: " + rule.id);
+        }
+        return rule;
+    }
+
+    public String id() { return id; }
+    public String name() { return id; }
+    public Severity defaultSeverity() { return defaultSeverity; }
+    public Confidence confidence() { return confidence; }
+    public String category() { return category; }
+    public String docPath() { return docPath; }
+    public String message() { return message; }
+    public String tagline() { return tagline; }
+    public String mechanism() { return mechanism; }
+    public String impact() { return impact; }
+    public String whyMatters() { return whyMatters; }
+
+    public static Collection<RuleId> values() {
+        return Collections.unmodifiableCollection(REGISTRY.values());
+    }
+
+    public static RuleId valueOf(String id) {
+        RuleId r = REGISTRY.get(id);
+        if (r == null) {
+            throw new IllegalArgumentException("Unknown rule id: " + id);
+        }
+        return r;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof RuleId other && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return id;
+    }
+
+    private static final class Builder {
+        private String id;
+        private Severity defaultSeverity;
+        private Confidence confidence;
+        private String category;
+        private String docPath;
+        private String message;
+        private String tagline;
+        private String mechanism;
+        private String impact;
+        private String whyMatters;
+
+        Builder id(String v) { this.id = v; return this; }
+        Builder defaultSeverity(Severity v) { this.defaultSeverity = v; return this; }
+        Builder confidence(Confidence v) { this.confidence = v; return this; }
+        Builder category(String v) { this.category = v; return this; }
+        Builder docPath(String v) { this.docPath = v; return this; }
+        Builder message(String v) { this.message = v; return this; }
+        Builder tagline(String v) { this.tagline = v; return this; }
+        Builder mechanism(String v) { this.mechanism = v; return this; }
+        Builder impact(String v) { this.impact = v; return this; }
+        Builder whyMatters(String v) { this.whyMatters = v; return this; }
+        RuleId build() { return new RuleId(this); }
     }
 }

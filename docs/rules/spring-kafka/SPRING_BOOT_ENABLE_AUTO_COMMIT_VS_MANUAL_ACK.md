@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: `enable-auto-commit=true` + Acknowledgment in code = two cooks, no kitchen.
 
 ## TL;DR

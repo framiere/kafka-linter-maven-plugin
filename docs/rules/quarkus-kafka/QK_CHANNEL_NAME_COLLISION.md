@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: config-file + bytecode
+**Detection**: bytecode + config-file
 **Tagline**: Same channel name for in and out wires your app to itself.
 
 ## TL;DR

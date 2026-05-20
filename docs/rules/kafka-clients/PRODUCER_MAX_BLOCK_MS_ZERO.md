@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: max.block.ms=0 means "fail before you even ask the broker."
 
 ## TL;DR

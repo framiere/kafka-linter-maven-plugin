@@ -1,7 +1,7 @@
 # QK_TRANSACTIONAL_ID_NOT_UNIQUE
 
 **Severity**: ERROR
-**Confidence**: MEDIUM
+**Confidence**: HIGH
 **Detection**: config-file
 **Tagline**: A shared transactional.id is two producers fencing each other off forever.
 
@@ -54,6 +54,14 @@ For exactly-once semantics with stable id, use StatefulSets in Kubernetes (`pod-
 - Config: `mp.messaging.outgoing.<channel>.transactional.id` set to a value that does NOT include `${HOSTNAME}`, `${quarkus.uuid}`, or a unique env var template.
 - Also flag absence of `transactional.id` on channels with `enable.idempotence=true` + transactional code path detected in bytecode (less reliable).
 - Confidence: MEDIUM — operator may have a unique strategy the linter can't infer.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Pinning `transactional.id` to `${HOSTNAME}` or `${quarkus.uuid}` is correct, but the two have very different recovery stories — and the wrong choice silently breaks EOS on the very first crash.
+> - `${HOSTNAME}` (StatefulSet): id is stable across restarts → a new pod replacing pod-0 fences the previous one and *resumes* its in-flight transaction. This is what EOS requires.
+> - `${quarkus.uuid}`: id changes on every startup → the previous instance's open transaction stays "owned" by a now-dead id until `transaction.timeout.ms` (default 10 min) elapses on the broker. During that window, downstream `read_committed` consumers stall, and any partition the old instance held is locked. Is that downtime acceptable?
+> - Cloud Run / Lambda / autoscaled-from-zero environments: pods have no stable identity by design. Are you sure exactly-once is the right semantic here, or would at-least-once + downstream idempotence be a saner fit?
+> - For Kubernetes Deployments (not StatefulSets), `${HOSTNAME}` includes a random suffix — same problem as UUID. Confirm the manifest is StatefulSet *before* you put `${HOSTNAME}` in the config.
 
 ## References
 

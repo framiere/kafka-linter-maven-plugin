@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: @RetryableTopic + batch listeners = unsupported, per the docs.
 
 ## TL;DR

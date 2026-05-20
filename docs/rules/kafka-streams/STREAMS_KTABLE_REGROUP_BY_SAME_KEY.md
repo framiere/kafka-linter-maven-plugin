@@ -1,7 +1,7 @@
 # STREAMS_KTABLE_REGROUP_BY_SAME_KEY
 
 **Severity**: WARNING
-**Confidence**: HIGH
+**Confidence**: MEDIUM
 **Detection**: dsl-chain
 **Tagline**: `toStream().groupByKey()` is a repartition you didn't need to pay for.
 

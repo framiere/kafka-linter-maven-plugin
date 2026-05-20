@@ -55,6 +55,13 @@ The `group.instance.id` must be unique per consumer instance. Reusing the same i
 - Suppress if the framework manages this (Kafka Streams sets it automatically since 3.0 via `application.id`).
 - Suggest pairing with raised `session.timeout.ms` (30–60s) so brief restarts don't blow the window.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Static membership removes the "rebalance on every restart" tax, but it also means a *crashed* JVM stays in the group until `session.timeout.ms` expires — slower failover, not faster, unless the deploy story matches.
+> - When a pod is OOM-killed (no graceful `LeaveGroup`), how long do you want its partitions to sit idle before another instance picks them up? That's the `session.timeout.ms` budget. Default 45s is often too long for stateless services.
+> - Is the `group.instance.id` truly unique per live instance? Reusing the same id across two simultaneously-running pods (e.g., during a botched blue/green) throws `FencedInstanceIdException` on the loser — confirm your deploy tooling sequences pod replacement.
+> - Pod identity must survive restart for static membership to help. On Kubernetes that means a StatefulSet (ordinal hostname), not a Deployment (random pod-name suffix). Which are you actually running?
+
 ## References
 
 - KIP-345 — Static membership: https://cwiki.apache.org/confluence/display/KAFKA/KIP-345

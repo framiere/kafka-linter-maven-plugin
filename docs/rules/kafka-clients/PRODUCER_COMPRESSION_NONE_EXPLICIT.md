@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: compression.type=none isn't a default — it's a choice. Make sure you meant it.
 
 ## TL;DR

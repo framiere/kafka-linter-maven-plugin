@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: CONTEXT
-**Detection**: combination
+**Detection**: bytecode + config-file
 **Tagline**: Static membership turns N rolling-restart rebalances into zero.
 
 ## TL;DR

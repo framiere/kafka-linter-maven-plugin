@@ -1,6 +1,6 @@
 # SPRING_KAFKA_EOL
 
-**Severity**: WARNING
+**Severity**: ERROR
 **Confidence**: HIGH
 **Detection**: pom-dependency
 **Tagline**: spring-kafka's OSS life is tied to Spring Boot's — and Boot 2.x stopped getting patches three years ago.

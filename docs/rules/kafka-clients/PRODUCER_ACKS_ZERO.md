@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: acks=0 is fire-and-pray.
 
 ## TL;DR
@@ -50,6 +50,13 @@ If throughput is the worry, prefer `acks=all` plus larger `batch.size` / `linger
 - Config files (`application.properties`, `application.yml`, `*.properties`): key `acks` (or `spring.kafka.producer.acks`, `kafka.producer.acks`, `mp.messaging.outgoing.*.acks`) with value `0`. HIGH confidence.
 - Bytecode: a `Properties.put` / `Map.put` call whose first arg is an `LDC "acks"` (or `ProducerConfig.ACKS_CONFIG` resolved at compile time to `"acks"`) and whose second arg is `LDC "0"`. HIGH confidence when both LDCs are constant.
 - Confidence: HIGH for explicit `"0"`. MEDIUM if `acks` is read from environment/config without a default (the value cannot be evaluated statically).
+
+## Consult a friend?
+
+> 🤝 **Slow down.** `acks=0` was chosen for a reason — almost always "throughput" — and the team likely has dashboards built around the current produce rate that will look worse the moment durability is turned on.
+> - Why was `acks=0` set originally? If the answer is "we never investigated", the team needs to actually compare `acks=all` + larger `batch.size` / `linger.ms` against current throughput before assuming the regression matters.
+> - Are there alerts hooked to `record-send-rate`? They'll fire on the deploy that turns durability on, because batching dynamics change. Pre-bake the new baseline or you'll get paged on the win.
+> - If this is genuinely a telemetry / best-effort sink, the right answer is a per-topic `KafkaTemplate` with `acks=0` rather than the application-wide default — keep the explicit waiver but stop poisoning every other producer in the JVM.
 
 ## References
 

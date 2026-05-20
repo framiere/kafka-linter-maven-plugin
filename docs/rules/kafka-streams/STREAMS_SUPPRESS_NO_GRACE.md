@@ -1,7 +1,7 @@
 # STREAMS_SUPPRESS_NO_GRACE
 
 **Severity**: WARNING
-**Confidence**: HIGH
+**Confidence**: MEDIUM
 **Detection**: dsl-chain
 **Tagline**: `suppress(untilWindowCloses)` without explicit grace is a 24-hour pause.
 

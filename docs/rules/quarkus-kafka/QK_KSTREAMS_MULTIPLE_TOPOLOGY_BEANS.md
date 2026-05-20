@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: bytecode + annotation
+**Detection**: annotation + bytecode
 **Tagline**: One Topology to rule them all — extras get ignored.
 
 ## TL;DR

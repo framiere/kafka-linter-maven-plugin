@@ -51,6 +51,13 @@ This rule is hard to apply universally — the linter cannot generally know whet
 - Config: detect `transactional.id` set in any producer config in the same project; flag any consumer in the same project that does not explicitly set `isolation.level=read_committed`. MEDIUM.
 - Bytecode: locate `KafkaProducer` constructions with `transactional.id` set, then locate `KafkaConsumer` constructions in the same project. MEDIUM.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Flipping to `read_committed` is the right move for EOS, but it isn't free — the consumer is now gated by the broker's Last Stable Offset (LSO), which lags the log-end by however long upstream transactions stay open.
+> - What's the upstream producer's `transaction.timeout.ms`? Whatever it is, that's the worst-case end-to-end latency floor on this consumer once you flip to `read_committed`. If your SLO is tighter than that timeout, you have a problem.
+> - If the upstream JVM ever crashes mid-transaction, downstream `read_committed` consumers stall until the broker times out the open transaction. Is the consumer's lag alerting tuned to distinguish "stuck on aborted txn" from "actually behind"?
+> - Is `enable.auto.commit=true` set on this consumer? If yes, you've been auto-committing phantom (aborted) offsets — flipping `read_committed` *and* leaving auto-commit on still skips the manual-commit discipline that EOS read-process-write needs.
+
 ## References
 
 - Apache Kafka consumer configs — `isolation.level`: https://kafka.apache.org/documentation/#consumerconfigs_isolation.level

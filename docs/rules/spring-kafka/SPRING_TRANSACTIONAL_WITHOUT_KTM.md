@@ -1,8 +1,8 @@
 # SPRING_TRANSACTIONAL_WITHOUT_KTM
 
-**Severity**: WARNING
+**Severity**: ERROR
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: @Transactional + kafkaTemplate.send() without a transactional producer is decoration.
 
 ## TL;DR
@@ -68,6 +68,14 @@ If you don't want exactly-once across DB and Kafka, accept the inconsistency win
 - Bean-graph: detect any `KafkaTransactionManager` bean defined in `@Configuration` classes.
 - Suppress when either is present.
 - Confidence: MEDIUM — bean-graph reasoning has gaps; the rule is best-effort but high-signal when both checks fail.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Wiring `spring.kafka.producer.transaction-id-prefix` looks innocuous but it changes the producer's runtime contract — every send now *requires* an active transaction and throws `IllegalStateException` outside one.
+> - Are there *any* `kafkaTemplate.send(...)` call sites in the app outside of `@Transactional` methods (controllers, `@Scheduled`, ad-hoc admin endpoints, healthchecks)? They'll all start throwing on the first deploy after the prefix is set. Audit before merging.
+> - Is the `transaction-id-prefix` unique per pod? Two replicas with the same prefix fence each other (`ProducerFencedException`) on epoch bump — same foot-gun as `transactional.id` in plain clients. Spring Boot appends a sequence per producer, but the *prefix* still needs to vary per pod.
+> - If the `@Transactional` method also writes to a database, `KafkaTransactionManager` alone won't roll back the DB. You need `ChainedKafkaTransactionManager` (or `TransactionalEventListener(phase=AFTER_COMMIT)`) — confirm which boundary you actually want before merging.
+> - Read the Spring Kafka transactions chapter end-to-end — the `KafkaTemplate` / `KafkaTransactionManager` / `ProducerFactory` triangle has subtle rules about which one synchronizes with what.
 
 ## References
 

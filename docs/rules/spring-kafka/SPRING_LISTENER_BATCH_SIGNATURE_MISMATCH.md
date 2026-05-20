@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: A batch listener that takes one record will never deploy.
 
 ## TL;DR

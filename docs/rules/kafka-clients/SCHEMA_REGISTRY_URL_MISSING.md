@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: A Schema Registry serializer without a URL is just an exception generator.
 
 ## TL;DR

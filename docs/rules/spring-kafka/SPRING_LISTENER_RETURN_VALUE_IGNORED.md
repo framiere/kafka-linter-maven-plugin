@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: annotation + bytecode
 **Tagline**: A non-void listener with no @SendTo is a return statement nobody reads.
 
 ## TL;DR

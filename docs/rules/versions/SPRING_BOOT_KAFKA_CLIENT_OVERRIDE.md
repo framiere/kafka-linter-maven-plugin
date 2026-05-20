@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: pom-dependency + pom-property
 **Tagline**: Boot picks the kafka-clients spring-kafka was tested against; pinning your own is signing a private contract.
 
 ## TL;DR

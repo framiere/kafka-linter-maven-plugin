@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: The broker only remembers your last 5 sequences. Sixth one rewrites history.
 
 ## TL;DR
@@ -53,6 +53,13 @@ If you need strict per-partition ordering without idempotence, set `max.in.fligh
 - Config: key `max.in.flight.requests.per.connection` integer literal greater than 5.
 - Bytecode: `Properties.put("max.in.flight.requests.per.connection", <int or string>)` where the value resolves to a constant > 5. HIGH confidence.
 - If value is non-constant (read from env), MEDIUM and recommend a manifest-level audit.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Dropping `max.in.flight` from a high value back to 5 changes throughput and ordering shape in ways that the team may have implicitly come to depend on.
+> - Why was the value raised above 5 in the first place? If "for throughput", measure first: with idempotence-induced batching, in-flight=5 is usually within single-digit-percent of in-flight=10. The current setting may be cargo-cult.
+> - If `enable.idempotence` was left implicit, KAFKA-13673 means idempotence has been silently *off* — which means ordering during retries was already broken. Re-enabling idempotence will surface latent ordering assumptions in downstream consumers. Are there any?
+> - librdkafka clients in the same project (non-JVM polyglot) clamp `max.in.flight` to 5 silently when idempotence is on — the Java fix won't visibly change anything for them. Confirm you're not chasing a Java-only ghost.
 
 ## References
 

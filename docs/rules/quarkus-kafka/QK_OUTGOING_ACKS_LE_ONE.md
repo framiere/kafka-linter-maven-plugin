@@ -1,6 +1,6 @@
 # QK_OUTGOING_ACKS_LE_ONE
 
-**Severity**: WARNING
+**Severity**: ERROR for acks=0, WARNING for acks=1
 **Confidence**: HIGH
 **Detection**: config-file
 **Tagline**: acks=1 trusts one broker. acks=0 trusts nothing.
@@ -50,6 +50,13 @@ mp.messaging.outgoing.orders.enable.idempotence=true
 
 - Config: `mp.messaging.outgoing.<channel>.acks` set to `0` or `1`. Also flag absence in production profiles (relies on default `1`).
 - Confidence: HIGH for `0`, MEDIUM for `1` (default-related, operator may not realize).
+
+## Consult a friend?
+
+> 🤝 **Slow down.** SmallRye's `acks=1` default means most Quarkus apps that "just work" today have been quietly under-durable since v1. Flipping to `acks=all` is correct, but the *broker side* has to be ready or you've just changed the failure mode, not the durability.
+> - For each channel: what is `min.insync.replicas` on the target topic? `acks=all` with `min.insync.replicas=1` is still single-leader durability. Confirm the topic config, not just the cluster default.
+> - During a rolling broker restart, partitions with `min.insync.replicas=2` and a temporarily-shrunk ISR will reject writes with `NotEnoughReplicasException`. Has Quarkus' default `request.timeout.ms` been tuned, or will the producer surface failures during routine cluster maintenance?
+> - SmallRye's `enable.idempotence` default also differs from Apache Kafka's — explicitly set both `acks=all` *and* `enable.idempotence=true` rather than relying on either default. Two visible lines beats two invisible mismatches.
 
 ## References
 

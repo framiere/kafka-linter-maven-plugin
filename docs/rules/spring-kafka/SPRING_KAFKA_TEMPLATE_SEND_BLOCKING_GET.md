@@ -68,6 +68,13 @@ If you really need synchronous behavior across many sends, batch them and wait o
 - Bounded `get(long, TimeUnit)` may also be flagged with INFO severity if you want to encourage callback usage; or suppressed entirely.
 - Confidence: HIGH for the no-arg pattern; MEDIUM for `join()`.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Removing `.get()` is the right move, but if the caller was *relying* on the synchronous behavior to gate downstream work (e.g., "publish event, then commit the DB row"), switching to `whenComplete` silently changes the ordering contract.
+> - What did the code do *after* `.send().get()`? If the next line writes to a database or returns an HTTP 200 to the user, the send is now in flight when the response is sent — failure handling changes from "throws in-line" to "callback on another thread". Confirm that's acceptable.
+> - Inside a `@Transactional` method, the blocking `.get()` may have been the *only* thing forcing the send to complete before commit. With `whenComplete`, the transaction commits while the send is still in flight — if the producer is non-transactional, you've reintroduced the DB-committed-Kafka-failed window from `SPRING_TRANSACTIONAL_WITHOUT_KTM`. Are the two rules in scope together?
+> - For genuinely synchronous needs (request-scoped audit, end-of-batch flush), keep `.get(timeout, TimeUnit)` with a *short* timeout — not `.get()`. Pick a number tied to your HTTP SLA, not `delivery.timeout.ms`.
+
 ## References
 
 - Spring Kafka — `KafkaTemplate` sync usage: https://docs.spring.io/spring-kafka/reference/kafka/sending-messages.html

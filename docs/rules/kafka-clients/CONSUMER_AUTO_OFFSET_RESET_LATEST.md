@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: auto.offset.reset=latest is "skip the backlog you didn't know you had."
 
 ## TL;DR

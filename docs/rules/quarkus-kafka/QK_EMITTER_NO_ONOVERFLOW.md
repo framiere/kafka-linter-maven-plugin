@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: bytecode + annotation
+**Detection**: annotation + bytecode
 **Tagline**: 256 messages is not your back-pressure plan.
 
 ## TL;DR

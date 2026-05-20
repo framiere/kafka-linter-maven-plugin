@@ -1,5 +1,6 @@
 package io.conductor.kafkalinter;
 
+import io.conductor.kafkalinter.report.Reporter;
 import io.conductor.kafkalinter.rules.ConsumerAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.ConsumerCommitPerRecordRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
@@ -8,8 +9,29 @@ import io.conductor.kafkalinter.rules.ProducerInLoopRule;
 import io.conductor.kafkalinter.rules.ProducerNoCompressionRule;
 import io.conductor.kafkalinter.rules.ProducerSendBlockingGetRule;
 import io.conductor.kafkalinter.rules.ProducerSendNoCallbackRule;
+import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
+import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
+import io.conductor.kafkalinter.rules.clients.KafkaClientTypoGroupIdRule;
+import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
+import io.conductor.kafkalinter.rules.clients.ProducerTxnIdWithoutIdempotenceRule;
+import io.conductor.kafkalinter.rules.config.ConfigKeyValueRule;
+import io.conductor.kafkalinter.rules.config.MethodCallRule;
+import io.conductor.kafkalinter.rules.observability.JacksonDefaultTypingRule;
+import io.conductor.kafkalinter.rules.observability.SchemaRegistryUrlMissingRule;
+import io.conductor.kafkalinter.rules.quarkus.QkBlockingMissingOnIncomingRule;
+import io.conductor.kafkalinter.rules.quarkus.QkDevservicesInProdRule;
+import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDelegatesRule;
+import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
+import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
+import io.conductor.kafkalinter.rules.version.KafkaClientsCveJndiLdapRule;
+import io.conductor.kafkalinter.rules.version.KafkaClientsCveSaslOAuthRule;
+import io.conductor.kafkalinter.rules.version.KafkaClientsEolRule;
+import io.conductor.kafkalinter.rules.version.QuarkusKafkaExtensionRenamedRule;
+import io.conductor.kafkalinter.rules.version.SpringKafkaBootMismatchRule;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
+import io.conductor.kafkalinter.scanner.ProjectContext;
+import io.conductor.kafkalinter.scanner.ProjectRuleRunner;
 import io.conductor.kafkalinter.scanner.ProjectScanner;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoFailureException;
@@ -21,13 +43,14 @@ import org.apache.maven.project.MavenProject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Mojo(name = "check", defaultPhase = LifecyclePhase.VERIFY, threadSafe = true)
+@Mojo(name = "check", defaultPhase = LifecyclePhase.VERIFY, threadSafe = true,
+      requiresDependencyResolution = org.apache.maven.plugins.annotations.ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class KafkaLinterMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
@@ -44,10 +67,14 @@ public class KafkaLinterMojo extends AbstractMojo {
 
     /**
      * Per-rule severity overrides. Keys are RuleId names (e.g. PRODUCER_IN_LOOP),
-     * values are ERROR, WARNING, or OFF.
+     * values are ERROR, WARNING, INFO, or OFF.
      */
     @Parameter
     private Map<String, String> severities = new HashMap<>();
+
+    /** Reporter flavor: "simple" (default) or "verbose". */
+    @Parameter(property = "kafka-linter.reporter", defaultValue = "simple")
+    private String reporter;
 
     @Override
     public void execute() throws MojoFailureException {
@@ -56,23 +83,28 @@ public class KafkaLinterMojo extends AbstractMojo {
             return;
         }
 
-        Path classesDir = Paths.get(classesDirectory);
-        if (!classesDir.toFile().isDirectory()) {
-            getLog().info("kafka-linter: no classes directory at " + classesDir + " — nothing to scan.");
-            return;
-        }
-
         Map<RuleId, Severity> resolved = resolveSeverities();
-        List<Rule> rules = buildRules(resolved);
+        List<Violation> violations = new ArrayList<>();
 
-        List<Violation> violations;
-        try {
-            violations = new ProjectScanner(rules).scanDirectory(classesDir);
-        } catch (Exception e) {
-            throw new MojoFailureException("kafka-linter: failed to scan " + classesDir, e);
+        Path classesDir = Paths.get(classesDirectory);
+        if (classesDir.toFile().isDirectory()) {
+            try {
+                violations.addAll(new ProjectScanner(buildRules(resolved)).scanDirectory(classesDir));
+            } catch (Exception e) {
+                throw new MojoFailureException("kafka-linter: failed to scan " + classesDir, e);
+            }
+        } else {
+            getLog().info("kafka-linter: no classes directory at " + classesDir + " — skipping bytecode scan.");
         }
 
-        report(violations);
+        try {
+            ProjectContext pctx = new ProjectContext(project);
+            violations.addAll(new ProjectRuleRunner(buildProjectRules(resolved)).run(pctx));
+        } catch (Exception e) {
+            getLog().warn("kafka-linter: project-scoped rules failed: " + e.getMessage());
+        }
+
+        Reporter.of(reporter).report(violations, getLog());
 
         long errors = violations.stream().filter(v -> v.severity() == Severity.ERROR).count();
         if (errors > 0) {
@@ -81,7 +113,7 @@ public class KafkaLinterMojo extends AbstractMojo {
     }
 
     private Map<RuleId, Severity> resolveSeverities() {
-        Map<RuleId, Severity> map = new EnumMap<>(RuleId.class);
+        Map<RuleId, Severity> map = new LinkedHashMap<>();
         for (RuleId r : RuleId.values()) {
             map.put(r, r.defaultSeverity());
         }
@@ -99,53 +131,96 @@ public class KafkaLinterMojo extends AbstractMojo {
 
     private List<Rule> buildRules(Map<RuleId, Severity> sev) {
         List<Rule> rules = new ArrayList<>();
-        if (sev.get(RuleId.PRODUCER_IN_LOOP) != Severity.OFF) {
-            rules.add(new ProducerInLoopRule(RuleId.PRODUCER_IN_LOOP, sev.get(RuleId.PRODUCER_IN_LOOP),
-                    Set.of(KafkaTypes.KAFKA_PRODUCER)));
+
+        // ── kafka-clients ──────────────────────────────────────────────────────
+        addIfEnabled(rules, sev, RuleId.PRODUCER_IN_LOOP,
+                s -> new ProducerInLoopRule(RuleId.PRODUCER_IN_LOOP, s, Set.of(KafkaTypes.KAFKA_PRODUCER)));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_IN_LOOP,
+                s -> new ProducerInLoopRule(RuleId.CONSUMER_IN_LOOP, s, Set.of(KafkaTypes.KAFKA_CONSUMER)));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_NO_COMPRESSION, ProducerNoCompressionRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BLOCKING_GET, ProducerSendBlockingGetRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NO_CALLBACK, ProducerSendNoCallbackRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_LOOP, ProducerFlushInLoopRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);
+
+        addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
+                "acks=0 — producer does not wait for broker acknowledgement. Records may be silently lost on any broker hiccup."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE, s, KafkaTypes.ALLOW_AUTO_CREATE_TOPICS_KEY, "true",
+                "allow.auto.create.topics=true — a typo can permanently create a one-partition, default-RF topic."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE, ProducerTxnIdWithoutIdempotenceRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, ProducerMaxInFlightTooHighRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_ASSIGN_AND_SUBSCRIBE, ConsumerAssignAndSubscribeRule::new);
+        addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_TYPO_GROUP_ID, KafkaClientTypoGroupIdRule::new);
+
+        // ── kafka-streams ──────────────────────────────────────────────────────
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPLICATION_FACTOR_ONE, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_REPLICATION_FACTOR_ONE, s, KafkaTypes.STREAMS_REPLICATION_FACTOR_KEY, "1",
+                "Streams replication.factor=1 — internal changelog/repartition topics become single-points-of-failure."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STATE_DIR_TMP, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_STATE_DIR_TMP, s, KafkaTypes.STREAMS_STATE_DIR_KEY,
+                v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp")),
+                "state.dir={value} — Streams state on ephemeral /tmp; restart triggers full changelog rebuild."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_EOS_V1_DEPRECATED, s -> ConfigKeyValueRule.literalAny(
+                RuleId.STREAMS_EOS_V1_DEPRECATED, s, KafkaTypes.STREAMS_PROCESSING_GUARANTEE_KEY,
+                KafkaTypes.STREAMS_EOS_V1_VALUES,
+                "processing.guarantee={value} — EOS-v1 was deprecated by KIP-732 and removed in Kafka 4.0. Use exactly_once_v2."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_CLEANUP_IN_PROD, s -> new MethodCallRule(
+                RuleId.STREAMS_CLEANUP_IN_PROD, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("cleanUp"),
+                "KafkaStreams.cleanUp() — wipes local state. Acceptable in tests; in prod it forces full changelog rebuild."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
+                "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
+
+        // ── spring-kafka ───────────────────────────────────────────────────────
+        addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
+        addIfEnabled(rules, sev, RuleId.SPRING_ERROR_HANDLING_DESERIALIZER_NO_DELEGATES,
+                SpringErrorHandlingDeserializerNoDelegatesRule::new);
+
+        // ── quarkus-kafka ──────────────────────────────────────────────────────
+        addIfEnabled(rules, sev, RuleId.QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER,
+                QkBlockingMissingOnIncomingRule::new);
+
+        // ── observability/security ─────────────────────────────────────────────
+        addIfEnabled(rules, sev, RuleId.DESER_JSON_TYPE_INFO_NO_ALLOWLIST, JacksonDefaultTypingRule::new);
+        addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_URL_MISSING, SchemaRegistryUrlMissingRule::new);
+
+        return rules;
+    }
+
+    private List<ProjectScopedRule> buildProjectRules(Map<RuleId, Severity> sev) {
+        List<ProjectScopedRule> rules = new ArrayList<>();
+        if (sev.get(RuleId.KAFKA_CLIENTS_EOL) != Severity.OFF) {
+            rules.add(new KafkaClientsEolRule(sev.get(RuleId.KAFKA_CLIENTS_EOL)));
         }
-        if (sev.get(RuleId.CONSUMER_IN_LOOP) != Severity.OFF) {
-            rules.add(new ProducerInLoopRule(RuleId.CONSUMER_IN_LOOP, sev.get(RuleId.CONSUMER_IN_LOOP),
-                    Set.of(KafkaTypes.KAFKA_CONSUMER)));
+        if (sev.get(RuleId.KAFKA_CLIENTS_CVE_JNDI_LDAP) != Severity.OFF) {
+            rules.add(new KafkaClientsCveJndiLdapRule(sev.get(RuleId.KAFKA_CLIENTS_CVE_JNDI_LDAP)));
         }
-        if (sev.get(RuleId.PRODUCER_NO_COMPRESSION) != Severity.OFF) {
-            rules.add(new ProducerNoCompressionRule(sev.get(RuleId.PRODUCER_NO_COMPRESSION)));
+        if (sev.get(RuleId.KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER) != Severity.OFF) {
+            rules.add(new KafkaClientsCveSaslOAuthRule(sev.get(RuleId.KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER)));
         }
-        if (sev.get(RuleId.PRODUCER_SEND_BLOCKING_GET) != Severity.OFF) {
-            rules.add(new ProducerSendBlockingGetRule(sev.get(RuleId.PRODUCER_SEND_BLOCKING_GET)));
+        if (sev.get(RuleId.JAVA_VERSION_TOO_LOW) != Severity.OFF) {
+            rules.add(new JavaVersionTooLowRule(sev.get(RuleId.JAVA_VERSION_TOO_LOW)));
         }
-        if (sev.get(RuleId.PRODUCER_SEND_NO_CALLBACK) != Severity.OFF) {
-            rules.add(new ProducerSendNoCallbackRule(sev.get(RuleId.PRODUCER_SEND_NO_CALLBACK)));
+        if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
+            rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
         }
-        if (sev.get(RuleId.PRODUCER_FLUSH_IN_LOOP) != Severity.OFF) {
-            rules.add(new ProducerFlushInLoopRule(sev.get(RuleId.PRODUCER_FLUSH_IN_LOOP)));
+        if (sev.get(RuleId.SPRING_KAFKA_BOOT_MISMATCH) != Severity.OFF) {
+            rules.add(new SpringKafkaBootMismatchRule(sev.get(RuleId.SPRING_KAFKA_BOOT_MISMATCH)));
         }
-        if (sev.get(RuleId.CONSUMER_AUTO_COMMIT_TRUE) != Severity.OFF) {
-            rules.add(new ConsumerAutoCommitTrueRule(sev.get(RuleId.CONSUMER_AUTO_COMMIT_TRUE)));
-        }
-        if (sev.get(RuleId.CONSUMER_COMMIT_PER_RECORD) != Severity.OFF) {
-            rules.add(new ConsumerCommitPerRecordRule(sev.get(RuleId.CONSUMER_COMMIT_PER_RECORD)));
-        }
-        if (sev.get(RuleId.CONSUMER_POLL_ZERO) != Severity.OFF) {
-            rules.add(new ConsumerPollZeroRule(sev.get(RuleId.CONSUMER_POLL_ZERO)));
+        if (sev.get(RuleId.QK_DEVSERVICES_IN_PROD) != Severity.OFF) {
+            rules.add(new QkDevservicesInProdRule(sev.get(RuleId.QK_DEVSERVICES_IN_PROD)));
         }
         return rules;
     }
 
-    private void report(List<Violation> violations) {
-        if (violations.isEmpty()) {
-            getLog().info("kafka-linter: 0 violations.");
-            return;
-        }
-        long errors = violations.stream().filter(v -> v.severity() == Severity.ERROR).count();
-        long warnings = violations.stream().filter(v -> v.severity() == Severity.WARNING).count();
-        getLog().info("kafka-linter: " + violations.size() + " violation(s) — " + errors + " error, " + warnings + " warning.");
-        for (Violation v : violations) {
-            String line = v.format();
-            if (v.severity() == Severity.ERROR) {
-                getLog().error(line);
-            } else {
-                getLog().warn(line);
-            }
-        }
+    private static void addIfEnabled(List<Rule> rules, Map<RuleId, Severity> sev, RuleId id,
+                                     java.util.function.Function<Severity, Rule> ctor) {
+        Severity s = sev.get(id);
+        if (s == null || s == Severity.OFF) return;
+        rules.add(ctor.apply(s));
     }
 }

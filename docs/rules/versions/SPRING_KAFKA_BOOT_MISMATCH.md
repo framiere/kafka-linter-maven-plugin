@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: pom-dependency + pom-property
 **Tagline**: Mixing spring-kafka and Spring Boot major versions is a slow-motion classpath collision.
 
 ## TL;DR

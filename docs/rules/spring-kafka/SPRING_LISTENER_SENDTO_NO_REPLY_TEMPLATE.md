@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: @SendTo without a reply template sends your replies into the void.
 
 ## TL;DR

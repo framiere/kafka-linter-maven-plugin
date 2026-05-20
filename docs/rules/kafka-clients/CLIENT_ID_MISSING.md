@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: No client.id is a faceless caller — broker logs see "producer-1" and so do you.
 
 ## TL;DR

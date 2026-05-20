@@ -1,7 +1,7 @@
 # SPRING_BOOT_PRODUCER_ACKS_NOT_ALL
 
-**Severity**: WARNING
-**Confidence**: MEDIUM
+**Severity**: ERROR for acks=0, WARNING for acks=1
+**Confidence**: HIGH
 **Detection**: config-file
 **Tagline**: `spring.kafka.producer.acks=1` ships durability away one record at a time.
 
@@ -58,6 +58,13 @@ If latency matters more than durability for a specific topic (e.g., metrics inge
 - Also flag the property in `spring.kafka.producer.properties[acks]` form.
 - Cross-check against `spring.kafka.producer.transaction-id-prefix` — if a transaction prefix is set and `acks != all`, escalate to ERROR (will fail at start).
 - Confidence: MEDIUM standalone; HIGH when paired with transactions.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Flipping `spring.kafka.producer.acks=all` is correct, but it also forces the application-wide default — and if there's a `transaction-id-prefix` set or `enable.idempotence=true` anywhere, the producer was *already* using `acks=all` internally; the visible config was lying.
+> - For every topic this Spring app produces to: what is the broker-side `min.insync.replicas`? `acks=all` against `min.insync.replicas=1` is just `acks=1` with extra steps.
+> - Is there a `transaction-id-prefix` set? If yes, the producer rejected `acks=1` already (`ConfigException`) — which means the application is currently broken, or there's a second `KafkaTemplate` with a different `ProducerFactory` somewhere. Find it before changing the default.
+> - If the team wants `acks=1` for a specific telemetry topic, build a dedicated `KafkaTemplate` bean rather than weakening the application-wide property — keep the audit trail of "we explicitly traded durability here".
 
 ## References
 

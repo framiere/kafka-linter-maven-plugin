@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: bytecode + annotation
+**Detection**: annotation + bytecode
 **Tagline**: GraalVM doesn't read your mind — register that class.
 
 ## TL;DR

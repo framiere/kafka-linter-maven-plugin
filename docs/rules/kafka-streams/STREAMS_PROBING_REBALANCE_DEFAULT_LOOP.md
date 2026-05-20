@@ -1,7 +1,7 @@
 # STREAMS_PROBING_REBALANCE_DEFAULT_LOOP
 **Severity**: WARNING
 **Confidence**: CONTEXT
-**Detection**: combination (config-file + topology analysis)
+**Detection**: config-file + dsl-chain
 **Tagline**: Stateful app with standbys that never catch up → 10-minute rebalance loop forever.
 **Source**: Confluent agent-skills — kafka-streams-programming/references/debugging.md § 10-Minute Rebalance Loop (Probing Rebalance).
 

@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: bytecode + config-file
 **Tagline**: A producer with default batching settings is one-record-at-a-time pretending to be a stream.
 
 ## TL;DR

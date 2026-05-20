@@ -55,6 +55,13 @@ If you need lower end-to-end latency, tune `cache.max.bytes` smaller or use `Sup
 - Bytecode: `Properties.put(...COMMIT_INTERVAL_MS_CONFIG..., LDC <value>)` where value is statically resolvable to < 100.
 - Confidence: MEDIUM. Threshold tunable.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Raising `commit.interval.ms` back to defaults is the right move, but the team probably set it low to fix a *real* latency problem — bumping it without addressing the underlying cause just hides the symptom on the broker side.
+> - Why was the interval lowered? "Downstream wasn't seeing records fast enough" is usually a cache problem, not a commit problem — `cache.max.bytes` defaults to ~10MB per thread, and the cache only flushes on commit *or* on overflow. Lowering the cache (or using `Suppressed.untilWindowCloses(...)`) is the right knob.
+> - Under EOS, each commit is a transaction commit — broker load is `txn_rate × num_partitions`. Have you checked `__transaction_state` write rate after the bump? It should drop by orders of magnitude; if it doesn't, something else is committing more than it should.
+> - The cache benefits (`STREAMS_CACHE_DISABLED` rule) are only real with a sane commit interval. After fixing this, re-check that cache hit rate is non-trivial — if it's still near zero, the commit interval wasn't the only thing wrong.
+
 ## References
 
 - Streams config — commit.interval.ms: https://kafka.apache.org/documentation/streams/developer-guide/config-streams.html#commit-interval-ms

@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: bytecode + config-file
 **Tagline**: `client.id` is the difference between `producer-1` and `orders-svc-prod-pod-3` in broker logs.
 
 ## TL;DR

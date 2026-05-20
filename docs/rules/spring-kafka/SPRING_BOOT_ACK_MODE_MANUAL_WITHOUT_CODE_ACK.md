@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: MEDIUM
-**Detection**: combination
+**Detection**: annotation + bytecode + config-file
 **Tagline**: ack-mode=MANUAL plus no acknowledge() means no commits, ever.
 
 ## TL;DR

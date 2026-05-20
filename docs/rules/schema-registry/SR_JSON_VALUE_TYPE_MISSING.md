@@ -1,7 +1,7 @@
 # SR_JSON_VALUE_TYPE_MISSING
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination (bytecode + config-file)
+**Detection**: bytecode + config-file
 **Tagline**: Without `json.value.type`, your consumer gets `LinkedHashMap` and `getCustomerId()` throws `ClassCastException`.
 **Source**: Confluent agent-skills — kafka-streams-programming/references/schema-patterns.md § Critical: always set json.value.type, kafka-schema-registry/references/code-migration.md § Java JSON Schema consumer.
 

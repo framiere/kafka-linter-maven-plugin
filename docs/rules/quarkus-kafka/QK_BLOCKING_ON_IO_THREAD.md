@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: bytecode + annotation
+**Detection**: annotation + bytecode
 **Tagline**: @Blocking on the IO thread isn't reactive — it's surrender.
 
 ## TL;DR

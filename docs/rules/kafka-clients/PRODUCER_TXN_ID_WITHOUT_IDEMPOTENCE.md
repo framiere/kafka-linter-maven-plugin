@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: A transactional.id without idempotence is a transaction that isn't.
 
 ## TL;DR
@@ -61,6 +61,14 @@ try {
 
 - Config: presence of `transactional.id` paired with `enable.idempotence=false` in the same Properties source. HIGH.
 - Bytecode: `new KafkaProducer(props)` where `props.put("transactional.id", ...)` is reachable AND `initTransactions()` is never called on the resulting producer reference (intra-method or via field). HIGH for single-method scope, MEDIUM if the producer reference escapes.
+
+## Consult a friend?
+
+> 🤝 **Slow down.** Flipping `enable.idempotence=true` and adding `initTransactions()` is correct, but the operational shape of the producer changes — same `transactional.id` from two JVMs will fence one of them on the next epoch bump.
+> - Is your `transactional.id` derived from a stable per-instance identity (StatefulSet ordinal, pod name) — or are two replicas about to share it? Shared id + restart loop = `ProducerFencedException` ping-pong between pods.
+> - Every send path now needs to live inside `beginTransaction()` / `commitTransaction()` / `abortTransaction()` — does every error branch in the codebase abort, or do some silently leak an open transaction past `transaction.timeout.ms`?
+> - Downstream consumers reading from the produced topic: are they on `isolation.level=read_committed`? If not, they'll still see aborted records and the EOS guarantee is broken at the consumer boundary.
+> - Read KIP-98 (transactions) end-to-end before merging — the state machine is small but unforgiving.
 
 ## References
 

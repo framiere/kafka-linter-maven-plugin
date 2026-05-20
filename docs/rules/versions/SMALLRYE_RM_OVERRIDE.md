@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: pom-dependency
 **Tagline**: Quarkus 3 ships SmallRye Reactive Messaging 4 — pinning your own version breaks the build steps.
 
 ## TL;DR

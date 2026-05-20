@@ -1,8 +1,8 @@
 # STREAMS_NUM_THREADS_OVER_PARTITIONS
 
 **Severity**: WARNING
-**Confidence**: MEDIUM
-**Detection**: combination
+**Confidence**: CONTEXT
+**Detection**: annotation + config-file
 **Tagline**: Threads with nothing to do still cost you a heap.
 
 ## TL;DR

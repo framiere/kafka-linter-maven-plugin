@@ -1,7 +1,7 @@
 # SR_PROTOBUF_VALUE_TYPE_MISSING
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination (bytecode + config-file)
+**Detection**: bytecode + config-file
 **Tagline**: Without `specific.protobuf.value.type`, your consumer gets `DynamicMessage` instead of the generated class — every typed access goes through `getField()`.
 **Source**: Confluent agent-skills — kafka-streams-programming/references/schema-patterns.md § Protobuf serde configuration, kafka-schema-registry/references/code-migration.md § Java Protobuf consumer.
 

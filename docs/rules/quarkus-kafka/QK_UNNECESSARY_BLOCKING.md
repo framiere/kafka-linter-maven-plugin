@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: bytecode + annotation
+**Detection**: annotation + bytecode
 **Tagline**: @Blocking on pure compute is a free thread hop you pay for.
 
 ## TL;DR

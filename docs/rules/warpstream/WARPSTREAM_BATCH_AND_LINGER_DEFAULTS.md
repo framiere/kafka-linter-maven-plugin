@@ -84,6 +84,14 @@ For latency-sensitive workloads, reduce `linger.ms` to 10-25ms — but only if t
 - Flag with the specific knob that's misconfigured.
 - Confidence: CONTEXT — the rule is only relevant when WarpStream targeting is established.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Cranking `batch.size` and `linger.ms` is the right move on WarpStream, but the same config on a *non*-WarpStream cluster (dev environment using Apache Kafka, integration tests against a local broker, fallback to MSK during a WarpStream outage) is now a 100ms latency tax on every record for no benefit.
+> - Is the WarpStream targeting expressed in code/config, or is it implicit in `bootstrap.servers`? If a dev environment shares the same `application.properties` with a different broker URL, the tuned config follows. Use profile-scoped properties so the tune only applies when the target actually warrants it.
+> - `linger.ms=100` adds up to 100ms to the *first* record in each batch — for latency-sensitive paths (request/response, user-facing acks) that's a real SLO impact. Confirm which topics are latency-critical and consider per-topic `KafkaTemplate` beans for those.
+> - The math on cost only holds at scale. For low-volume topics (control plane, audit), the larger `buffer.memory` is just RAM that sits empty. Right-size per app, not per cluster.
+> - On the broker side, `max.request.size=64000000` (64 MB) only works if the broker / Agent also accepts that. Check WarpStream Agent's `WARPSTREAM_MAX_MSG_SIZE_BYTES` and the topic's `max.message.bytes` before deploying the producer change.
+
 ## References
 
 - Confluent agent-skills — kafka-streams-programming/references/warpstream-optimization.md § Java Client Overrides, § Latency Expectations and Tuning, § Quick Checklist

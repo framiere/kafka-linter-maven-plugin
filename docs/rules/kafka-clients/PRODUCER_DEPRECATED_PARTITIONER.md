@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: both
+**Detection**: bytecode + config-file
 **Tagline**: DefaultPartitioner is older than your phone. Stop naming it.
 
 ## TL;DR

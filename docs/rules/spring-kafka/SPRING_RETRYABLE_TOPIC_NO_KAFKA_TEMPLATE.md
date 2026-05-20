@@ -2,7 +2,7 @@
 
 **Severity**: ERROR
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: annotation + bytecode
 **Tagline**: @RetryableTopic without a template bean fails at startup — every time.
 
 ## TL;DR

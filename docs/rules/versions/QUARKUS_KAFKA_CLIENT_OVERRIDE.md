@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: pom-dependency
 **Tagline**: The Quarkus BOM pins kafka-clients; overriding it can derail native compilation.
 
 ## TL;DR

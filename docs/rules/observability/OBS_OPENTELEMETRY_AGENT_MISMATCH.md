@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: MEDIUM
-**Detection**: pom-dependency + config-file
+**Detection**: config-file + pom-dependency
 **Tagline**: Declaring `opentelemetry-api` without the agent *or* the Kafka instrumentation library is owning the boxing gloves without ever stepping in the ring.
 
 ## TL;DR

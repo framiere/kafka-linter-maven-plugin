@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: CONTEXT
-**Detection**: combination
+**Detection**: bytecode + config-file
 **Tagline**: Interceptors are how the trace context survives the partition boundary.
 
 ## TL;DR

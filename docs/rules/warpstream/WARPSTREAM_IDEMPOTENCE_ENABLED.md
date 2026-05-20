@@ -63,6 +63,14 @@ If EOS is a hard requirement (e.g., the downstream sink doesn't tolerate duplica
   - `processing.guarantee=exactly_once_v2` (or `exactly_once`)
 - Confidence: CONTEXT — print-only by default; bump to WARNING if a WarpStream-target signal is explicit in the project config.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Turning off idempotence on WarpStream is a *throughput* fix that breaks a *correctness* guarantee — and the team may have enabled idempotence "for safety" without realising they were paying 10-20x for it.
+> - Why is idempotence on? If the answer is "the Kafka 3.0 default" or "best practice", the team is buying a guarantee they don't need against a backend (object storage) where the cost is real. Confirm the producer's retries actually generate duplicates that matter end-to-end — if downstream is idempotent or the consumer dedupes, you're paying for nothing.
+> - If EOS is a hard requirement (audit trail, financial ledger, downstream sink that doesn't tolerate duplicates), keep idempotence on and budget for the throughput cost. Don't disable it to make a dashboard look better.
+> - Does this app share its `bootstrap.servers` with another that *does* need EOS? The WarpStream-tuned client config is per-app, not per-cluster — confirm no other Streams app in the same repo is implicitly relying on the global default.
+> - WarpStream Agents reassign partition ownership frequently, which surfaces as `KAFKA_STORAGE_ERROR` retries. With idempotence on you get more of those (slower); with it off you get duplicates on retry. Pick which failure mode you're prepared to monitor.
+
 ## References
 
 - Confluent agent-skills — kafka-streams-programming/references/warpstream-optimization.md § Idempotent Producers and EOS, § Quick Checklist

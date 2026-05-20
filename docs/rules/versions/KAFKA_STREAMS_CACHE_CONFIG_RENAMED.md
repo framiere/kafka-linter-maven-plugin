@@ -2,7 +2,7 @@
 
 **Severity**: WARNING
 **Confidence**: HIGH
-**Detection**: combination
+**Detection**: bytecode + config-file + pom-dependency
 **Tagline**: cache.max.bytes.buffering was renamed in Streams 3.4 — using the old name silently disables your cache.
 
 ## TL;DR

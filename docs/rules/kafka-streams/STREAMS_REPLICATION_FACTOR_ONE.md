@@ -59,6 +59,13 @@ Also configure `min.insync.replicas=2` at the broker / topic level for changelog
 - Bytecode: `Properties.put` / `Map.put` with key matching `replication.factor` or `StreamsConfig.REPLICATION_FACTOR_CONFIG` and value `LDC 1` / `ICONST_1` / `LDC "1"`.
 - Confidence: HIGH.
 
+## Consult a friend?
+
+> 🤝 **Slow down.** Changing `replication.factor` from 1 to 3 only takes effect on *newly created* internal topics. The existing changelog and repartition topics keep their RF=1 until you delete or alter them — and you can't ALTER through Streams.
+> - What's the current state of existing changelog topics? Use `kafka-topics.sh --describe` to confirm. If they're already at RF=1, the application config change does nothing until you `kafka-reassign-partitions` them by hand, or wipe them and restore from upstream.
+> - Wiping a changelog topic means a *full* state restore on next startup — for a multi-GB RocksDB store, that can be hours of restore-only time. Is that downtime acceptable? Can it run during a planned maintenance window?
+> - The fix usually pairs with `min.insync.replicas=2` on the topic and `acks=all` on the internal producer — EOS turns these on, but ALOS doesn't. Confirm which mode you're in and whether the broker-side topic config matches.
+
 ## References
 
 - Streams config — replication.factor: https://kafka.apache.org/documentation/streams/developer-guide/config-streams.html#replication-factor

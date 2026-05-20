@@ -1,34 +1,34 @@
 # version & dependency rules
 
-Build-time anti-pattern checks for the **`pom.xml`** of any Kafka-touching project: client/library version EOL, CVE exposure, framework BOM mismatches, transitive dependency hygiene. These rules read the Maven object model (`MavenProject`) — no bytecode involved.
+Build-time anti-pattern checks for the **`pom.xml`** of any Kafka-touching project: client / library version EOL, CVE exposure, framework BOM mismatches, transitive dependency hygiene. These rules read the Maven object model (`MavenProject`) — no bytecode involved.
 
-The checks fall into five families:
+The checks fall into six families:
 
-1. **Kafka client and Streams versions** — EOL, CVEs, KIP-679 era defaults, deprecated config keys.
-2. **Spring Boot / spring-kafka** — Boot EOL, kafka-clients override, spring-kafka×Boot major mismatch.
-3. **Quarkus** — Quarkus EOL, BOM-override traps, missing companion extensions, renamed artifacts.
-4. **Serdes & schema registries** — Confluent Platform line, Apicurio v1 vs v2, mixed-vendor clients.
-5. **Build hygiene** — JDK level, surefire/failsafe version, slf4j binding conflicts, test artifacts in production scope, snapshot/milestone dependencies, multi-module drift.
+1. **Kafka client and Streams versions** — EOL, KIP-679 era defaults, deprecated config keys.
+2. **CVE exposure** — Kafka clients lines with known unpatched vulnerabilities.
+3. **Spring Boot / spring-kafka** — Boot EOL, kafka-clients override, spring-kafka × Boot major mismatch, duplicate declarations.
+4. **Quarkus** — Quarkus EOL, BOM-override traps, missing companion extensions, renamed artifacts.
+5. **Serdes & schema registries** — Confluent Platform line, Apicurio v1 vs v2, mixed-vendor clients.
+6. **Build hygiene** — JDK level, test artifacts in production scope, multi-module drift.
 
-Severity:
-- **ERROR** — almost always a bug. Build won't run, will hard-fail at startup, exposes a remotely-exploitable CVE, or commits to an EOL line whose security path is closed.
-- **WARNING** — likely a bug. Legitimate exceptions exist; commercial support contracts, deliberate broker pinning, library-internal compatibility shims.
+## Legend
 
-Confidence:
-- **HIGH** — the linter reads the resolved version directly; the EOL table or CVE range is unambiguous.
-- **MEDIUM** — depends on a cross-module assumption or on inferring intent from coupled dependencies.
-- **CONTEXT** — depends on deployment context (broker version, commercial support contract) the linter cannot see.
+**Severity**
+- `ERROR` — almost always a bug. Build won't run, will hard-fail at startup, exposes a remotely-exploitable CVE, or commits to an EOL line whose security path is closed.
+- `WARNING` — likely a bug. Legitimate exceptions exist; commercial support contracts, deliberate broker pinning, library-internal compatibility shims.
 
-Detection:
-- **pom-dependency** — `project.getArtifacts()` and `project.getDependencies()`.
-- **pom-property** — `project.getProperties()`, plugin configurations under `project.getBuild().getPlugins()`.
-- **combination** — multiple signals must agree (e.g. Spring Boot major × spring-kafka major).
+**Confidence**
+- `HIGH` — the linter reads the resolved version directly; the EOL table or CVE range is unambiguous.
+- `MEDIUM` — depends on a cross-module assumption or on inferring intent from coupled dependencies.
+- `CONTEXT` — depends on deployment context (broker version, commercial support contract) the linter cannot see.
 
-## Catalog
+**Detection** — `pom-dependency`, `pom-property`, or a combination (` + `, alphabetical).
+
+## Catalog (28)
 
 ### Apache Kafka client & Streams
 
-| Rule ID | Severity | Conf. | Detection | Tagline |
+| Rule | Severity | Confidence | Detection | Tagline |
 |---|---|---|---|---|
 | [KAFKA_CLIENTS_EOL](./KAFKA_CLIENTS_EOL.md) | ERROR | HIGH | pom-dependency | A Kafka client older than the bugs you'd file against it. |
 | [KAFKA_CLIENTS_PRE_KIP679](./KAFKA_CLIENTS_PRE_KIP679.md) | WARNING | HIGH | pom-dependency | A client from before durable defaults — your producer is fire-and-forget unless you said otherwise. |
@@ -36,56 +36,53 @@ Detection:
 | [KAFKA_SCALA_BUNDLE_IMPORTED](./KAFKA_SCALA_BUNDLE_IMPORTED.md) | ERROR | HIGH | pom-dependency | You wanted a Kafka client. You pulled in Scala, the broker, and a small star system. |
 | [KAFKA_CLIENT_TYPO_GROUP](./KAFKA_CLIENT_TYPO_GROUP.md) | ERROR | HIGH | pom-dependency | There is no io.confluent:kafka-clients. There never has been. |
 | [KAFKA_CLIENTS_SNAPSHOT](./KAFKA_CLIENTS_SNAPSHOT.md) | WARNING | HIGH | pom-dependency | A SNAPSHOT or milestone client in production is a contract you didn't sign. |
-| [KAFKA_STREAMS_EOS_V1_DEPRECATED](./KAFKA_STREAMS_EOS_V1_DEPRECATED.md) | WARNING | HIGH | combination | exactly_once is a 2018 setting on a 2026 client — use exactly_once_v2. |
-| [KAFKA_STREAMS_CACHE_CONFIG_RENAMED](./KAFKA_STREAMS_CACHE_CONFIG_RENAMED.md) | WARNING | HIGH | combination | cache.max.bytes.buffering was renamed in Streams 3.4 — using the old name silently disables your cache. |
+| [KAFKA_STREAMS_CACHE_CONFIG_RENAMED](./KAFKA_STREAMS_CACHE_CONFIG_RENAMED.md) | WARNING | HIGH | bytecode + config-file + pom-dependency | cache.max.bytes.buffering was renamed in Streams 3.4 — using the old name silently disables your cache. |
 
 ### Apache Kafka CVE exposure
 
-| Rule ID | CVE | Severity | Fixed in |
-|---|---|---|---|
-| [KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER](./KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER.md) | CVE-2025-27817 | ERROR | 3.9.1 / 4.0.0 |
-| [KAFKA_CLIENTS_CVE_JNDI_LDAP](./KAFKA_CLIENTS_CVE_JNDI_LDAP.md) | CVE-2023-25194, 27818, 27819 | ERROR | 3.4.0 / 3.9.1 |
-| [KAFKA_CLIENTS_CVE_CONFIG_PROVIDER](./KAFKA_CLIENTS_CVE_CONFIG_PROVIDER.md) | CVE-2024-31141 | ERROR | 3.6.3 / 3.7.1 |
-| [KAFKA_CLIENTS_CVE_BUFFER_POOL](./KAFKA_CLIENTS_CVE_BUFFER_POOL.md) | CVE-2026-35554 | ERROR | 3.9.2 / 4.0.2 |
-| [KAFKA_CLIENTS_CVE_SCRAM_REPLAY](./KAFKA_CLIENTS_CVE_SCRAM_REPLAY.md) | CVE-2024-56128 | WARNING | 3.9.1 |
+| Rule | Severity | Confidence | Detection | Tagline |
+|---|---|---|---|---|
+| [KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER](./KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER.md) | ERROR | HIGH | pom-dependency | CVE-2025-27817 — your kafka-clients can be told to read any file on disk. |
+| [KAFKA_CLIENTS_CVE_JNDI_LDAP](./KAFKA_CLIENTS_CVE_JNDI_LDAP.md) | ERROR | HIGH | pom-dependency | CVE-2023-25194 / CVE-2025-27818 — the Kafka spiritual successor to Log4Shell. |
+| [KAFKA_CLIENTS_CVE_CONFIG_PROVIDER](./KAFKA_CLIENTS_CVE_CONFIG_PROVIDER.md) | ERROR | HIGH | pom-dependency | CVE-2024-31141 — ConfigProvider was happy to read whatever file you named. |
+| [KAFKA_CLIENTS_CVE_BUFFER_POOL](./KAFKA_CLIENTS_CVE_BUFFER_POOL.md) | ERROR | HIGH | pom-dependency | CVE-2026-35554 — your producer ships messages to the wrong topic and never tells you. |
+| [KAFKA_CLIENTS_CVE_SCRAM_REPLAY](./KAFKA_CLIENTS_CVE_SCRAM_REPLAY.md) | WARNING | HIGH | pom-dependency | CVE-2024-56128 — SCRAM without TLS is a replay attack waiting to happen. |
 
 ### Spring Boot / spring-kafka
 
-| Rule ID | Severity | Conf. | Detection | Tagline |
+| Rule | Severity | Confidence | Detection | Tagline |
 |---|---|---|---|---|
 | [SPRING_BOOT_EOL](./SPRING_BOOT_EOL.md) | ERROR | HIGH | pom-dependency | An EOL Spring Boot means an EOL kafka-clients underneath, and you don't get to pick. |
-| [SPRING_KAFKA_EOL](./SPRING_KAFKA_EOL.md) | WARNING | HIGH | pom-dependency | spring-kafka's OSS life is tied to Spring Boot's. |
-| [SPRING_KAFKA_BOOT_MISMATCH](./SPRING_KAFKA_BOOT_MISMATCH.md) | ERROR | HIGH | combination | Mixing spring-kafka and Spring Boot major versions is a slow-motion classpath collision. |
-| [SPRING_BOOT_KAFKA_CLIENT_OVERRIDE](./SPRING_BOOT_KAFKA_CLIENT_OVERRIDE.md) | WARNING | HIGH | combination | Boot picks the kafka-clients spring-kafka was tested against. |
+| [SPRING_KAFKA_EOL](./SPRING_KAFKA_EOL.md) | ERROR | HIGH | pom-dependency | spring-kafka's OSS life is tied to Spring Boot's — and Boot 2.x stopped getting patches three years ago. |
+| [SPRING_KAFKA_BOOT_MISMATCH](./SPRING_KAFKA_BOOT_MISMATCH.md) | ERROR | HIGH | pom-dependency + pom-property | Mixing spring-kafka and Spring Boot major versions is a slow-motion classpath collision. |
+| [SPRING_BOOT_KAFKA_CLIENT_OVERRIDE](./SPRING_BOOT_KAFKA_CLIENT_OVERRIDE.md) | WARNING | HIGH | pom-dependency + pom-property | Boot picks the kafka-clients spring-kafka was tested against; pinning your own is signing a private contract. |
 | [SPRING_KAFKA_DUPLICATE_DECLARATION](./SPRING_KAFKA_DUPLICATE_DECLARATION.md) | WARNING | HIGH | pom-dependency | Declaring spring-kafka and spring-boot-starter-kafka is one of them too many. |
 
 ### Quarkus
 
-| Rule ID | Severity | Conf. | Detection | Tagline |
+| Rule | Severity | Confidence | Detection | Tagline |
 |---|---|---|---|---|
-| [QUARKUS_EOL](./QUARKUS_EOL.md) | ERROR | HIGH | pom-dependency | If you're not on an LTS, you're EOL within four weeks. |
-| [QUARKUS_KAFKA_EXTENSION_RENAMED](./QUARKUS_KAFKA_EXTENSION_RENAMED.md) | WARNING | HIGH | pom-dependency | quarkus-smallrye-reactive-messaging-kafka was renamed to quarkus-messaging-kafka. |
-| [QUARKUS_KAFKA_CLIENT_OVERRIDE](./QUARKUS_KAFKA_CLIENT_OVERRIDE.md) | WARNING | HIGH | combination | Overriding kafka-clients under Quarkus can derail native compilation. |
-| [QUARKUS_STREAMS_MISSING_CLIENT](./QUARKUS_STREAMS_MISSING_CLIENT.md) | ERROR | HIGH | pom-dependency | quarkus-kafka-streams requires quarkus-kafka-client. |
-| [SMALLRYE_RM_OVERRIDE](./SMALLRYE_RM_OVERRIDE.md) | WARNING | HIGH | combination | Quarkus 3 ships SmallRye RM 4 — pinning your own breaks the build steps. |
+| [QUARKUS_EOL](./QUARKUS_EOL.md) | ERROR | HIGH | pom-dependency | Quarkus releases monthly; if you're not on an LTS, you're EOL within four weeks. |
+| [QUARKUS_KAFKA_EXTENSION_RENAMED](./QUARKUS_KAFKA_EXTENSION_RENAMED.md) | WARNING | HIGH | pom-dependency | quarkus-smallrye-reactive-messaging-kafka was renamed to quarkus-messaging-kafka — use the new name. |
+| [QUARKUS_KAFKA_CLIENT_OVERRIDE](./QUARKUS_KAFKA_CLIENT_OVERRIDE.md) | WARNING | HIGH | pom-dependency | The Quarkus BOM pins kafka-clients; overriding it can derail native compilation. |
+| [QUARKUS_STREAMS_MISSING_CLIENT](./QUARKUS_STREAMS_MISSING_CLIENT.md) | ERROR | HIGH | pom-dependency | quarkus-kafka-streams requires quarkus-kafka-client — and won't tell you nicely. |
+| [SMALLRYE_RM_OVERRIDE](./SMALLRYE_RM_OVERRIDE.md) | WARNING | HIGH | pom-dependency | Quarkus 3 ships SmallRye Reactive Messaging 4 — pinning your own version breaks the build steps. |
 
 ### Serdes & schema registries
 
-| Rule ID | Severity | Conf. | Detection | Tagline |
+| Rule | Severity | Confidence | Detection | Tagline |
 |---|---|---|---|---|
-| [CONFLUENT_AVRO_SERDE_EOL](./CONFLUENT_AVRO_SERDE_EOL.md) | WARNING | HIGH | pom-dependency | kafka-avro-serializer 5.x belongs to Confluent Platform 5. |
-| [CONFLUENT_CLIENT_MIX](./CONFLUENT_CLIENT_MIX.md) | WARNING | MEDIUM | pom-dependency | Mixing Confluent Platform and Apache Kafka clients is asking two vendors to share one classpath. |
-| [APICURIO_SERDE_V1](./APICURIO_SERDE_V1.md) | WARNING | HIGH | pom-dependency | Apicurio Registry Serdes 1.x is on a different package. |
+| [CONFLUENT_AVRO_SERDE_EOL](./CONFLUENT_AVRO_SERDE_EOL.md) | WARNING | HIGH | pom-dependency | kafka-avro-serializer 5.x belongs to Confluent Platform 5 — twelve releases out of date. |
+| [CONFLUENT_CLIENT_MIX](./CONFLUENT_CLIENT_MIX.md) | WARNING | MEDIUM | pom-dependency | Mixing Confluent Platform clients with Apache Kafka clients is asking two vendors to share one classpath. |
+| [APICURIO_SERDE_V1](./APICURIO_SERDE_V1.md) | WARNING | HIGH | pom-dependency | Apicurio Registry Serdes 1.x is on a different package — and its lights went off in 2022. |
 
 ### Build hygiene
 
-| Rule ID | Severity | Conf. | Detection | Tagline |
+| Rule | Severity | Confidence | Detection | Tagline |
 |---|---|---|---|---|
-| [JAVA_VERSION_TOO_LOW](./JAVA_VERSION_TOO_LOW.md) | ERROR | HIGH | pom-property | Kafka 4 needs JDK 17. Spring 6 needs 17. Quarkus 3 needs 17. |
-| [MAVEN_SUREFIRE_TOO_OLD](./MAVEN_SUREFIRE_TOO_OLD.md) | WARNING | HIGH | pom-property | Surefire below 3.0 can't run JUnit 5 reliably. |
-| [LOGGING_IMPL_CONFLICT](./LOGGING_IMPL_CONFLICT.md) | WARNING | HIGH | pom-dependency | Two slf4j bindings on the classpath is a coin flip on which one logs. |
+| [JAVA_VERSION_TOO_LOW](./JAVA_VERSION_TOO_LOW.md) | ERROR | HIGH | pom-property | Kafka 4 needs JDK 17. Spring 6 needs 17. Quarkus 3 needs 17. JDK 11 is not enough anymore. |
 | [KAFKA_TEST_UTILS_RUNTIME_SCOPE](./KAFKA_TEST_UTILS_RUNTIME_SCOPE.md) | WARNING | HIGH | pom-dependency | kafka-streams-test-utils in runtime scope ships an embedded broker into production. |
-| [KAFKA_CLIENTS_DRIFT_IN_MULTIMODULE](./KAFKA_CLIENTS_DRIFT_IN_MULTIMODULE.md) | WARNING | MEDIUM | pom-dependency | Two modules on two different kafka-clients is half a fix away from a classloader fight. |
+| [KAFKA_CLIENTS_DRIFT_IN_MULTIMODULE](./KAFKA_CLIENTS_DRIFT_IN_MULTIMODULE.md) | WARNING | MEDIUM | pom-dependency | Two modules in the same reactor on two different kafka-clients is half a fix away from a classloader fight. |
 
 ---
 

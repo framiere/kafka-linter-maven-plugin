@@ -211,17 +211,19 @@ Two layers of tests live in this repo.
 
 Two sample Maven projects exercise the plugin end-to-end through [`maven-invoker-plugin`](https://maven.apache.org/plugins/maven-invoker-plugin/):
 
-- `src/it/good-project/` — uses Kafka the right way (producer/consumer as singletons, `compression.type=snappy`, `enable.auto.commit=false`, `commitSync()` per batch, `poll(Duration.ofMillis(500))`, `send(...)` with a `Callback`). Expected outcome: `kafka-linter: 0 violations.` and `BUILD SUCCESS`.
-- `src/it/bad-project/` — one method per anti-pattern; every rule fires at least once. Expected outcome: `kafka-linter: 12 violation(s) — 10 error, 2 warning.` and `BUILD FAILURE`.
+IT projects are named `<framework>-good` (clean usage, build should succeed) and `<framework>-bad` (one method per anti-pattern, build should fail). Today only `kafka-clients-good` and `kafka-clients-bad` exist; framework-specific IT pairs (`kafka-streams-*`, `spring-kafka-*`, `quarkus-kafka-*`) are added alongside the rules that exercise them.
+
+- `src/it/kafka-clients-good/` — producer/consumer as singletons, `compression.type=snappy`, `enable.auto.commit=false`, `commitSync()` per batch, `poll(Duration.ofMillis(500))`, `send(...)` with a `Callback`. Expected outcome: `kafka-linter: 0 violations.` and `BUILD SUCCESS`.
+- `src/it/kafka-clients-bad/` — one method per anti-pattern; every implemented rule fires at least once. Expected outcome: `kafka-linter: N violation(s) — …` and `BUILD FAILURE`.
 
 Each IT has an `invoker.properties` declaring the expected build result:
 
 ```properties
-# good-project/invoker.properties
+# kafka-clients-good/invoker.properties
 invoker.goals = verify
 invoker.buildResult = success
 
-# bad-project/invoker.properties
+# kafka-clients-bad/invoker.properties
 invoker.goals = verify
 invoker.buildResult = failure
 ```
@@ -247,12 +249,12 @@ With `<streamLogs>true</streamLogs>`, you'll see every IT's log inline — usefu
 
 ### Adding a new rule
 
-1. Add a `RuleId` enum constant in `RuleId.java` with its default severity and message template.
+1. Add a `RuleId` constant in `RuleId.java` with its default severity, confidence, category, doc path, message, and tagline.
 2. Create `rules/MyNewRule.java` implementing `Rule`. Use `RuleContext` if you need loop/lambda info.
 3. Wire it into `KafkaLinterMojo.buildRules(...)`.
-4. Add an anti-pattern method to `src/it/bad-project/src/main/java/sample/BadKafkaUsage.java` so the IT exercises it.
-5. Optionally add the counter-example to `good-project` to prove the rule doesn't false-positive.
-6. `mvn verify` — `bad-project` should now report one more violation; the IT will pass because the result (failure) still matches.
+4. Add an anti-pattern method to the matching `src/it/<framework>-bad/` source tree (create the IT pair if it doesn't exist yet).
+5. Optionally add the counter-example to `<framework>-good/` to prove the rule doesn't false-positive.
+6. `mvn verify` — the bad IT should report one more violation; the IT will pass because the declared failure result still matches.
 
 ---
 
@@ -273,13 +275,15 @@ With `<streamLogs>true</streamLogs>`, you'll see every IT's log inline — usefu
 ├── src/
 │   ├── main/java/io/conductor/kafkalinter/
 │   │   ├── KafkaLinterMojo.java                       # @Mojo(name="check")
-│   │   ├── RuleId.java                                # 9 rules, default severities
-│   │   ├── Severity.java                              # ERROR | WARNING | OFF
+│   │   ├── RuleId.java                                # implemented rules + metadata registry
+│   │   ├── Severity.java                              # ERROR | WARNING | INFO | OFF
+│   │   ├── Confidence.java                            # HIGH | MEDIUM | CONTEXT
 │   │   ├── Violation.java                             # reporting record
+│   │   ├── report/                                    # SimpleReporter, VerboseReporter
 │   │   ├── rules/                                     # one .java per rule
 │   │   └── scanner/                                   # LoopFinder, LambdaTracker, etc.
 │   └── it/
-│       ├── good-project/                              # 0 expected violations
-│       └── bad-project/                               # 12 expected violations
+│       ├── kafka-clients-good/                        # 0 expected violations
+│       └── kafka-clients-bad/                         # N expected violations
 └── README.md
 ```
