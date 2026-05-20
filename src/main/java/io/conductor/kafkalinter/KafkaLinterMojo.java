@@ -375,6 +375,21 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_COMPRESSION_GZIP, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_COMPRESSION_GZIP, s, KafkaTypes.COMPRESSION_TYPE_KEY, "gzip",
                 "compression.type=gzip — slowest codec for the ratio. Prefer lz4 (throughput), zstd (best ratio, 2.1+) or snappy (cheapest CPU)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITION_ASSIGNMENT_LEGACY, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_PARTITION_ASSIGNMENT_LEGACY, s, KafkaTypes.PARTITION_ASSIGNMENT_STRATEGY_KEY,
+                v -> {
+                    if (v == null) return false;
+                    if (v.contains(KafkaTypes.COOPERATIVE_STICKY_ASSIGNOR_FQCN)) return false;
+                    return KafkaTypes.LEGACY_PARTITION_ASSIGNORS.stream().anyMatch(v::contains);
+                },
+                "partition.assignment.strategy={value} — legacy eager-rebalance assignor without CooperativeStickyAssignor. Every restart pauses the whole group."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_BUFFER_MEMORY_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_BUFFER_MEMORY_TOO_HIGH, s, KafkaTypes.BUFFER_MEMORY_KEY,
+                v -> parseLongOrZero(v) > 268_435_456L,
+                "buffer.memory={value} — above 256 MiB. Producer accumulator is pre-allocated; this can OOM the JVM or stack thundering-herd traffic on broker recovery."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SASL_MECHANISM_PLAIN, s -> ConfigKeyValueRule.literal(
+                RuleId.SECURITY_SASL_MECHANISM_PLAIN, s, KafkaTypes.SASL_MECHANISM_KEY, "PLAIN",
+                "sasl.mechanism=PLAIN — password sent in cleartext during SASL exchange; switch to SCRAM-SHA-256/512 (or ensure SASL_SSL only)."));
         addIfEnabled(rules, sev, RuleId.CRED_SASL_JAAS_LITERAL, s -> new ConfigKeyValueRule(
                 RuleId.CRED_SASL_JAAS_LITERAL, s, KafkaTypes.SASL_JAAS_CONFIG_KEY,
                 v -> isLiteralCredential(v) && v.toLowerCase().contains("password=") && !v.contains("password=\"${"),

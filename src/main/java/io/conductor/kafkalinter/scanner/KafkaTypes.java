@@ -90,6 +90,15 @@ public final class KafkaTypes {
             "TLSv1", "TLSv1.0", "TLSv1.1", "SSLv2", "SSLv3", "SSL"
     );
     public static final String EXCLUDE_INTERNAL_TOPICS_KEY = "exclude.internal.topics";
+    public static final String PARTITION_ASSIGNMENT_STRATEGY_KEY = "partition.assignment.strategy";
+    public static final Set<String> LEGACY_PARTITION_ASSIGNORS = Set.of(
+            "org.apache.kafka.clients.consumer.RangeAssignor",
+            "org.apache.kafka.clients.consumer.RoundRobinAssignor",
+            "org.apache.kafka.clients.consumer.StickyAssignor"
+    );
+    public static final String COOPERATIVE_STICKY_ASSIGNOR_FQCN =
+            "org.apache.kafka.clients.consumer.CooperativeStickyAssignor";
+    public static final String SASL_MECHANISM_KEY = "sasl.mechanism";
 
     // kafka-streams config keys
     public static final String STREAMS_APPLICATION_ID_KEY = "application.id";

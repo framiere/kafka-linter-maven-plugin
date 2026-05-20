@@ -1110,6 +1110,36 @@ public final class RuleId {
             .whyMatters("Almost every gzip in a Kafka config today is a copy from a 2017-era tutorial. The reasonable replacements are: `lz4` for the throughput-leaning default, `zstd` if you want size and have kafka-clients ≥ 2.1 + broker ≥ 2.1, `snappy` if you want the cheapest CPU. This rule is INFO severity — it's a quality-of-life signal, not a correctness bug.")
             .build());
 
+    public static final RuleId CONSUMER_PARTITION_ASSIGNMENT_LEGACY = register(builder("CONSUMER_PARTITION_ASSIGNMENT_LEGACY")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_PARTITION_ASSIGNMENT_LEGACY.md")
+            .message("partition.assignment.strategy pinned to legacy assignor (Range/RoundRobin/Sticky) without CooperativeStickyAssignor — eager rebalance hurts every restart.")
+            .tagline("partition.assignment.strategy picks the protocol the group uses to share work. The legacy assignors stop the world for every rebalance; CooperativeStickyAssignor is strictly better since 2.4.")
+            .mechanism("On every group event (join, leave, topic-metadata change), the assignor decides which partitions go to which consumer. Legacy assignors (`RangeAssignor`, `RoundRobinAssignor`, `StickyAssignor`) follow the *eager* protocol: every consumer revokes *all* its partitions, the group rebalances, then partitions are re-assigned. During the revoke→assign window, no record is being processed. `CooperativeStickyAssignor` (≥ 2.4) follows the *cooperative* protocol: only the partitions that actually need to move are revoked, the rest keep flowing.")
+            .impact("On a 20-consumer group reading from a 200-partition topic, a single restart pauses *every* consumer for the duration of the rebalance under an eager assignor — typically 1-3 seconds, longer if any consumer is slow to finish its current poll. With CooperativeStickyAssignor, 19 of the 20 consumers keep working through the restart and only the moved partitions stall. The throughput difference under deploy/autoscale is large enough to show up as a SLO violation on busy services.")
+            .whyMatters("The 3.x default of `RangeAssignor,CooperativeStickyAssignor` allows the cooperative protocol when all members can speak it. Pinning to just `RangeAssignor` (or `RoundRobinAssignor`, `StickyAssignor`) downgrades the whole group to eager rebalance. The fix is to either remove the override (let the default kick in) or to use `org.apache.kafka.clients.consumer.CooperativeStickyAssignor` alone if you can guarantee a homogeneous fleet.")
+            .build());
+
+    public static final RuleId PRODUCER_BUFFER_MEMORY_TOO_HIGH = register(builder("PRODUCER_BUFFER_MEMORY_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_BUFFER_MEMORY_TOO_HIGH.md")
+            .message("buffer.memory above 256 MiB — producer can pin that much off-heap accumulator memory; almost always a misunderstanding.")
+            .tagline("buffer.memory is the cap on the producer accumulator's in-memory queue. Set it to hundreds of megabytes and you have promised the JVM that much memory just for unsent records.")
+            .mechanism("`buffer.memory` (default 33_554_432 = 32 MiB) bounds the total bytes the producer can hold for not-yet-sent records across all partitions. Records are queued here from `send()` and drained by the sender thread. When the buffer fills, `send()` blocks for up to `max.block.ms` before throwing `BufferExhaustedException`. The bytes are real heap allocations, used immediately on producer construction (the accumulator pre-allocates segments).")
+            .impact("Setting `buffer.memory=536870912` (512 MiB) on a service that ships with `-Xmx768m` is a recipe for OOM. Even if the JVM has the room, half a gigabyte of unsent records means a single-broker outage can stack up 5-10 seconds of traffic in producer RAM before the back-pressure trips — multiplied by every producer instance. When the broker comes back, all those records get re-sent at once, causing a thundering-herd on the broker's request queue.")
+            .whyMatters("The default 32 MiB is the right starting point for any service that is not a high-throughput log-collector. Raising this knob is almost always a mistake masquerading as a fix for an unrelated symptom (slow sends, BufferExhaustedException). The real fix is usually one of: increase `max.in.flight.requests.per.connection`, tune `batch.size`, or add another producer instance — not enlarge the queue.")
+            .build());
+
+    public static final RuleId SECURITY_SASL_MECHANISM_PLAIN = register(builder("SECURITY_SASL_MECHANISM_PLAIN")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("security")
+            .docPath("security/SECURITY_SASL_MECHANISM_PLAIN.md")
+            .message("sasl.mechanism=PLAIN — sends username/password in cleartext during the SASL handshake; only safe over TLS.")
+            .tagline("PLAIN is the SASL mechanism that ships the password as-is. Without TLS underneath, anyone with a packet capture has the credentials.")
+            .mechanism("`sasl.mechanism=PLAIN` (RFC 4616) wraps the username and password into a single SASL token, base64-encoded, sent on the client's first authentication frame. There is no challenge, no salt, no hash — the broker receives the password and compares it. With `security.protocol=SASL_SSL` this is all inside a TLS tunnel and is fine. With `security.protocol=SASL_PLAINTEXT` (or no TLS at all), the password is on the wire in cleartext.")
+            .impact("On a cluster that uses SASL_PLAINTEXT (already flagged separately, but combined with PLAIN it is acute), a single tcpdump from a side-car, a Kubernetes-network plugin in promiscuous mode, or a man-in-the-middle on the broker DNS yields the service account password. The credential is then valid for every other service using the same account — and PLAIN-with-Kafka is usually paired with a single shared service-account pattern, so the blast radius is wide.")
+            .whyMatters("Even when TLS is correctly configured, PLAIN puts the broker in possession of every client's plaintext password — a key-management headache that the SCRAM family removes. The right shape is `SCRAM-SHA-256` or `SCRAM-SHA-512`: the broker only stores a derived value, the handshake uses a challenge, and a compromised broker disk does not leak the original passwords. Reserve PLAIN for cases where SCRAM is unavailable on the broker — and then only over SASL_SSL.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

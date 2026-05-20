@@ -557,6 +557,35 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: CONSUMER_PARTITION_ASSIGNMENT_LEGACY.
+    public void consumerPartitionAssignmentLegacy() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "consumer-legacy-assignor");
+        p.put("partition.assignment.strategy", "org.apache.kafka.clients.consumer.RangeAssignor");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_BUFFER_MEMORY_TOO_HIGH.
+    public void producerBufferMemoryTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("buffer.memory", "536870912");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: SECURITY_SASL_MECHANISM_PLAIN.
+    public void securitySaslMechanismPlain() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("sasl.mechanism", "PLAIN");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();
