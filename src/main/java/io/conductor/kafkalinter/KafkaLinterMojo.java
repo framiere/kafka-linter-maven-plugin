@@ -774,6 +774,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_JOIN_WINDOWS_OF_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_JOIN_WINDOWS_OF_DEPRECATED, s, Set.of(KafkaTypes.JOIN_WINDOWS), Set.of("of"),
                 "JoinWindows.of(Duration) is deprecated since Kafka Streams 3.0 (KIP-633) — replaced by JoinWindows.ofTimeDifferenceWithNoGrace(Duration) or ofTimeDifferenceAndGrace(Duration, Duration). The legacy 24-hour default grace period inflated stream-stream join state-store sizes by ~1440×."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, s, Set.of(KafkaTypes.SESSION_WINDOWS), Set.of("with"),
+                "SessionWindows.with(Duration) is deprecated since Kafka Streams 2.7 — replaced by SessionWindows.ofInactivityGapWithNoGrace(Duration) or ofInactivityGapAndGrace(Duration, Duration). The legacy 24-hour default grace period silently inflated session-store size by ~1440×."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_TRANSFORM_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("transform"),
                 "KStream.transform() is deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) with the new org.apache.kafka.streams.processor.api.Processor."));

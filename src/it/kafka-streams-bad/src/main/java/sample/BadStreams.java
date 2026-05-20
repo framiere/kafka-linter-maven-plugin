@@ -8,6 +8,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.kstream.SessionWindows;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.kstream.ValueJoiner;
@@ -430,5 +431,11 @@ public final class BadStreams {
         p.put("probing.rebalance.interval.ms", "14400000");
         p.put("replication.factor", "3");
         return p;
+    }
+
+    // RULE: STREAMS_SESSION_WINDOWS_WITH_DEPRECATED — KIP-633 forces explicit grace period via ofInactivityGapWithNoGrace.
+    @SuppressWarnings("deprecation")
+    public void sessionWindowsWithDeprecated() {
+        SessionWindows w = SessionWindows.with(Duration.ofMinutes(1));
     }
 }

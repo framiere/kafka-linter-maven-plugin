@@ -15,6 +15,7 @@ public final class KafkaTypes {
     public static final String KSTREAM = "org/apache/kafka/streams/kstream/KStream";
     public static final String TIME_WINDOWS = "org/apache/kafka/streams/kstream/TimeWindows";
     public static final String JOIN_WINDOWS = "org/apache/kafka/streams/kstream/JoinWindows";
+    public static final String SESSION_WINDOWS = "org/apache/kafka/streams/kstream/SessionWindows";
 
     public static final Set<String> PRODUCER_OWNERS = Set.of(KAFKA_PRODUCER, PRODUCER_INTERFACE);
     public static final Set<String> CONSUMER_OWNERS = Set.of(KAFKA_CONSUMER, CONSUMER_INTERFACE);
