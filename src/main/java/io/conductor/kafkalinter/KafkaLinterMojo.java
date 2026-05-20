@@ -268,6 +268,26 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s -> ConfigKeyValueRule.literal(
                 RuleId.SSL_ENDPOINT_IDENTIFICATION_DISABLED, s, KafkaTypes.SSL_ENDPOINT_ID_ALGO_KEY, "",
                 "ssl.endpoint.identification.algorithm=\"\" — hostname verification disabled. Any cert on the trusted chain is accepted regardless of CN/SAN (MITM vector)."));
+        addIfEnabled(rules, sev, RuleId.CRED_SASL_JAAS_LITERAL, s -> new ConfigKeyValueRule(
+                RuleId.CRED_SASL_JAAS_LITERAL, s, KafkaTypes.SASL_JAAS_CONFIG_KEY,
+                v -> isLiteralCredential(v) && v.toLowerCase().contains("password=") && !v.contains("password=\"${"),
+                "sasl.jaas.config={value} — JAAS string contains an inline password literal. Inject via ${ENV_VAR} placeholder."));
+        addIfEnabled(rules, sev, RuleId.CRED_BASIC_AUTH_USER_INFO_LITERAL, s -> new ConfigKeyValueRule(
+                RuleId.CRED_BASIC_AUTH_USER_INFO_LITERAL, s, KafkaTypes.BASIC_AUTH_USER_INFO_KEY,
+                v -> isLiteralCredential(v) && v.contains(":"),
+                "basic.auth.user.info={value} — Schema Registry credentials in a literal user:password. Inject via ${ENV_VAR}."));
+        addIfEnabled(rules, sev, RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, s -> new ConfigKeyValueRule(
+                RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, s, KafkaTypes.SSL_KEYSTORE_PASSWORD_KEY,
+                KafkaLinterMojo::isLiteralCredential,
+                "ssl.keystore.password={value} — keystore password in source/config. Inject via ${ENV_VAR}."));
+        addIfEnabled(rules, sev, RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, s -> new ConfigKeyValueRule(
+                RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, s, KafkaTypes.SSL_TRUSTSTORE_PASSWORD_KEY,
+                KafkaLinterMojo::isLiteralCredential,
+                "ssl.truststore.password={value} — truststore password in source/config. Inject via ${ENV_VAR}."));
+        addIfEnabled(rules, sev, RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, s -> new ConfigKeyValueRule(
+                RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, s, KafkaTypes.SSL_KEY_PASSWORD_KEY,
+                KafkaLinterMojo::isLiteralCredential,
+                "ssl.key.password={value} — private key password in source/config. Inject via ${ENV_VAR}."));
         addIfEnabled(rules, sev, RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE, s -> ConfigKeyValueRule.literal(
                 RuleId.SR_AUTO_REGISTER_SCHEMAS_TRUE, s, KafkaTypes.SR_AUTO_REGISTER_SCHEMAS_KEY, "true",
                 "auto.register.schemas=true — producer registers new schemas to the Schema Registry on the fly. Set to false in non-dev environments and register schemas via CI."));
@@ -479,6 +499,42 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.properties.use.latest.version=true — without latest.compatibility.strict, the serializer may write records the consumers can't read.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.CRED_SASL_JAAS_LITERAL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.CRED_SASL_JAAS_LITERAL, sev.get(RuleId.CRED_SASL_JAAS_LITERAL),
+                    "spring.kafka.properties.sasl.jaas.config",
+                    v -> isLiteralCredential(v) && v.toLowerCase().contains("password=") && !v.contains("password=\"${"),
+                    "spring.kafka.properties.sasl.jaas.config={value} — JAAS string contains an inline password literal. Inject via ${ENV_VAR}.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.CRED_BASIC_AUTH_USER_INFO_LITERAL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.CRED_BASIC_AUTH_USER_INFO_LITERAL, sev.get(RuleId.CRED_BASIC_AUTH_USER_INFO_LITERAL),
+                    "spring.kafka.properties.basic.auth.user.info",
+                    v -> isLiteralCredential(v) && v.contains(":"),
+                    "spring.kafka.properties.basic.auth.user.info={value} — Schema Registry credentials in a literal user:password. Inject via ${ENV_VAR}.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, sev.get(RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL),
+                    "spring.kafka.ssl.key-store-password",
+                    KafkaLinterMojo::isLiteralCredential,
+                    "spring.kafka.ssl.key-store-password={value} — keystore password in source/config. Inject via ${ENV_VAR}.",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, sev.get(RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL),
+                    "spring.kafka.ssl.trust-store-password",
+                    KafkaLinterMojo::isLiteralCredential,
+                    "spring.kafka.ssl.trust-store-password={value} — truststore password in source/config. Inject via ${ENV_VAR}.",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL, sev.get(RuleId.CRED_SSL_KEYSTORE_PASSWORD_LITERAL),
+                    "spring.kafka.ssl.key-password",
+                    KafkaLinterMojo::isLiteralCredential,
+                    "spring.kafka.ssl.key-password={value} — private key password in source/config. Inject via ${ENV_VAR}.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SCHEMA_REGISTRY_URL_HTTP) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SCHEMA_REGISTRY_URL_HTTP, sev.get(RuleId.SCHEMA_REGISTRY_URL_HTTP),
@@ -505,5 +561,13 @@ public class KafkaLinterMojo extends AbstractMojo {
     private static long parseLongOrZero(String s) {
         if (s == null) return 0L;
         try { return Long.parseLong(s.trim()); } catch (NumberFormatException e) { return 0L; }
+    }
+
+    /** True when v is a non-empty literal credential — not blank, not a ${...} placeholder. */
+    private static boolean isLiteralCredential(String v) {
+        if (v == null) return false;
+        String t = v.trim();
+        if (t.isEmpty()) return false;
+        return !t.contains("${");
     }
 }

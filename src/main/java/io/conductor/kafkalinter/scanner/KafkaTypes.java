@@ -50,6 +50,11 @@ public final class KafkaTypes {
     public static final String TRANSACTION_TIMEOUT_MS_KEY = "transaction.timeout.ms";
     public static final String SECURITY_PROTOCOL_KEY = "security.protocol";
     public static final String SSL_ENDPOINT_ID_ALGO_KEY = "ssl.endpoint.identification.algorithm";
+    public static final String SASL_JAAS_CONFIG_KEY = "sasl.jaas.config";
+    public static final String BASIC_AUTH_USER_INFO_KEY = "basic.auth.user.info";
+    public static final String SSL_KEYSTORE_PASSWORD_KEY = "ssl.keystore.password";
+    public static final String SSL_TRUSTSTORE_PASSWORD_KEY = "ssl.truststore.password";
+    public static final String SSL_KEY_PASSWORD_KEY = "ssl.key.password";
 
     // kafka-streams config keys
     public static final String STREAMS_REPLICATION_FACTOR_KEY = "replication.factor";

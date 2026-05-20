@@ -780,6 +780,36 @@ public final class RuleId {
             .whyMatters("The fix is one character: `SASL_SSL`. The TLS layer wraps the SASL handshake and the record stream. SASL_PLAINTEXT is almost always a mis-copy from a lab guide that nobody fixed before going to prod.")
             .build());
 
+    public static final RuleId CRED_SASL_JAAS_LITERAL = register(builder("CRED_SASL_JAAS_LITERAL")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/CRED_SASL_JAAS_LITERAL.md")
+            .message("sasl.jaas.config set to a literal containing a password — credentials shipped in source/properties.")
+            .tagline("A password baked into source or application.properties travels in every CI artifact, every container image, and every git history page.")
+            .mechanism("The Kafka client reads `sasl.jaas.config` as the literal value of the JAAS login-module configuration string, e.g. `org.apache.kafka.common.security.plain.PlainLoginModule required username=\"app\" password=\"hunter2\";`. The value is consumed verbatim — there is no built-in env-resolution.")
+            .impact("Once a password is in a git commit, it has to be considered compromised regardless of subsequent deletion. Container registries and CI logs preserve the artifact indefinitely. Rotating the password requires coordination across every consumer of that secret.")
+            .whyMatters("Inject the secret at runtime: env-var substitution (`password=\"${KAFKA_PASSWORD}\"`), Spring's `${...}` placeholders, Kubernetes secret mounts, Vault Agent. The lint accepts placeholder-style values (containing `${`); anything else with `password=` is flagged.")
+            .build());
+
+    public static final RuleId CRED_BASIC_AUTH_USER_INFO_LITERAL = register(builder("CRED_BASIC_AUTH_USER_INFO_LITERAL")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/CRED_BASIC_AUTH_USER_INFO_LITERAL.md")
+            .message("basic.auth.user.info set to a literal user:password — Schema Registry credentials shipped in source/properties.")
+            .tagline("Schema Registry basic-auth credentials baked into config are the easiest secrets to leak — they're in plain text and look like a normal URL.")
+            .mechanism("Confluent's Schema Registry client reads `basic.auth.user.info` as `<user>:<password>` and base64-encodes it as the Authorization header. There is no env-resolution; the literal value is forwarded as configured.")
+            .impact("Same shape as any committed secret — git history, CI logs, container images keep it forever. Worse, schema-registry credentials often grant read AND write to subjects, so a leak lets an attacker corrupt schema evolution for the entire org.")
+            .whyMatters("Use a runtime placeholder (`${SR_AUTH}`) and inject the value from env/Vault/k8s secret. Lint accepts placeholder-style values; anything else with a `:` separator is flagged.")
+            .build());
+
+    public static final RuleId CRED_SSL_KEYSTORE_PASSWORD_LITERAL = register(builder("CRED_SSL_KEYSTORE_PASSWORD_LITERAL")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
+            .docPath("security/CRED_SSL_KEYSTORE_PASSWORD_LITERAL.md")
+            .message("ssl.keystore.password (or truststore password) set to a literal — TLS material credential shipped in config.")
+            .tagline("Keystore passwords in config files are credentials. The fact that they unlock a file instead of a service doesn't change the leak shape.")
+            .mechanism("The Kafka client reads `ssl.keystore.password` / `ssl.truststore.password` / `ssl.key.password` as plain string values used to unlock the JKS/PKCS12 store at startup. The store typically lives in the same repo or container layer; if the password is also there, the bundle is unlocked by anyone with the artifact.")
+            .impact("A leaked keystore password lets an attacker present the broker's mTLS client identity. On a cluster that relies on mTLS for authentication, that's full impersonation of the application. The blast radius is the topics that identity is authorized for.")
+            .whyMatters("Inject at runtime (`${KAFKA_KEYSTORE_PASS}`) and pair it with secret-store-mounted keystore files. Lint accepts placeholder-style values; non-empty literals are flagged.")
+            .build());
+
     public static final RuleId SR_AUTO_REGISTER_SCHEMAS_TRUE = register(builder("SR_AUTO_REGISTER_SCHEMAS_TRUE")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SR_AUTO_REGISTER_SCHEMAS_TRUE.md")

@@ -340,6 +340,34 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CRED_SASL_JAAS_LITERAL.
+    public void credSaslJaasLiteral() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("sasl.jaas.config",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"svc\" password=\"hunter2\";");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CRED_BASIC_AUTH_USER_INFO_LITERAL.
+    public void credBasicAuthUserInfoLiteral() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("basic.auth.user.info", "sr-user:sr-secret");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CRED_SSL_KEYSTORE_PASSWORD_LITERAL.
+    public void credSslKeystorePasswordLiteral() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("ssl.keystore.password", "changeit");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
