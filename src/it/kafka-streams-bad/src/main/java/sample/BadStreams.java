@@ -7,6 +7,7 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.kstream.SessionWindows;
 import org.apache.kafka.streams.kstream.TimeWindows;
@@ -14,6 +15,10 @@ import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.kstream.ValueJoiner;
 import org.apache.kafka.streams.kstream.ValueTransformerSupplier;
 import org.apache.kafka.streams.kstream.ValueTransformerWithKeySupplier;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
 
 import java.time.Duration;
 import java.util.Properties;
@@ -486,5 +491,22 @@ public final class BadStreams {
         p.put("repartition.purge.interval.ms", "600000"); // 10 min — well above the 5-min ceiling
         p.put("replication.factor", "3");
         return p;
+    }
+
+    // RULE: STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED.
+    public Materialized<String, Long, org.apache.kafka.streams.state.KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>> materializedWithLoggingDisabled() {
+        return Materialized.<String, Long, org.apache.kafka.streams.state.KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("counts-store")
+                .withKeySerde(Serdes.String())
+                .withValueSerde(Serdes.Long())
+                .withLoggingDisabled(); // no changelog topic → state lost on rebalance
+    }
+
+    // RULE: STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED.
+    public StoreBuilder<KeyValueStore<String, Long>> storeBuilderWithLoggingDisabled() {
+        return Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore("processor-store"),
+                        Serdes.String(),
+                        Serdes.Long())
+                .withLoggingDisabled(); // Processor-API equivalent — no changelog, no fault tolerance
     }
 }

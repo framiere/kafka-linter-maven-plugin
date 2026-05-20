@@ -1302,6 +1302,18 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_END_OFFSETS_NO_TIMEOUT.
+    public void consumerEndOffsetsNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        java.util.List<org.apache.kafka.common.TopicPartition> tps = java.util.List.of(
+                new org.apache.kafka.common.TopicPartition("topic", 0));
+        // Unbounded — blocks for up to default.api.timeout.ms on broker outage.
+        java.util.Map<org.apache.kafka.common.TopicPartition, Long> ends = consumer.endOffsets(tps);
+        ends.forEach((tp, off) -> { /* compute lag here */ });
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

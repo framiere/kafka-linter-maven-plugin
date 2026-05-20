@@ -156,6 +156,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitSync"),
                 "()V"::equals,
                 "Consumer.commitSync() (no-arg) blocks indefinitely on coordinator unavailability — equivalent to commitSync(Duration.ofMillis(Long.MAX_VALUE)). Use commitSync(Duration) so coordinator outages surface as recoverable TimeoutException instead of silent stalls."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("endOffsets"),
+                desc -> desc != null && desc.equals("(Ljava/util/Collection;)Ljava/util/Map;"),
+                "Consumer.endOffsets(Collection) (no Duration) blocks for up to default.api.timeout.ms (60 s by default) on broker/leader unavailability. Lag-monitoring scripts and admin tooling that use this overload pin threads during the exact outages they exist to detect. Use endOffsets(Collection, Duration) so timeouts surface as recoverable TimeoutException."));
 
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
@@ -374,6 +378,12 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_CLEANUP_IN_PROD, s -> new MethodCallRule(
                 RuleId.STREAMS_CLEANUP_IN_PROD, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("cleanUp"),
                 "KafkaStreams.cleanUp() — wipes local state. Acceptable in tests; in prod it forces full changelog rebuild."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
+                RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.MATERIALIZED), Set.of("withLoggingDisabled"),
+                "Materialized.withLoggingDisabled() — state-store changelog topic disabled. The store is no longer fault-tolerant: on task reassignment or pod restart it starts empty and downstream aggregates/joins silently return wrong answers."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
+                RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.STORE_BUILDER), Set.of("withLoggingDisabled"),
+                "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
