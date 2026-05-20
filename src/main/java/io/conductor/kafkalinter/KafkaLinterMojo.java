@@ -232,6 +232,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.DEFAULT_API_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 30000; },
                 "default.api.timeout.ms={value} — below 30 s. Routine commitSync/position/metadata calls bubble up TimeoutException on normal broker hiccups."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_ID_GENERIC, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_GROUP_ID_GENERIC, s, KafkaTypes.GROUP_ID_KEY,
+                v -> v != null && KafkaTypes.CONSUMER_GENERIC_GROUP_IDS.contains(v.trim().toLowerCase()),
+                "group.id={value} — a generic placeholder. Two apps with this group.id will collide on partition assignment and offset commits."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.DELIVERY_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 600_000L; },
+                "delivery.timeout.ms={value} — above 10 minutes. Stuck records occupy buffer.memory for that long while the application can't see the failure."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MIN_BYTES_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_FETCH_MIN_BYTES_TOO_HIGH, s, KafkaTypes.FETCH_MIN_BYTES_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 10_485_760L; },
+                "fetch.min.bytes={value} — above 10 MiB. Every poll waits up to fetch.max.wait.ms for that much data to accumulate; latency cliff."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },

@@ -55,6 +55,12 @@ public final class KafkaTypes {
     public static final String CHECK_CRCS_KEY = "check.crcs";
     public static final String MAX_BLOCK_MS_KEY = "max.block.ms";
     public static final String DEFAULT_API_TIMEOUT_MS_KEY = "default.api.timeout.ms";
+    public static final String FETCH_MIN_BYTES_KEY = "fetch.min.bytes";
+    public static final Set<String> CONSUMER_GENERIC_GROUP_IDS = Set.of(
+            "group", "consumer", "consumer-group", "kafka-consumer",
+            "my-group", "my-consumer", "test", "test-group", "demo", "demo-group",
+            "app", "application", "default", "tmp", "tmp-group"
+    );
     /** Partitioner classes deprecated by KIP-794 since 3.3 — the default strategy is now strictly better. */
     public static final Set<String> PARTITIONER_DEPRECATED_FQCNS = Set.of(
             "org.apache.kafka.clients.producer.internals.DefaultPartitioner",

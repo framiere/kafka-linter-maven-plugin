@@ -772,6 +772,36 @@ public final class RuleId {
             .whyMatters("The motivation is usually 'send() should never block this thread' — which is reasonable, but the right shape is to keep `max.block.ms` at the default and put the call behind a circuit-breaker or worker pool that owns the latency budget. Treating `max.block.ms` as a per-call latency cap mistakes one knob for another.")
             .build());
 
+    public static final RuleId CONSUMER_GROUP_ID_GENERIC = register(builder("CONSUMER_GROUP_ID_GENERIC")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_GROUP_ID_GENERIC.md")
+            .message("group.id is a generic placeholder (group, my-group, test, demo, ...). Two apps with the same group.id share the same partition assignment.")
+            .tagline("group.id is how Kafka decides which consumers split work. A generic value means colliding with whoever else also forgot to change it.")
+            .mechanism("The consumer group coordinator uses `group.id` as the identity for the partition-assignment protocol. All consumers sharing a `group.id` form one group: partitions are split across them, offsets are committed against this id, and a join triggers a rebalance for the whole set.")
+            .impact("Two unrelated services both shipping with `group.id=my-group` end up in the same group. Each thinks it owns the topic; the assignor splits partitions arbitrarily; each commits offsets that the other will never see. The consequence is silent data loss for one service and silent duplicate-processing for the other — and a rebalance every time either restarts.")
+            .whyMatters("Treat `group.id` like a database name. Use a service-qualified value: `payments-fraud-screening`, `audit-log-writer-v2`. This rule catches the leftover-from-tutorial class of bug, where the placeholder ships to staging without being changed.")
+            .build());
+
+    public static final RuleId PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH = register(builder("PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH.md")
+            .message("delivery.timeout.ms above 10 minutes — the producer will hold and retry a record for that long before surfacing failure.")
+            .tagline("delivery.timeout.ms is the upper bound on a record's lifetime inside the producer. Set it too high and stuck records pile up in RAM while the application looks healthy.")
+            .mechanism("`delivery.timeout.ms` (default 120 s) bounds the total time from `send()` enqueue to either ACK or final failure callback. While this clock runs, the producer keeps retrying — through leader-elections, network blips, broker rolling restarts.")
+            .impact("Setting it to 3_600_000 ms (1 h) means a record that gets stuck because of an ACL change, a topic-rename, or a misconfigured client keeps occupying buffer.memory for an hour before the callback fires. By then, many other records have been blocked behind it (head-of-line in the accumulator), the producer's in-memory queue is full, and `send()` starts throwing BufferExhaustedException without ever telling you why.")
+            .whyMatters("The right ceiling is on the order of minutes, not hours. If you genuinely need very long retry tolerance, build it at the application layer (durable outbox + retry job), not inside the producer's RAM. This rule catches the units-confusion class of typo — someone meant 300 s, typed 300000 thinking it was seconds.")
+            .build());
+
+    public static final RuleId CONSUMER_FETCH_MIN_BYTES_TOO_HIGH = register(builder("CONSUMER_FETCH_MIN_BYTES_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_FETCH_MIN_BYTES_TOO_HIGH.md")
+            .message("fetch.min.bytes above 10 MiB — consumer parks the fetch until that much data accumulates or fetch.max.wait.ms elapses. Latency cliff.")
+            .tagline("fetch.min.bytes is a 'don't bother responding until you have at least this much' hint to the broker. Set it large and you trade latency for batch size on every poll.")
+            .mechanism("On a FetchRequest, the broker waits until either (a) the available data for the consumer's assigned partitions exceeds `fetch.min.bytes`, or (b) `fetch.max.wait.ms` (default 500 ms) elapses. The default `fetch.min.bytes=1` returns whatever is available. Raising it lets the broker batch — but the cost is the wait.")
+            .impact("With `fetch.min.bytes=52428800` (50 MiB), every poll on a low-traffic topic waits the full `fetch.max.wait.ms` (default 500 ms) every time. End-to-end latency jumps from a few ms to 500+ ms per poll. On a streaming app, this stalls the topology; on a request/response consumer (rare but real), it adds half a second per request.")
+            .whyMatters("This knob has a legitimate use (high-throughput batch consumer that prefers latency for throughput) but the threshold for 'too high' is much lower than the value users tend to pick. 10 MiB is already aggressive; above that almost always reflects a misunderstanding (someone thought it was a buffer size, not a wait condition).")
+            .build());
+
     public static final RuleId CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW = register(builder("CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW.md")

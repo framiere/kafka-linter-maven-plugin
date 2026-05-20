@@ -420,6 +420,35 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_GROUP_ID_GENERIC.
+    public void consumerGroupIdGeneric() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "my-group");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH.
+    public void producerDeliveryTimeoutMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("delivery.timeout.ms", "3600000");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_FETCH_MIN_BYTES_TOO_HIGH.
+    public void consumerFetchMinBytesTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("fetch.min.bytes", "52428800");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();
