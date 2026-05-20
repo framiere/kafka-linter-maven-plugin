@@ -1042,6 +1042,26 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "outgoing", "retries", "0",
                     "mp.messaging.outgoing.{channel}.retries=0 — transient broker errors become permanent send failures. Default (effectively unbounded, capped by delivery.timeout.ms) is right."));
         }
+        if (sev.get(RuleId.QK_INCOMING_PATTERN_TRUE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_INCOMING_PATTERN_TRUE, sev.get(RuleId.QK_INCOMING_PATTERN_TRUE),
+                    "incoming", "pattern", "true",
+                    "mp.messaging.incoming.{channel}.pattern=true — topic is interpreted as a regex matched against every topic in the cluster on every metadata refresh; new tenant topics or accidental matches trigger rebalances cluster-wide. Use an explicit topic list instead."));
+        }
+        if (sev.get(RuleId.QK_OUTGOING_PARTITION_PINNED) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_OUTGOING_PARTITION_PINNED, sev.get(RuleId.QK_OUTGOING_PARTITION_PINNED),
+                    "outgoing", "partition",
+                    v -> { if (v == null) return false; try { return Integer.parseInt(v.trim()) >= 0; } catch (NumberFormatException e) { return false; } },
+                    "mp.messaging.outgoing.{channel}.partition={value} — pins every record to one partition. Throughput is capped at single-partition rate, key-based ordering is broken, and partition-N leader outage stalls the whole channel. Remove the override and let the partitioner pick."));
+        }
+        if (sev.get(RuleId.QK_OUTGOING_MAX_INFLIGHT_MESSAGES_TOO_HIGH) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_OUTGOING_MAX_INFLIGHT_MESSAGES_TOO_HIGH, sev.get(RuleId.QK_OUTGOING_MAX_INFLIGHT_MESSAGES_TOO_HIGH),
+                    "outgoing", "max-inflight-messages",
+                    v -> { if (v == null) return false; try { return Long.parseLong(v.trim()) > 10_000L; } catch (NumberFormatException e) { return false; } },
+                    "mp.messaging.outgoing.{channel}.max-inflight-messages={value} — above 10000. The connector relaxes backpressure to the upstream Mutiny stream; during broker slowness the in-memory queue grows unbounded, leading to producer-pod OOM. Default 1024 is right; raise kafka-clients buffer.memory / max.in.flight.requests.per.connection if you need more in-flight."));
+        }
         if (sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(SmallRyeChannelConfigRule.predicate(
                     RuleId.QK_OUTGOING_ACKS_NOT_ALL, sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL),
