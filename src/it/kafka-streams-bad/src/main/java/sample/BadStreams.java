@@ -183,4 +183,14 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_NUM_STREAM_THREADS_TOO_HIGH.
+    public Properties numStreamThreadsTooHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("num.stream.threads", "256");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }

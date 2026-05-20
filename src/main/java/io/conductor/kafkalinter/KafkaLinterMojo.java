@@ -375,6 +375,14 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STREAM_THREADS_ONE, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_NUM_STREAM_THREADS_ONE, s, KafkaTypes.STREAMS_NUM_STREAM_THREADS_KEY, "1",
                 "num.stream.threads=1 — single-thread topology cannot use multi-core pods. Set to min(input-partitions/instances, cpu-cores)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STREAM_THREADS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_NUM_STREAM_THREADS_TOO_HIGH, s, KafkaTypes.STREAMS_NUM_STREAM_THREADS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Integer.parseInt(v.trim()) > 64; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "num.stream.threads={value} — above 64. Threads beyond the assignable task count sit idle, claiming heap and metric overhead."));
         addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK, s, KafkaTypes.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_KEY,
                 v -> v != null && v.endsWith("WallclockTimestampExtractor"),
@@ -698,6 +706,26 @@ public class KafkaLinterMojo extends AbstractMojo {
                         catch (NumberFormatException e) { return false; }
                     },
                     "spring.kafka.producer.batch-size={value} — below the 16 KiB default. Under-batched produces lose compression and inflate broker request rate.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_JSON_TRUSTED_PACKAGES_WILDCARD) != Severity.OFF) {
+            Severity s = sev.get(RuleId.SPRING_BOOT_JSON_TRUSTED_PACKAGES_WILDCARD);
+            String detail = "spring.json.trusted.packages={value} — wildcard trust lets a producer load any FQCN via __TypeId__ header. Set to an explicit allow-list of your own packages.";
+            for (String key : new String[]{
+                    "spring.kafka.consumer.properties.spring.json.trusted.packages",
+                    "spring.kafka.producer.properties.spring.json.trusted.packages",
+                    "spring.kafka.properties.spring.json.trusted.packages"}) {
+                rules.add(PropertyFileRule.literal(
+                        RuleId.SPRING_BOOT_JSON_TRUSTED_PACKAGES_WILDCARD, s,
+                        key, "*", detail,
+                        "org.springframework.kafka", "spring-kafka"));
+            }
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO),
+                    "spring.kafka.producer.properties.linger.ms", "0",
+                    "spring.kafka.producer.properties.linger.ms=0 — explicit no-batching. Even linger.ms=5 keeps p99 latency flat while restoring batch efficiency.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
