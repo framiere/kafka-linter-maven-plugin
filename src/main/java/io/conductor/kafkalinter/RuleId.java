@@ -582,6 +582,36 @@ public final class RuleId {
             .whyMatters("If the listener does any blocking work, mark the method `@Blocking` (or `@Blocking(\"my-pool\")` for isolation). SmallRye then dispatches it on a worker thread and the event loop stays responsive.")
             .build());
 
+    public static final RuleId STREAMS_NUM_STANDBY_REPLICAS_ZERO = register(builder("STREAMS_NUM_STANDBY_REPLICAS_ZERO")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_NUM_STANDBY_REPLICAS_ZERO.md")
+            .message("num.standby.replicas=0 — any instance failure forces a full changelog restore on a peer.")
+            .tagline("With zero standbys, every Streams instance death costs you a from-scratch state rebuild.")
+            .mechanism("`num.standby.replicas` controls how many warm copies of each state-store partition are maintained on other instances. With 0, when an instance dies the new owner must replay the entire `changelog` topic from earliest before resuming processing.")
+            .impact("Recovery time scales linearly with state size — minutes-to-hours for medium-sized RocksDB stores. During recovery the new owner processes no input on its assigned tasks; downstream consumers see a stall. Throughput also drops on the surviving instance that's now doing the restore I/O on top of its own work.")
+            .whyMatters("Set `num.standby.replicas=1` (or more) so a warm copy is ready. The trade is broker storage + replication bandwidth for changelog data — usually a much smaller cost than the operational disruption. Default is 0, which is rarely what you want in production.")
+            .build());
+
+    public static final RuleId STREAMS_DESER_HANDLER_LOG_AND_CONTINUE = register(builder("STREAMS_DESER_HANDLER_LOG_AND_CONTINUE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_DESER_HANDLER_LOG_AND_CONTINUE.md")
+            .message("default.deserialization.exception.handler=LogAndContinueExceptionHandler — poison-pill records silently skipped.")
+            .tagline("LogAndContinue swallows undeserializable records. Data loss looks like a log line, not an error.")
+            .mechanism("`LogAndContinueExceptionHandler` catches deserialization exceptions, logs them at WARN, and tells the runtime to skip the record. The Streams app keeps running as if nothing happened. The default — `LogAndFailExceptionHandler` — would have stopped the app and forced a fix.")
+            .impact("A schema change, a malformed producer, or a serializer-version mismatch produces a steady drip of skipped records. The topic looks healthy from a lag-metrics perspective (offsets advance) but you're losing data. Nobody notices until a downstream report shows a hole that no integrator can explain.")
+            .whyMatters("If you genuinely want to skip poison-pills, route them to a Dead-Letter Queue instead — `SendToDeadLetterQueueExceptionHandler` or a custom handler. Pure 'log and continue' is almost never the right operational stance in a system you care about.")
+            .build());
+
+    public static final RuleId STREAMS_CACHE_KEY_DEPRECATED = register(builder("STREAMS_CACHE_KEY_DEPRECATED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_CACHE_KEY_DEPRECATED.md")
+            .message("cache.max.bytes.buffering is deprecated since Kafka 3.4 — use statestore.cache.max.bytes.")
+            .tagline("The Streams cache config was renamed in 3.4. The old key still works but emits a warning at every startup.")
+            .mechanism("`cache.max.bytes.buffering` was the original key for the Streams record-cache size (used for KTable update suppression and aggregator hot-batching). KIP-770 renamed it to `statestore.cache.max.bytes` in 3.4 to clarify scope. The old key is still honored but will be removed in a future major.")
+            .impact("Nothing breaks today, but each app startup logs a deprecation warning, and a future upgrade will silently ignore the old setting — at which point the cache reverts to its 10MB-per-thread default and you may see unexpected changelog write amplification.")
+            .whyMatters("This is a 30-second fix: rename the property. Doing it now removes the deprecation noise and protects against a silent regression on the next major upgrade.")
+            .build());
+
     // ────────────────────────────────────────────────────────────────────────
     // observability/ — security & deserialization
     // ────────────────────────────────────────────────────────────────────────

@@ -55,6 +55,9 @@ public final class KafkaTypes {
     public static final String STREAMS_COMMIT_INTERVAL_MS_KEY = "commit.interval.ms";
     public static final String STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY = "cache.max.bytes.buffering";
     public static final String STREAMS_STATESTORE_CACHE_MAX_BYTES_KEY = "statestore.cache.max.bytes";
+    public static final String STREAMS_NUM_STANDBY_REPLICAS_KEY = "num.standby.replicas";
+    public static final String STREAMS_DEFAULT_DESER_HANDLER_KEY = "default.deserialization.exception.handler";
+    public static final String STREAMS_LOG_AND_CONTINUE_HANDLER_FQCN = "org.apache.kafka.streams.errors.LogAndContinueExceptionHandler";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

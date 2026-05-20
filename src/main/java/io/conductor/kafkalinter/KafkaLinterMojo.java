@@ -212,6 +212,17 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STANDBY_REPLICAS_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_NUM_STANDBY_REPLICAS_ZERO, s, KafkaTypes.STREAMS_NUM_STANDBY_REPLICAS_KEY, "0",
+                "num.standby.replicas=0 — any instance failure forces a full changelog restore on a peer (minutes-to-hours of recovery)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DESER_HANDLER_LOG_AND_CONTINUE, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DESER_HANDLER_LOG_AND_CONTINUE, s, KafkaTypes.STREAMS_DEFAULT_DESER_HANDLER_KEY,
+                v -> v != null && v.endsWith("LogAndContinueExceptionHandler"),
+                "default.deserialization.exception.handler={value} — silently drops undeserializable records. Use a DLQ-based handler or the default fail-fast handler."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_CACHE_KEY_DEPRECATED, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_CACHE_KEY_DEPRECATED, s, KafkaTypes.STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY,
+                v -> v != null && !v.isEmpty(),
+                "cache.max.bytes.buffering={value} — deprecated since Kafka 3.4. Rename to statestore.cache.max.bytes."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
