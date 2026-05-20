@@ -1330,6 +1330,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.fetch-max-wait={value} — above 5 s. Empty fetches block the broker request handler for the full window; end-to-end latency floors at the wait time and max.poll.interval.ms margin shrinks.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_DELIVERY_TIMEOUT_MS_TOO_HIGH),
+                    "spring.kafka.producer.properties.delivery.timeout.ms",
+                    v -> parseLongOrZero(v) > 600_000L,
+                    "spring.kafka.producer.properties.delivery.timeout.ms={value} — above 10 min. Stuck records sit in the accumulator for the full window; buffer.memory fills and send() blocks on the hot path before the failure surfaces.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH),
+                    "spring.kafka.producer.properties.max.request.size",
+                    v -> parseLongOrZero(v) > 10L * 1024L * 1024L,
+                    "spring.kafka.producer.properties.max.request.size={value} — above 10 MiB. Broker message.max.bytes and consumer fetch settings must move together; otherwise the broker rejects with RecordTooLargeException and stored records become unfetchable.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_LARGE) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_LARGE, sev.get(RuleId.SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_LARGE),
+                    "spring.kafka.producer.batch-size",
+                    v -> parseSpringDataSizeBytes(v) > 1_048_576L,
+                    "spring.kafka.producer.batch-size={value} — above 1 MiB. buffer.memory holds only a handful of in-flight batches; one slow partition pins its slot for the full delivery.timeout window and stalls writes to healthy partitions.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
