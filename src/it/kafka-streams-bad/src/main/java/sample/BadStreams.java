@@ -301,6 +301,17 @@ public final class BadStreams {
         return p;
     }
 
+    // RULE: STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_LOG_AND_SKIP.
+    public Properties defaultTimestampExtractorLogAndSkip() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("default.timestamp.extractor",
+                "org.apache.kafka.streams.processor.LogAndSkipOnInvalidTimestamp");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
     // RULE: STREAMS_APPLICATION_ID_PLACEHOLDER.
     public Properties applicationIdPlaceholder() {
         Properties p = new Properties();

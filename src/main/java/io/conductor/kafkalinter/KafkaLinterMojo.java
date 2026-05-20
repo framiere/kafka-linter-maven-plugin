@@ -387,6 +387,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK, s, KafkaTypes.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_KEY,
                 v -> v != null && v.endsWith("WallclockTimestampExtractor"),
                 "default.timestamp.extractor={value} — wall clock replaces record event time; windows and joins silently bucket into the wrong window on replay."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_LOG_AND_SKIP, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_LOG_AND_SKIP, s, KafkaTypes.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_KEY,
+                v -> v != null && v.endsWith("LogAndSkipOnInvalidTimestamp"),
+                "default.timestamp.extractor={value} — records with invalid timestamps are silently dropped (single WARN log line, no DLQ, no metric). Use FailOnInvalidTimestamp (default) and handle the error explicitly."));
         addIfEnabled(rules, sev, RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW, s, KafkaTypes.CONNECTIONS_MAX_IDLE_MS_KEY,
                 v -> {
@@ -1070,6 +1074,20 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.QK_INCOMING_BROADCAST_TRUE, sev.get(RuleId.QK_INCOMING_BROADCAST_TRUE),
                     "incoming", "broadcast", "true",
                     "mp.messaging.incoming.{channel}.broadcast=true — every record fans out in-process to every subscriber of the channel; the slowest subscriber pins the channel's throughput, at-least-once semantics break per-subscriber, and a stuck subscriber turns into producer-side OOM. Use a second consumer group instead."));
+        }
+        if (sev.get(RuleId.QK_OUTGOING_CLOSE_TIMEOUT_TOO_LOW) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_OUTGOING_CLOSE_TIMEOUT_TOO_LOW, sev.get(RuleId.QK_OUTGOING_CLOSE_TIMEOUT_TOO_LOW),
+                    "outgoing", "close-timeout",
+                    v -> { if (v == null) return false; try { long n = Long.parseLong(v.trim()); return n > 0 && n < 5_000L; } catch (NumberFormatException e) { return false; } },
+                    "mp.messaging.outgoing.{channel}.close-timeout={value} — below 5000 ms. On graceful shutdown the producer must flush its accumulator before this deadline; below 5 s, every rolling deploy silently drops the records in-flight. Default 10000 ms is right; raise the pod's terminationGracePeriodSeconds if you need a bigger shutdown budget, don't shrink close-timeout."));
+        }
+        if (sev.get(RuleId.QK_INCOMING_THROTTLED_UNPROCESSED_RECORD_MAX_AGE_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_INCOMING_THROTTLED_UNPROCESSED_RECORD_MAX_AGE_MS_TOO_LOW, sev.get(RuleId.QK_INCOMING_THROTTLED_UNPROCESSED_RECORD_MAX_AGE_MS_TOO_LOW),
+                    "incoming", "throttled.unprocessed-record-max-age.ms",
+                    v -> { if (v == null) return false; try { long n = Long.parseLong(v.trim()); return n > 0 && n < 5_000L; } catch (NumberFormatException e) { return false; } },
+                    "mp.messaging.incoming.{channel}.throttled.unprocessed-record-max-age.ms={value} — below 5000 ms. The throttled commit-strategy flips the health probe to UNHEALTHY for any unacked record older than this, so ordinary downstream slowness triggers pod restart. Default 60000 ms is calibrated to catch stuck (not slow) processing."));
         }
         if (sev.get(RuleId.QK_OUTGOING_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(SmallRyeChannelConfigRule.predicate(
