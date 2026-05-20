@@ -658,6 +658,32 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.concurrency=0 — listener container creates zero consumer threads. Almost always a typo or env-substitution bug.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED, sev.get(RuleId.SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED),
+                    "spring.kafka.template.observation-enabled", "false",
+                    "spring.kafka.template.observation-enabled=false — KafkaTemplate produces drop out of distributed traces. Remove the override; Spring Boot 3.2+ default is true.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_OBSERVATION_DISABLED) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_LISTENER_OBSERVATION_DISABLED, sev.get(RuleId.SPRING_BOOT_LISTENER_OBSERVATION_DISABLED),
+                    "spring.kafka.listener.observation-enabled", "false",
+                    "spring.kafka.listener.observation-enabled=false — @KafkaListener invocations drop out of distributed traces. Remove the override; Spring Boot 3.2+ default is true.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_SMALL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_SMALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_SMALL),
+                    "spring.kafka.producer.batch-size",
+                    v -> {
+                        if (v == null) return false;
+                        try { return Integer.parseInt(v.trim()) < 16384; }
+                        catch (NumberFormatException e) { return false; }
+                    },
+                    "spring.kafka.producer.batch-size={value} — below the 16 KiB default. Under-batched produces lose compression and inflate broker request rate.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),

@@ -1260,6 +1260,36 @@ public final class RuleId {
             .whyMatters("Use the default (`DefaultProductionExceptionHandler`, which fails fast) or write a handler that selectively retries/quarantines specific exception classes (e.g. continue on `RecordTooLargeException` after sending to a DLQ, fail on everything else). 'Always continue' is the worst possible answer because it treats every kind of broker failure — transient, configuration, data-shape — identically as 'drop it'. If you reach for this handler because the topology keeps crashing, the crash is the symptom, not the disease.")
             .build());
 
+    public static final RuleId SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED = register(builder("SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_TEMPLATE_OBSERVATION_DISABLED.md")
+            .message("spring.kafka.template.observation-enabled=false — disables Micrometer observation on KafkaTemplate; outgoing produces drop out of distributed traces.")
+            .tagline("`spring.kafka.template.observation-enabled` turns Micrometer Observation API on for every KafkaTemplate.send() in Spring Boot 3.x. Setting it to false strips W3C `traceparent` propagation and removes the producer hop from your trace graph.")
+            .mechanism("Spring Boot 3.0+ wires KafkaTemplate to the Micrometer Observation API when `spring.kafka.template.observation-enabled=true` (the framework default in 3.2+). The template wraps each send in an `Observation`, which produces (a) a Brave/OpenTelemetry span around the producer call, (b) a `traceparent` Kafka header so downstream consumers can stitch the trace, and (c) a `spring.kafka.template` meter for produce timing/error rate. Setting the flag to false skips all three: no span, no header, no meter.")
+            .impact("Distributed traces show the upstream HTTP request, then a gap, then whatever consumer eventually picks up the record. SREs lose the ability to attribute end-to-end latency. The downstream consumer's `traceparent`-based observation also goes blank — the trace ends at the producer boundary even on the consumer side, because the propagation header is missing. Bug triage that depends on 'follow the trace' becomes 'reproduce locally with debug logging'.")
+            .whyMatters("Almost every team that explicitly sets this to false is doing so as a 'workaround' for a noisy metric or a startup-time concern that no longer applies in current Spring Boot versions. The defaults are correct. If a specific span is too noisy, configure the sampler; do not disable observation wholesale.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_LISTENER_OBSERVATION_DISABLED = register(builder("SPRING_BOOT_LISTENER_OBSERVATION_DISABLED")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_LISTENER_OBSERVATION_DISABLED.md")
+            .message("spring.kafka.listener.observation-enabled=false — disables Micrometer observation on @KafkaListener; consumer-side traces and metrics go dark.")
+            .tagline("`spring.kafka.listener.observation-enabled` controls whether the MessageListenerContainer wraps each onMessage callback in a Micrometer Observation. Off means no spans, no `traceparent` consumption, no listener-error metrics.")
+            .mechanism("In Spring Boot 3.x, the listener container picks up `observation-enabled=true` and wraps every record (or batch) invocation in an `Observation.start()/stop()` pair. This (a) extracts the `traceparent` header from the incoming ConsumerRecord and creates a child span on the consumer side, (b) emits `spring.kafka.listener` timing metrics tagged with topic/partition/exception class, and (c) propagates the trace context onto any KafkaTemplate.send() called from inside the listener (so produce-after-consume in a streaming pattern stays in one trace). Setting it to false skips every step.")
+            .impact("On the consumer side, every record looks unattributed: the trace stops at the producer hop and restarts as a brand-new root span on each consumer poll. Error budgets attributed to specific listeners cannot be calculated. Long tail latency dashboards show only the network-side polling, never the user-code work done inside the listener method.")
+            .whyMatters("The default in Spring Boot 3.2+ is true; setting it false is almost always copy-pasted from an older Boot 2.x baseline or from a misguided 'reduce overhead' refactor. The observation cost is microseconds per record; the value at trouble-shoot time is enormous.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_SMALL = register(builder("SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_SMALL")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_PRODUCER_BATCH_SIZE_TOO_SMALL.md")
+            .message("spring.kafka.producer.batch-size is below 16 KiB — under-batched produces lose compression efficiency and inflate broker request rate.")
+            .tagline("`spring.kafka.producer.batch-size` (which maps directly to kafka-clients `batch.size`) is the cap on a per-partition record batch. Setting it under the 16 KiB default explicitly trades broker-side throughput for nothing.")
+            .mechanism("The producer accumulates records per partition until either `batch.size` bytes accumulate or `linger.ms` elapses, then ships the batch in one ProduceRequest. The 16 KiB default was carefully chosen: large enough that a single 1 KiB record does not stall the broker with overhead, small enough that low-traffic partitions do not wait long for `linger.ms` to trip. Setting `batch-size` to a few hundred bytes makes every record its own ProduceRequest — the broker pays the per-request CPU cost, the compression dictionary cannot warm up (compression is per-batch, so tiny batches compress worse), and the on-wire byte count goes up.")
+            .impact("A producer with `batch-size=1024` sending 5000 records/sec generates 5000 ProduceRequests/sec on a single partition, instead of ~300. The broker's request-rate metric spikes 15x; the producer's `record-send-rate` plateaus because each thread is blocked on more handshakes. Compression goes from ~3x to ~1.2x. Wire egress doubles.")
+            .whyMatters("Almost every 'under-default batch.size' override is a misunderstanding — someone read about latency vs throughput and lowered batch size without realising the kafka-clients producer is already low-latency-by-default thanks to `linger.ms=0`. The right knob for latency is `linger.ms`, not `batch.size`. Leave `batch.size` at its default unless you have measured a specific reason to change it.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")
