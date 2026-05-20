@@ -1020,6 +1020,36 @@ public final class RuleId {
             .whyMatters("Switch to `https://` and put the Schema Registry behind TLS. Confluent Cloud and managed registries are HTTPS by default — this lint catches the case where someone copied an example URL or set up a local dev registry that survived into the deployed config.")
             .build());
 
+    public static final RuleId PRODUCER_RETRY_BACKOFF_MS_TOO_LOW = register(builder("PRODUCER_RETRY_BACKOFF_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_RETRY_BACKOFF_MS_TOO_LOW.md")
+            .message("retry.backoff.ms below 50 ms — retry loop pounds the broker before it has time to recover.")
+            .tagline("retry.backoff.ms is the wait between produce retries. Under 50 ms it stops being a backoff and becomes a tight loop that prevents the broker from recovering.")
+            .mechanism("When a `produce` request fails with a retriable error (NOT_LEADER_FOR_PARTITION, REQUEST_TIMED_OUT, NETWORK_EXCEPTION), the producer waits `retry.backoff.ms` (default 100 ms, growing exponentially up to `retry.backoff.max.ms`) before retrying. The default exists to give the broker time to elect a new leader, finish a restart, or unblock its request queue.")
+            .impact("With `retry.backoff.ms=10`, a leader election (typically 200-1000 ms broker-side) gets hit by 20-100 produce retries from every producer in the fleet. The broker's request-handler threads spend their first second post-election processing retries from clients that already gave up — and the next election starts before they have caught up. A routine rolling restart turns into a partial outage.")
+            .whyMatters("The motivation is usually 'we want faster recovery from a single network blip'. But the bottleneck on recovery isn't producer wait time, it's broker readiness — and producers spamming a recovering broker make recovery *slower*. The default 100 ms is right; if anything, raise it under heavy load, never lower it.")
+            .build());
+
+    public static final RuleId CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_HIGH = register(builder("CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_HIGH.md")
+            .message("auto.commit.interval.ms above 60 s — combined with auto-commit, a crash or rebalance reprocesses that whole window.")
+            .tagline("auto.commit.interval.ms is the size of your at-least-once duplicate window. Stretch it past a minute and every restart re-runs a minute's worth of records.")
+            .mechanism("With `enable.auto.commit=true` (Kafka's default), the consumer commits the highest offset it has *seen via poll()* — not necessarily processed — every `auto.commit.interval.ms` (default 5 s). Between commits, records have been delivered to the application but not yet acknowledged broker-side. A crash, kill, or rebalance during that interval causes the new owner to replay every record back to the last committed offset.")
+            .impact("Setting `auto.commit.interval.ms=300000` (5 min) on a 10k-records-per-second consumer means a kill or rolling restart replays up to 3 million records. For idempotent consumers it is annoying duplication; for non-idempotent code (counters, side-effects, money), it is a correctness bug that surfaces as 'why are some numbers off after each deploy?'.")
+            .whyMatters("This knob almost never deserves to be tuned upward. The right fix when commit RPC overhead is a problem is to move to manual commits (`enable.auto.commit=false` + `commitSync()` after processing), not to widen the loss window. The default 5 s is already the cheapest the broker cares about.")
+            .build());
+
+    public static final RuleId PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH = register(builder("PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH.md")
+            .message("max.request.size above 10 MiB — single-record cliff that brokers reject and consumers cannot read by default.")
+            .tagline("max.request.size lets a producer assemble huge batches in memory, but the broker still has its own per-message cap. Set it too high and the request is fine on the wire and rejected by the server.")
+            .mechanism("`max.request.size` (default 1 MiB) is the producer-side cap on the size of a single produce request, which in practice is the cap on the largest record the producer will accept from `send()`. The broker has an independent cap (`message.max.bytes` topic-level, default 1 MiB) and the consumer has another (`fetch.max.bytes` / `max.partition.fetch.bytes`). Raising one without raising the others creates a silent asymmetry.")
+            .impact("Setting `max.request.size=104857600` (100 MiB) without touching broker/topic `message.max.bytes` means every record larger than 1 MiB makes it through `send()`, gets buffered in the accumulator, batches with friends, then dies broker-side with RecordTooLargeException — but on the producer it looks like 'some random sends fail with no obvious pattern'. The client's `delivery.timeout.ms` retries make it worse: each retry holds the same too-big record in memory until the timeout fires.")
+            .whyMatters("Large Kafka records are almost always the wrong tool — the right shape for blobs is to store them externally (S3, blob store) and put a reference on the topic. If you genuinely need bigger records, the broker `message.max.bytes` and consumer `fetch.max.bytes` must be raised in lockstep, with awareness of replica replication buffer and disk IO. This rule catches the half-done version of that work.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

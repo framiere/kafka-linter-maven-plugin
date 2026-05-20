@@ -58,6 +58,9 @@ public final class KafkaTypes {
     public static final String FETCH_MIN_BYTES_KEY = "fetch.min.bytes";
     public static final String HEARTBEAT_INTERVAL_MS_KEY = "heartbeat.interval.ms";
     public static final String RECONNECT_BACKOFF_MS_KEY = "reconnect.backoff.ms";
+    public static final String RETRY_BACKOFF_MS_KEY = "retry.backoff.ms";
+    public static final String AUTO_COMMIT_INTERVAL_MS_KEY = "auto.commit.interval.ms";
+    public static final String MAX_REQUEST_SIZE_KEY = "max.request.size";
     public static final Set<String> CONSUMER_GENERIC_GROUP_IDS = Set.of(
             "group", "consumer", "consumer-group", "kafka-consumer",
             "my-group", "my-consumer", "test", "test-group", "demo", "demo-group",

@@ -256,6 +256,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "reconnect.backoff.ms={value} — below 100 ms. Broker outage becomes a tight reconnect loop; raise this, don't lower it."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RETRY_BACKOFF_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_RETRY_BACKOFF_MS_TOO_LOW, s, KafkaTypes.RETRY_BACKOFF_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Integer.parseInt(v.trim()) < 50; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "retry.backoff.ms={value} — below 50 ms. Producer retries pound the broker before it can recover; raise this, don't lower it."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_AUTO_COMMIT_INTERVAL_MS_TOO_HIGH, s, KafkaTypes.AUTO_COMMIT_INTERVAL_MS_KEY,
+                v -> parseIntOrZero(v) > 60000,
+                "auto.commit.interval.ms={value} — above 60 s. Combined with enable.auto.commit=true, that's a 60 s+ duplicate-window after every crash or rebalance."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_MAX_REQUEST_SIZE_TOO_HIGH, s, KafkaTypes.MAX_REQUEST_SIZE_KEY,
+                v -> parseLongOrZero(v) > 10_485_760L,
+                "max.request.size={value} — above 10 MiB. Without matching broker message.max.bytes and consumer fetch settings, oversize records die server-side."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
