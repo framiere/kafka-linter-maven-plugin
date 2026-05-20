@@ -13,13 +13,14 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Generic "any call to method {@code name} on an owner in {@code owners}" detector.
  *
- * <p>Use this for rules whose entire signal is "this method should not be called from
- * production code" — KafkaStreams.cleanUp(), the deprecated KStream.through(),
- * ObjectMapper.activateDefaultTyping(), and so on.
+ * <p>Pass a non-null {@code descriptorMatcher} when overloads share a name but only one
+ * variant should be flagged — e.g. the deprecated {@code Consumer.poll(long)} vs the
+ * modern {@code poll(Duration)}.
  */
 public final class MethodCallRule implements Rule {
 
@@ -27,15 +28,24 @@ public final class MethodCallRule implements Rule {
     private final Severity severity;
     private final Set<String> owners;
     private final Set<String> methodNames;
+    private final Predicate<String> descriptorMatcher;
     private final String detail;
 
     public MethodCallRule(RuleId ruleId, Severity severity,
                           Set<String> owners, Set<String> methodNames,
                           String detail) {
+        this(ruleId, severity, owners, methodNames, null, detail);
+    }
+
+    public MethodCallRule(RuleId ruleId, Severity severity,
+                          Set<String> owners, Set<String> methodNames,
+                          Predicate<String> descriptorMatcher,
+                          String detail) {
         this.ruleId = ruleId;
         this.severity = severity;
         this.owners = owners;
         this.methodNames = methodNames;
+        this.descriptorMatcher = descriptorMatcher;
         this.detail = detail;
     }
 
@@ -52,6 +62,7 @@ public final class MethodCallRule implements Rule {
                 if (!(insn instanceof MethodInsnNode mi)) continue;
                 if (!owners.contains(mi.owner)) continue;
                 if (!methodNames.contains(mi.name)) continue;
+                if (descriptorMatcher != null && !descriptorMatcher.test(mi.desc)) continue;
                 out.add(new Violation(ruleId, severity, ctx.classNode().name, mn.name,
                         AsmUtil.lineOf(insn), detail));
             }

@@ -148,6 +148,10 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_LONG_DEPRECATED, s -> new MethodCallRule(
+                RuleId.CONSUMER_POLL_LONG_DEPRECATED, s, KafkaTypes.CONSUMER_OWNERS, Set.of("poll"),
+                desc -> desc != null && desc.startsWith("(J)"),
+                "Consumer.poll(long) is deprecated since Kafka 2.0 (KIP-266) — replaced by poll(Duration). The long variant blocks indefinitely waiting for an initial group-coordinator assignment regardless of the timeout argument; the Duration variant returns an empty record set when the duration elapses, making coordinator-unavailability visible to the caller. The deprecated method is slated for removal in Kafka 4.x."));
 
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
@@ -951,6 +955,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SR_USE_LATEST_VERSION_TRUE, s -> ConfigKeyValueRule.literal(
                 RuleId.SR_USE_LATEST_VERSION_TRUE, s, KafkaTypes.SR_USE_LATEST_VERSION_KEY, "true",
                 "use.latest.version=true — without latest.compatibility.strict=true the serializer can write records under an incompatible latest schema."));
+        addIfEnabled(rules, sev, RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE, s -> ConfigKeyValueRule.literal(
+                RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE, s, KafkaTypes.SR_LATEST_COMPATIBILITY_STRICT_KEY, "false",
+                "latest.compatibility.strict=false — combined with use.latest.version=true, the serializer pins records to the latest registered schema without verifying that the runtime record is compatible with it. Silent data loss: fields can be dropped or coerced with no error at serialization time."));
         addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_URL_HTTP, s -> new ConfigKeyValueRule(
                 RuleId.SCHEMA_REGISTRY_URL_HTTP, s, KafkaTypes.SCHEMA_REGISTRY_URL_KEY,
                 v -> v != null && v.startsWith("http://"),
@@ -1290,6 +1297,20 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.poll-timeout",
                     v -> parseLongOrZero(v) > 30_000L,
                     "spring.kafka.listener.poll-timeout={value} — above 30s. The listener thread blocks inside consumer.poll() for that long, so container shutdown, rebalances, and lifecycle events stall by the same amount. Leave at the default 5000 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_ASYNC_ACKS_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_LISTENER_ASYNC_ACKS_TRUE, sev.get(RuleId.SPRING_BOOT_LISTENER_ASYNC_ACKS_TRUE),
+                    "spring.kafka.listener.async-acks", "true",
+                    "spring.kafka.listener.async-acks=true — manual acknowledgements are queued on a background commit thread instead of running inline. Out-of-order commits are explicitly allowed: on a JVM crash between enqueue and broker-commit the offset is dropped (re-delivery after the side effect already ran), and within a batch with mixed success/failure offsets can be coalesced past a failed record. Default is false for at-least-once semantics.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE, sev.get(RuleId.SR_LATEST_COMPATIBILITY_STRICT_FALSE),
+                    "spring.kafka.properties.latest.compatibility.strict", "false",
+                    "spring.kafka.properties.latest.compatibility.strict=false — disables the runtime-vs-latest schema compatibility check. Combined with use.latest.version=true, the serializer projects records into the latest registered schema without verifying compatibility, silently dropping or coercing fields.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_NO_POLL_THRESHOLD_TOO_LOW) != Severity.OFF) {

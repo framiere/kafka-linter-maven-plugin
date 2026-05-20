@@ -1251,6 +1251,26 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: SR_LATEST_COMPATIBILITY_STRICT_FALSE.
+    public Properties latestCompatibilityStrictFalse() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("schema.registry.url", "https://sr:8081");
+        p.put("latest.compatibility.strict", "false");
+        return p;
+    }
+
+    // RULE: CONSUMER_POLL_LONG_DEPRECATED.
+    @SuppressWarnings("deprecation")
+    public void consumerPollLongDeprecated() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.subscribe(java.util.List.of("topic"));
+        consumer.poll(1000L);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
