@@ -1235,6 +1235,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.missing-topics-fatal=false — the app boots even when a configured @KafkaListener topic doesn't exist; the listener attaches to nothing and silently processes zero records. Set to true so topic typos / missing-topic situations become loud boot failures instead of silent consumption gaps.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_IDLE_BETWEEN_POLLS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_IDLE_BETWEEN_POLLS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_LISTENER_IDLE_BETWEEN_POLLS_TOO_HIGH),
+                    "spring.kafka.listener.idle-between-polls",
+                    v -> parseLongOrZero(v) > 1_000L,
+                    "spring.kafka.listener.idle-between-polls={value} — Spring inserts an artificial sleep between consecutive consumer polls. Throughput drops, and idle time pushes toward max.poll.interval.ms (5 min) so a slow batch on top fences the consumer. Remove the override or stay under 1000 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_LOW),
+                    "spring.kafka.producer.buffer-memory",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 16L * 1024L * 1024L; },
+                    "spring.kafka.producer.buffer-memory={value} — below 16 MiB. The producer's accumulator fills under any burst; send() blocks for max.block.ms (60 s) and the application's hot path stalls. Default 33554432 (32 MiB) is right; raise linger.ms / tune batch.size instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_BUFFER_MEMORY_TOO_HIGH),
+                    "spring.kafka.producer.buffer-memory",
+                    v -> parseLongOrZero(v) > 256L * 1024L * 1024L,
+                    "spring.kafka.producer.buffer-memory={value} — above 256 MiB. The accumulator reserves heap that the JVM cannot reclaim; under normal load the buffer is 99% empty. If you have measured back-pressure, raise linger.ms or add brokers/partitions instead of inflating the cap.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO, sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO),
