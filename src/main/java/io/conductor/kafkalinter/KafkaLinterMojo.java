@@ -356,6 +356,18 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PRINT, s -> new MethodCallRule(
                 RuleId.STREAMS_KSTREAM_PRINT, s, Set.of(KafkaTypes.KSTREAM), Set.of("print"),
                 "KStream.print() — debugging operator left in production topology. Pipes every record through System.out; use peek() with a counter or a dedicated debug topic."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MAX_TASK_IDLE_MS_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_MAX_TASK_IDLE_MS_HIGH, s, KafkaTypes.STREAMS_MAX_TASK_IDLE_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 30000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.task.idle.ms={value} — above 30 s. Topology stalls waiting on quiet partitions, inflating end-to-end latency. Default 0 is the right starting point."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE, s, KafkaTypes.STREAMS_DEFAULT_PRODUCTION_HANDLER_KEY,
+                v -> v != null && v.endsWith("AlwaysContinueProductionExceptionHandler"),
+                "default.production.exception.handler={value} — silently drops every failed produce. Use the default fail-fast handler or a selective one with DLQ."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -504,6 +516,12 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.QK_AUTO_OFFSET_RESET_LATEST, sev.get(RuleId.QK_AUTO_OFFSET_RESET_LATEST),
                     "incoming", "auto.offset.reset", "latest",
                     "mp.messaging.incoming.{channel}.auto.offset.reset=latest — fresh consumer group skips existing backlog. Prefer 'earliest' for pipeline consumers."));
+        }
+        if (sev.get(RuleId.QK_INCOMING_AUTO_OFFSET_RESET_NONE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_INCOMING_AUTO_OFFSET_RESET_NONE, sev.get(RuleId.QK_INCOMING_AUTO_OFFSET_RESET_NONE),
+                    "incoming", "auto.offset.reset", "none",
+                    "mp.messaging.incoming.{channel}.auto.offset.reset=none — fresh consumer group throws NoOffsetForPartitionException and the pod crashloops on first deploy. Use 'earliest' or 'latest' unless you manage offsets manually."));
         }
         if (sev.get(RuleId.QK_AUTO_COMMIT_ENABLED) != Severity.OFF) {
             rules.add(SmallRyeChannelConfigRule.literal(

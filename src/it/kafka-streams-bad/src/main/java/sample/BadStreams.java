@@ -141,4 +141,25 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_MAX_TASK_IDLE_MS_HIGH.
+    public Properties maxTaskIdleMsHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("max.task.idle.ms", "60000");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
+    // RULE: STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE.
+    public Properties productionExceptionHandlerAlwaysContinue() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("default.production.exception.handler",
+                "org.apache.kafka.streams.errors.AlwaysContinueProductionExceptionHandler");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }

@@ -128,6 +128,9 @@ public final class KafkaTypes {
     public static final String STREAMS_NUM_STANDBY_REPLICAS_KEY = "num.standby.replicas";
     public static final String STREAMS_DEFAULT_DESER_HANDLER_KEY = "default.deserialization.exception.handler";
     public static final String STREAMS_LOG_AND_CONTINUE_HANDLER_FQCN = "org.apache.kafka.streams.errors.LogAndContinueExceptionHandler";
+    public static final String STREAMS_MAX_TASK_IDLE_MS_KEY = "max.task.idle.ms";
+    public static final String STREAMS_DEFAULT_PRODUCTION_HANDLER_KEY = "default.production.exception.handler";
+    public static final String STREAMS_ALWAYS_CONTINUE_PRODUCTION_HANDLER_FQCN = "org.apache.kafka.streams.errors.AlwaysContinueProductionExceptionHandler";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(
