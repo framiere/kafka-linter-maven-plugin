@@ -1347,6 +1347,38 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_PARTITIONS_FOR_NO_TIMEOUT.
+    public void consumerPartitionsForNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        // Startup health check — hangs 60 s on bad bootstrap.servers.
+        java.util.List<org.apache.kafka.common.PartitionInfo> parts = consumer.partitionsFor("topic");
+        parts.forEach(pi -> System.out.println(pi.topic() + ":" + pi.partition()));
+        consumer.close();
+    }
+
+    // RULE: CONSUMER_LIST_TOPICS_NO_TIMEOUT.
+    public void consumerListTopicsNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        // Full-cluster metadata snapshot — expensive even when healthy, hangs on outage.
+        java.util.Map<String, java.util.List<org.apache.kafka.common.PartitionInfo>> topics = consumer.listTopics();
+        topics.forEach((t, parts) -> System.out.println(t + ": " + parts.size() + " partitions"));
+        consumer.close();
+    }
+
+    // RULE: CONSUMER_COMMITTED_NO_TIMEOUT.
+    public void consumerCommittedNoTimeout() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        java.util.Set<org.apache.kafka.common.TopicPartition> tps = java.util.Set.of(
+                new org.apache.kafka.common.TopicPartition("topic", 0));
+        // Lag-monitor pattern: hangs on group-coordinator outage.
+        java.util.Map<org.apache.kafka.common.TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> off = consumer.committed(tps);
+        off.forEach((tp, om) -> { /* compute lag */ });
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

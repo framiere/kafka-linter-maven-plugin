@@ -172,6 +172,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_POSITION_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("position"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/common/TopicPartition;)J"),
                 "Consumer.position(TopicPartition) (no Duration) can block for up to default.api.timeout.ms on coordinator unavailability when the cached position is stale. Lag/health probes that use this overload hang for 60 s per partition during outages. Use position(TopicPartition, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("partitionsFor"),
+                desc -> desc != null && desc.equals("(Ljava/lang/String;)Ljava/util/List;"),
+                "Consumer.partitionsFor(String) (no Duration) blocks for up to default.api.timeout.ms (60 s) on metadata unavailability. Startup-health checks that use this overload hang for a full minute on misconfigured bootstrap or missing topics. Use partitionsFor(String, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("listTopics"),
+                desc -> desc != null && desc.equals("()Ljava/util/Map;"),
+                "Consumer.listTopics() (no Duration) blocks for up to default.api.timeout.ms (60 s) and returns the full-cluster metadata snapshot. Expensive even on a healthy cluster; thread-pinning hazard during outages. Use listTopics(Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("committed"),
+                desc -> desc != null && desc.equals("(Ljava/util/Set;)Ljava/util/Map;"),
+                "Consumer.committed(Set) (no Duration) blocks for up to default.api.timeout.ms (60 s) on group-coordinator outage. Lag monitors that use this overload pin threads during exactly the incidents that justify monitoring. Use committed(Set, Duration)."));
 
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
