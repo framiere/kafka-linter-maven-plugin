@@ -658,6 +658,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_COMMIT_INTERVAL_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_COMMIT_INTERVAL_TOO_HIGH, s, KafkaTypes.STREAMS_COMMIT_INTERVAL_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 60_000L; },
+                "commit.interval.ms={value} — above 60 s. Cache flushes, state-store commits, and offset commits are all deferred for the full interval; downstream sees data stale by up to {value} ms, and on crash recovery the changelog replay window is that long. The default (30 s at-least-once, 100 ms EOS) is the right trade-off; if you need lower write-amplification, raise statestore.cache.max.bytes instead."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BUFFER_BYTES_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_SEND_BUFFER_BYTES_TOO_HIGH, s, KafkaTypes.SEND_BUFFER_BYTES_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 16L * 1024L * 1024L; },
+                "send.buffer.bytes={value} — over 16 MiB. Pins SO_SNDBUF per broker connection in kernel memory (invisible to JVM heap profilers); on a wide cluster this silently chews hundreds of MiB. Throughput gain over the autotuned default is nil — set to -1 (default) and let Linux TCP autotuning size it."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_RECEIVE_BUFFER_BYTES_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_RECEIVE_BUFFER_BYTES_TOO_HIGH, s, KafkaTypes.RECEIVE_BUFFER_BYTES_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 16L * 1024L * 1024L; },
+                "receive.buffer.bytes={value} — over 16 MiB. Pins SO_RCVBUF per broker connection in kernel memory; throughput ceiling is set by fetch.max.bytes / max.partition.fetch.bytes anyway, so the extra buffer is pure overhead. Set to -1 and let Linux autotune."));
         addIfEnabled(rules, sev, RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP, s -> new ConfigKeyValueRule(
                 RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP, s, KafkaTypes.SSL_KEYSTORE_LOCATION_KEY,
                 v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp") || v.startsWith("/dev/shm")),

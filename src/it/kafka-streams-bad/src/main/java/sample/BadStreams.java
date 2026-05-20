@@ -380,4 +380,14 @@ public final class BadStreams {
         KafkaStreams streams = new KafkaStreams(b.build(), replicationFactorOne());
         streams.localThreadsMetadata();
     }
+
+    // RULE: STREAMS_COMMIT_INTERVAL_TOO_HIGH.
+    public Properties commitIntervalTooHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("commit.interval.ms", "300000");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }

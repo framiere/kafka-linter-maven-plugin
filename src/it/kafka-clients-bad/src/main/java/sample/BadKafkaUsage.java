@@ -1143,6 +1143,24 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: PRODUCER_SEND_BUFFER_BYTES_TOO_HIGH.
+    public Properties sendBufferBytesTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("send.buffer.bytes", "33554432");
+        return p;
+    }
+
+    // RULE: CONSUMER_RECEIVE_BUFFER_BYTES_TOO_HIGH.
+    public Properties receiveBufferBytesTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("receive.buffer.bytes", "33554432");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
