@@ -658,6 +658,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RECONNECT_BACKOFF_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_RECONNECT_BACKOFF_MS_TOO_HIGH, s, KafkaTypes.RECONNECT_BACKOFF_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 10_000L; },
+                "reconnect.backoff.ms={value} — above 10 s. This is the FIRST reconnect delay before KIP-580 exponential backoff even kicks in; every transient broker bounce holds connections idle for at least this long before the first retry. Default 50 ms is right — initial reconnects should be cheap; raise reconnect.backoff.max.ms (the cap) if you need to be gentle, not the floor."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_RECONNECT_BACKOFF_MAX_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_RECONNECT_BACKOFF_MAX_MS_TOO_HIGH, s, KafkaTypes.RECONNECT_BACKOFF_MAX_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 60_000L; },
+                "reconnect.backoff.max.ms={value} — above 60 s. KIP-580 caps exponential reconnect backoff at this value; after a few failed attempts every subsequent reconnect waits the full cap. A rolling broker restart that should drain in seconds stretches into minutes of dead connections, producer batches expire, consumers stall and rebalance, K8s liveness probes flap. Default 1000 ms is right."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 60_000L; },
+                "socket.connection.setup.timeout.ms={value} — above 60 s. KIP-601 initial TCP setup timeout; with a value this high, a single broker DNS / network-partition failure pins a client thread waiting that long before failing over, request.timeout.ms fires first and the failure surfaces as request timeout (not connection timeout), masking the real cause. Default 10000 ms is right."));
         addIfEnabled(rules, sev, RuleId.STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH, s, KafkaTypes.STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY,
                 v -> { long n = parseLongOrZero(v); return n > 7_200_000L; },

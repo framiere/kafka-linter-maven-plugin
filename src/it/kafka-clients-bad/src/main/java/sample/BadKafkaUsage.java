@@ -1170,6 +1170,33 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: PRODUCER_RECONNECT_BACKOFF_MS_TOO_HIGH.
+    public Properties reconnectBackoffMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("reconnect.backoff.ms", "60000");
+        return p;
+    }
+
+    // RULE: KAFKA_RECONNECT_BACKOFF_MAX_MS_TOO_HIGH.
+    public Properties reconnectBackoffMaxMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("reconnect.backoff.max.ms", "300000");
+        return p;
+    }
+
+    // RULE: KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MS_TOO_HIGH.
+    public Properties socketConnectionSetupTimeoutMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("socket.connection.setup.timeout.ms", "300000");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
