@@ -21,6 +21,7 @@ import io.conductor.kafkalinter.rules.observability.JacksonDefaultTypingRule;
 import io.conductor.kafkalinter.rules.observability.SchemaRegistryUrlMissingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkBlockingMissingOnIncomingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkDevservicesInProdRule;
+import io.conductor.kafkalinter.rules.quarkus.SmallRyeChannelConfigRule;
 import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDelegatesRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
@@ -228,6 +229,24 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.QK_DEVSERVICES_IN_PROD) != Severity.OFF) {
             rules.add(new QkDevservicesInProdRule(sev.get(RuleId.QK_DEVSERVICES_IN_PROD)));
+        }
+        if (sev.get(RuleId.QK_COMMIT_STRATEGY_IGNORE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_COMMIT_STRATEGY_IGNORE, sev.get(RuleId.QK_COMMIT_STRATEGY_IGNORE),
+                    "incoming", "commit-strategy", "ignore",
+                    "mp.messaging.incoming.{channel}.commit-strategy=ignore — offsets never committed; restart re-reads everything."));
+        }
+        if (sev.get(RuleId.QK_FAILURE_STRATEGY_IGNORE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_FAILURE_STRATEGY_IGNORE, sev.get(RuleId.QK_FAILURE_STRATEGY_IGNORE),
+                    "incoming", "failure-strategy", "ignore",
+                    "mp.messaging.incoming.{channel}.failure-strategy=ignore — processing exceptions are swallowed and offsets advance. Use fail or dead-letter-queue."));
+        }
+        if (sev.get(RuleId.QK_AUTO_OFFSET_RESET_LATEST) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_AUTO_OFFSET_RESET_LATEST, sev.get(RuleId.QK_AUTO_OFFSET_RESET_LATEST),
+                    "incoming", "auto.offset.reset", "latest",
+                    "mp.messaging.incoming.{channel}.auto.offset.reset=latest — fresh consumer group skips existing backlog. Prefer 'earliest' for pipeline consumers."));
         }
         return rules;
     }

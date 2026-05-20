@@ -402,6 +402,36 @@ public final class RuleId {
             .whyMatters("Set `%prod.quarkus.kafka.devservices.enabled=false` explicitly. The default is on-when-no-bootstrap-servers, and prod environments do sometimes start without their config injected. Belt and braces.")
             .build());
 
+    public static final RuleId QK_COMMIT_STRATEGY_IGNORE = register(builder("QK_COMMIT_STRATEGY_IGNORE")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_COMMIT_STRATEGY_IGNORE.md")
+            .message("SmallRye incoming channel has commit-strategy=ignore — offsets are never committed for this channel.")
+            .tagline("commit-strategy=ignore: you process everything, you remember nothing.")
+            .mechanism("`mp.messaging.incoming.<channel>.commit-strategy` controls when the connector commits offsets. `ignore` disables commit entirely: SmallRye reads, dispatches, and forgets. On the next restart the consumer re-reads from `auto.offset.reset`.")
+            .impact("After a restart the channel re-reads from the beginning (or the latest, depending on reset policy) — either way, recently-processed records are reprocessed or skipped. Looks like 'we process every message twice' or 'we missed everything overnight' depending on reset.")
+            .whyMatters("The default is `throttled` and that's almost always what you want. Use `ignore` only for channels where reprocessing is free and explicit (CDC replays, debugging consumers). Document the reason next to the setting.")
+            .build());
+
+    public static final RuleId QK_FAILURE_STRATEGY_IGNORE = register(builder("QK_FAILURE_STRATEGY_IGNORE")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_FAILURE_STRATEGY_IGNORE.md")
+            .message("SmallRye incoming channel has failure-strategy=ignore — processing exceptions are swallowed and offsets advance.")
+            .tagline("failure-strategy=ignore is data loss with a smile.")
+            .mechanism("`mp.messaging.incoming.<channel>.failure-strategy=ignore` instructs SmallRye to log a warning when the @Incoming method throws and then ACK the message anyway. The next record processes; nothing fails loud.")
+            .impact("Any processing exception (deserialization failure, downstream timeout, business-logic crash) becomes a silent skip. The consumer log says 'WARN: message failed' once and moves on; metrics and downstream effects look fine until customers complain.")
+            .whyMatters("Use `fail` (default) for processing errors you want to investigate, or `dead-letter-queue` if you have an ops process to drain the DLQ. `ignore` is only correct for channels where the record was never meant to be reliable — and that case is rare enough to need a comment.")
+            .build());
+
+    public static final RuleId QK_AUTO_OFFSET_RESET_LATEST = register(builder("QK_AUTO_OFFSET_RESET_LATEST")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("quarkus-kafka")
+            .docPath("quarkus-kafka/QK_AUTO_OFFSET_RESET_LATEST.md")
+            .message("SmallRye incoming channel sets auto.offset.reset=latest — fresh deployments skip the existing backlog.")
+            .tagline("auto.offset.reset=latest on a SmallRye channel is the Quarkus version of the same backlog-skip bug.")
+            .mechanism("`mp.messaging.incoming.<channel>.auto.offset.reset=latest` makes a brand-new consumer group jump to the topic's end. Backlog produced before the first deployment is silently passed over.")
+            .impact("First deployment of a new service skips every record produced before it started. Easy to miss because the symptom — 'why didn't service X receive message Y from yesterday?' — surfaces only after the app has been running for a while.")
+            .whyMatters("Default to `earliest` for most analytical / pipeline consumers. Choose `latest` deliberately for heartbeat / live-only / monitoring consumers, and write a comment saying why.")
+            .build());
+
     public static final RuleId QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER = register(builder("QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("quarkus-kafka")
             .docPath("quarkus-kafka/QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER.md")
