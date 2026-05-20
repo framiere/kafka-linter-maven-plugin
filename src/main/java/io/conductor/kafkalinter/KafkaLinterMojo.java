@@ -658,16 +658,6 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
-        addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_AUTO_REGISTER_TRUE, s -> ConfigKeyValueRule.literal(
-                RuleId.SCHEMA_REGISTRY_AUTO_REGISTER_TRUE, s, KafkaTypes.SCHEMA_REGISTRY_AUTO_REGISTER_SCHEMAS_KEY, "true",
-                "auto.register.schemas=true — every producer can register a new subject version on first send. In prod this means a bad serializer config or an accidental schema mutation silently writes a breaking schema to the registry, then every downstream consumer crashes on poll. Set false in prod; register schemas via CI/CD instead."));
-        addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_USE_LATEST_VERSION_TRUE, s -> ConfigKeyValueRule.literal(
-                RuleId.SCHEMA_REGISTRY_USE_LATEST_VERSION_TRUE, s, KafkaTypes.SCHEMA_REGISTRY_USE_LATEST_VERSION_KEY, "true",
-                "use.latest.version=true — serializer always writes records with the *latest* registered schema regardless of the local POJO/class. Any field added to the latest schema but missing from the runtime object serializes as null/default, silently corrupting downstream state. Only intended for schema-references workflows; remove otherwise."));
-        addIfEnabled(rules, sev, RuleId.SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO_LITERAL, s -> new ConfigKeyValueRule(
-                RuleId.SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO_LITERAL, s, KafkaTypes.SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO_KEY,
-                v -> v != null && v.contains(":") && !looksLikeUnresolvedPlaceholder(v),
-                "basic.auth.user.info={value} — literal user:password pair hard-coded for Schema Registry HTTP Basic auth. Bytecode contains the credential verbatim; anyone with read access to the artifact (Nexus, Docker registry, source archive) has the registry credential. Inject via env-var / Vault / Kubernetes Secret."));
         addIfEnabled(rules, sev, RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP, s -> new ConfigKeyValueRule(
                 RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP, s, KafkaTypes.SSL_KEYSTORE_LOCATION_KEY,
                 v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp") || v.startsWith("/dev/shm")),

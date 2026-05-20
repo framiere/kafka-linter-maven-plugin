@@ -90,9 +90,6 @@ public final class KafkaTypes {
     public static final String SSL_KEYSTORE_LOCATION_KEY = "ssl.keystore.location";
     public static final String SSL_TRUSTSTORE_LOCATION_KEY = "ssl.truststore.location";
     public static final String CLIENT_RACK_KEY = "client.rack";
-    public static final String SCHEMA_REGISTRY_AUTO_REGISTER_SCHEMAS_KEY = "auto.register.schemas";
-    public static final String SCHEMA_REGISTRY_USE_LATEST_VERSION_KEY = "use.latest.version";
-    public static final String SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO_KEY = "basic.auth.user.info";
     public static final Set<String> CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES = Set.of("earliest", "latest", "none");
     public static final Set<String> PRODUCER_ACKS_VALID_VALUES = Set.of("0", "1", "-1", "all");
     public static final String STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY = "probing.rebalance.interval.ms";
