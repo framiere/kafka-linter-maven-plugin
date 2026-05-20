@@ -586,6 +586,15 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: SECURITY_SSL_KEYSTORE_TYPE_JKS.
+    public void sslKeystoreTypeJks() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("ssl.keystore.type", "JKS");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();

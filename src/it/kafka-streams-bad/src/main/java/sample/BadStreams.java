@@ -122,4 +122,23 @@ public final class BadStreams {
         KStream<String, String> s = b.stream("in");
         s.print(Printed.toSysOut());
     }
+
+    // RULE: STREAMS_REPLICATION_FACTOR_TWO.
+    public Properties replicationFactorTwo() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("replication.factor", "2");
+        return p;
+    }
+
+    // RULE: STREAMS_TOPOLOGY_OPTIMIZATION_NONE.
+    public Properties topologyOptimizationNone() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("topology.optimization", "none");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }

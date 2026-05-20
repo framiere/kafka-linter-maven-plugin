@@ -99,6 +99,8 @@ public final class KafkaTypes {
     public static final String COOPERATIVE_STICKY_ASSIGNOR_FQCN =
             "org.apache.kafka.clients.consumer.CooperativeStickyAssignor";
     public static final String SASL_MECHANISM_KEY = "sasl.mechanism";
+    public static final String STREAMS_TOPOLOGY_OPTIMIZATION_KEY = "topology.optimization";
+    public static final String SSL_KEYSTORE_TYPE_KEY = "ssl.keystore.type";
 
     // kafka-streams config keys
     public static final String STREAMS_APPLICATION_ID_KEY = "application.id";

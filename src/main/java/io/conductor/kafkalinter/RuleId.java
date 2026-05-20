@@ -1140,6 +1140,36 @@ public final class RuleId {
             .whyMatters("Even when TLS is correctly configured, PLAIN puts the broker in possession of every client's plaintext password — a key-management headache that the SCRAM family removes. The right shape is `SCRAM-SHA-256` or `SCRAM-SHA-512`: the broker only stores a derived value, the handshake uses a challenge, and a compromised broker disk does not leak the original passwords. Reserve PLAIN for cases where SCRAM is unavailable on the broker — and then only over SASL_SSL.")
             .build());
 
+    public static final RuleId STREAMS_TOPOLOGY_OPTIMIZATION_NONE = register(builder("STREAMS_TOPOLOGY_OPTIMIZATION_NONE")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_TOPOLOGY_OPTIMIZATION_NONE.md")
+            .message("topology.optimization=none — extra repartition / source-KTable changelog topics that 'all' would eliminate.")
+            .tagline("Streams' topology optimizer fuses redundant repartitions and lets source KTables reuse the input topic as a changelog. Disabling it ships more internal topics than necessary.")
+            .mechanism("`topology.optimization` (default `none` for backward compatibility, but the modern recommendation is `all` or `reuse.ktable.source.topic`) tells Streams to rewrite the topology before runtime. Two optimisations matter most: (1) reusing the input topic as a KTable's changelog instead of creating a `-changelog` internal topic, and (2) merging consecutive `selectKey()→groupByKey()` operations into a single repartition. Both reductions are correctness-preserving and broker-load-reducing.")
+            .impact("With `topology.optimization=none`, a topology that uses two consecutive `groupBy()` operations creates two internal repartition topics; with `all`, it creates one. A KTable read from a compacted input topic carries a duplicate `-changelog` topic — twice the storage, twice the replication bandwidth — under `none`. On a heavy topology, the optimizer cuts internal topic count by 30-50%, with proportional savings on broker disk, network, and the GroupCoordinator's commit traffic.")
+            .whyMatters("The reason the default is `none` is that switching it on can re-shape an existing application's internal topics — which is a breaking change for live state. For *new* applications there is no reason to leave it off; for *existing* applications the documented migration path lets you switch deliberately. This rule is INFO severity because it is improvement headroom, not a correctness bug.")
+            .build());
+
+    public static final RuleId STREAMS_REPLICATION_FACTOR_TWO = register(builder("STREAMS_REPLICATION_FACTOR_TWO")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_REPLICATION_FACTOR_TWO.md")
+            .message("Streams replication.factor=2 — losing one broker leaves only one replica, no fault-tolerance budget for a second loss.")
+            .tagline("Streams' internal topics carry the application state. With replication.factor=2, the first broker loss leaves you single-replicated; the second loss is data loss.")
+            .mechanism("`replication.factor` (Streams-side, applied to changelog and repartition topics) controls how many in-sync replicas each internal topic gets. A value of 2 means 'one leader + one follower'. When the follower is down (rolling restart, hardware fault), `min.insync.replicas≥2` blocks all writes; when the leader is also down (rolling restart of a second broker, or rack failure), there is no second copy of the changelog.")
+            .impact("On a routine rolling restart of a 3-node cluster, each broker is unavailable for a few minutes at a time. With `replication.factor=2`, every changelog has a window where only one ISR exists — producers stall (acks=all needs `min.insync.replicas` met), state-store updates pause, and Streams tasks may evict. Worse, an unexpected fault during the restart window (a coincident hardware failure) means full data loss for the topics that happened to have both replicas on the affected pair.")
+            .whyMatters("The standard production recommendation is `replication.factor=3` with `min.insync.replicas=2`. That gives you one tolerated failure with continued availability. Streams's default of 1 is for local testing; 2 is sometimes set as a 'compromise' that costs almost as much as 3 (still two cross-broker replicas to write) but gives no real fault-tolerance. The right answer in production is 3.")
+            .build());
+
+    public static final RuleId SECURITY_SSL_KEYSTORE_TYPE_JKS = register(builder("SECURITY_SSL_KEYSTORE_TYPE_JKS")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("security")
+            .docPath("security/SECURITY_SSL_KEYSTORE_TYPE_JKS.md")
+            .message("ssl.keystore.type=JKS — proprietary keystore format; PKCS12 is the modern, cross-tool standard.")
+            .tagline("JKS is the Java-specific keystore format from the 1990s. PKCS12 is the cross-platform, modern alternative — JDK 9+ uses it as the default and the tooling around it is much better.")
+            .mechanism("`ssl.keystore.type` selects the JCA KeyStore SPI implementation that the Kafka client uses to load `ssl.keystore.location`. `JKS` is the proprietary Java format; `PKCS12` is the cross-tool RFC-7292 format that OpenSSL, Windows, macOS Keychain, and every modern certificate tool produce natively. JDK 9+ defaults to `PKCS12`; the `JKS` value is supported but discouraged. Apache Kafka 3.x will keep accepting JKS but the JSSE deprecation notes flag it.")
+            .impact("This is not a runtime bug — JKS still works — but it is a maintainability tax. Rotating certificates requires `keytool` round-trips that the rest of the certificate-management toolchain (cert-manager, OpenShift's serving certs, AWS ACM exports, Vault's PKI engine) cannot produce directly. Every cert rotation becomes a manual JKS conversion step, which is exactly where production teams introduce bugs.")
+            .whyMatters("Switching to PKCS12 is a one-line config change plus a `keytool -importkeystore -srcstoretype JKS -deststoretype PKCS12` conversion. Once done, the certificate-management pipeline is straight-through. This rule is INFO severity: it's improvement headroom, not a vulnerability, and a JKS keystore is fine until the next rotation.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

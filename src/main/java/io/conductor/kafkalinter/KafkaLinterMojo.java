@@ -304,6 +304,12 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_REPLICATION_FACTOR_ONE, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_REPLICATION_FACTOR_ONE, s, KafkaTypes.STREAMS_REPLICATION_FACTOR_KEY, "1",
                 "Streams replication.factor=1 — internal changelog/repartition topics become single-points-of-failure."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPLICATION_FACTOR_TWO, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_REPLICATION_FACTOR_TWO, s, KafkaTypes.STREAMS_REPLICATION_FACTOR_KEY, "2",
+                "Streams replication.factor=2 — losing one broker leaves only one replica; production target is 3 with min.insync.replicas=2."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TOPOLOGY_OPTIMIZATION_NONE, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_TOPOLOGY_OPTIMIZATION_NONE, s, KafkaTypes.STREAMS_TOPOLOGY_OPTIMIZATION_KEY, "none",
+                "topology.optimization=none — extra repartition/changelog topics that 'all' would eliminate. For new apps, switch to 'all'."));
         addIfEnabled(rules, sev, RuleId.STREAMS_STATE_DIR_TMP, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_STATE_DIR_TMP, s, KafkaTypes.STREAMS_STATE_DIR_KEY,
                 v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp")),
@@ -390,6 +396,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SECURITY_SASL_MECHANISM_PLAIN, s -> ConfigKeyValueRule.literal(
                 RuleId.SECURITY_SASL_MECHANISM_PLAIN, s, KafkaTypes.SASL_MECHANISM_KEY, "PLAIN",
                 "sasl.mechanism=PLAIN — password sent in cleartext during SASL exchange; switch to SCRAM-SHA-256/512 (or ensure SASL_SSL only)."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SSL_KEYSTORE_TYPE_JKS, s -> ConfigKeyValueRule.literal(
+                RuleId.SECURITY_SSL_KEYSTORE_TYPE_JKS, s, KafkaTypes.SSL_KEYSTORE_TYPE_KEY, "JKS",
+                "ssl.keystore.type=JKS — proprietary keystore format; switch to PKCS12 (cross-tool, JDK 9+ default)."));
         addIfEnabled(rules, sev, RuleId.CRED_SASL_JAAS_LITERAL, s -> new ConfigKeyValueRule(
                 RuleId.CRED_SASL_JAAS_LITERAL, s, KafkaTypes.SASL_JAAS_CONFIG_KEY,
                 v -> isLiteralCredential(v) && v.toLowerCase().contains("password=") && !v.contains("password=\"${"),
