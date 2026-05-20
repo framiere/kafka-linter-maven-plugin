@@ -87,6 +87,9 @@ public final class KafkaTypes {
     public static final String STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_KEY = "global.consumer.auto.offset.reset";
     public static final String STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_KEY = "restore.consumer.auto.offset.reset";
     public static final String STREAMS_DEFAULT_DSL_STORE_KEY = "default.dsl.store";
+    public static final String SSL_KEYSTORE_LOCATION_KEY = "ssl.keystore.location";
+    public static final String SSL_TRUSTSTORE_LOCATION_KEY = "ssl.truststore.location";
+    public static final String CLIENT_RACK_KEY = "client.rack";
     public static final Set<String> CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES = Set.of("earliest", "latest", "none");
     public static final Set<String> PRODUCER_ACKS_VALID_VALUES = Set.of("0", "1", "-1", "all");
     public static final String STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY = "probing.rebalance.interval.ms";

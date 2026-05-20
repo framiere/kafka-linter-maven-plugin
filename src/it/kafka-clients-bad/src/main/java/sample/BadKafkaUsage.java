@@ -1117,6 +1117,32 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: SECURITY_SSL_KEYSTORE_LOCATION_TMP.
+    public Properties sslKeystoreLocationTmp() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("security.protocol", "SSL");
+        p.put("ssl.keystore.location", "/tmp/kafka-client.jks");
+        return p;
+    }
+
+    // RULE: SECURITY_SSL_TRUSTSTORE_LOCATION_TMP.
+    public Properties sslTruststoreLocationTmp() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("security.protocol", "SSL");
+        p.put("ssl.truststore.location", "/tmp/kafka-truststore.jks");
+        return p;
+    }
+
+    // RULE: KAFKA_CLIENT_RACK_PLACEHOLDER.
+    public Properties clientRackPlaceholder() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("client.rack", "${POD_TOPOLOGY_ZONE}");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

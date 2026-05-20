@@ -658,6 +658,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP, s, KafkaTypes.SSL_KEYSTORE_LOCATION_KEY,
+                v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp") || v.startsWith("/dev/shm")),
+                "ssl.keystore.location={value} — keystore in /tmp / /var/tmp / /dev/shm. World-readable/writable scratch space; any other process can read the private key or replace the keystore with an attacker-controlled file. Move to /etc/kafka/ssl, /opt/app/secrets, or a Kubernetes Secret mount with chmod 600."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SSL_TRUSTSTORE_LOCATION_TMP, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_SSL_TRUSTSTORE_LOCATION_TMP, s, KafkaTypes.SSL_TRUSTSTORE_LOCATION_KEY,
+                v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp") || v.startsWith("/dev/shm")),
+                "ssl.truststore.location={value} — truststore in /tmp / /var/tmp / /dev/shm. Any process that can write there replaces the CA bundle with an attacker-controlled CA and MITMs every subsequent broker handshake without triggering any TLS error. Move to /etc/kafka/ssl or a Kubernetes Secret mount."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_RACK_PLACEHOLDER, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_CLIENT_RACK_PLACEHOLDER, s, KafkaTypes.CLIENT_RACK_KEY,
+                v -> looksLikeUnresolvedPlaceholder(v),
+                "client.rack={value} — unresolved placeholder (${...}). The broker sees the literal text, fails the rack match, and silently falls back to leader-fetching across AZs. Resolve via @Value/System.getenv/ConfigProvider before constructing the client; verify with the preferred-read-replica consumer metric."));
         addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST, s, KafkaTypes.STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_KEY, "latest",
                 "global.consumer.auto.offset.reset=latest — GlobalKTable bootstrap consumer skips to tail instead of reading from beginning. The global store is permanently incomplete; every join against missing keys silently returns null. There is no production reason for this override — remove it."));
