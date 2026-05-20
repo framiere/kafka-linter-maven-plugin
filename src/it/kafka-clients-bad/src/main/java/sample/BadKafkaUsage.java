@@ -595,6 +595,26 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT.
+    public void consumerAutoOffsetResetNone() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "consumer-offset-none");
+        p.put("auto.offset.reset", "none");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: KAFKA_CLIENT_ID_GENERIC.
+    public void kafkaClientIdGeneric() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("client.id", "producer");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();

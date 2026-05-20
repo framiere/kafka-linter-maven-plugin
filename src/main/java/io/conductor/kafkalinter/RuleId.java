@@ -1170,6 +1170,36 @@ public final class RuleId {
             .whyMatters("Switching to PKCS12 is a one-line config change plus a `keytool -importkeystore -srcstoretype JKS -deststoretype PKCS12` conversion. Once done, the certificate-management pipeline is straight-through. This rule is INFO severity: it's improvement headroom, not a vulnerability, and a JKS keystore is fine until the next rotation.")
             .build());
 
+    public static final RuleId SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC = register(builder("SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC.md")
+            .message("spring.kafka.producer.transaction-id-prefix is a generic placeholder — two apps with the same prefix will fence each other across restarts.")
+            .tagline("Spring's transaction-id-prefix becomes the per-producer transactional.id at runtime. A generic value collides with whoever else also forgot to set theirs.")
+            .mechanism("When `spring.kafka.producer.transaction-id-prefix` is set, Spring's DefaultKafkaProducerFactory builds the underlying producer's `transactional.id` as `<prefix><suffix>` — the suffix is the listener-container's group-id and a sequence number, or a synthesised id for non-listener producers. The full id is what the broker uses for the fencing/epoch protocol. If the prefix collides between two apps, the full ids end up colliding too — and the broker enforces 'one live producer per transactional.id' by fencing all but the latest.")
+            .impact("Two services both shipping with `spring.kafka.producer.transaction-id-prefix=tx-` end up fencing each other: every Spring app restart bumps the producer epoch, the other service's next send fails with `ProducerFencedException`, the Spring listener container restarts, fences the first one back, and the cluster oscillates. Symptoms look like 'random ProducerFencedExceptions in the listener container logs that nobody can correlate'.")
+            .whyMatters("Pick a service-and-environment qualified prefix: `payments-fraud-pipeline-staging-`. Treat the prefix the way you treat a database lease — it identifies a single application instance group, not a service. This rule catches the copy-paste class of bug, where the placeholder ships unchanged.")
+            .build());
+
+    public static final RuleId CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT = register(builder("CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT.md")
+            .message("auto.offset.reset=none — consumer throws NoOffsetForPartitionException at startup if no committed offset exists.")
+            .tagline("auto.offset.reset=none means 'if there is no committed offset, refuse to start'. Sometimes that is what you want; more often it ships a service that won't start on a fresh group.")
+            .mechanism("When a consumer joins a group for a partition that has no committed offset yet (new group, expired group, never-committed-offset), `auto.offset.reset` decides whether to start at `earliest`, `latest`, or `none`. `none` raises `NoOffsetForPartitionException` and the consumer refuses to start. The exception bubbles to `poll()`, the listener container restarts, and the app stays in a crash loop until either offsets are seeded manually or the setting is changed.")
+            .impact("On a service whose first deployment uses a fresh `group.id`, `auto.offset.reset=none` makes the deploy fail in a way that looks like a Kafka outage — the service is up, the broker is up, but the consumer cannot start. In incident reviews this confuses people: the error message names the partition, not the policy. The intended use case (operator demands explicit offset seeding before consumption starts) is real but rare.")
+            .whyMatters("This is INFO severity because `none` can be the right choice for offset-sensitive pipelines (you'd rather fail loudly than silently skip or replay). But it should be a deliberate choice with operational runbook attached, not a copy-paste survival from a tutorial. The rule prompts a review; it does not assert wrongness.")
+            .build());
+
+    public static final RuleId KAFKA_CLIENT_ID_GENERIC = register(builder("KAFKA_CLIENT_ID_GENERIC")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/KAFKA_CLIENT_ID_GENERIC.md")
+            .message("client.id is a generic placeholder — broker logs and metrics cannot tell instances apart.")
+            .tagline("client.id is the label brokers attach to every request from this client. A generic value turns every broker dashboard and audit log into anonymous noise.")
+            .mechanism("`client.id` is included in every produce/fetch/metadata request and is the dimension brokers use to label client metrics (`kafka.server:type=BrokerTopicMetrics,name=*` per-client-id), JMX rate limits, ACL audit logs, and quota tracking. The default is a generated `producer-<n>` / `consumer-<n>` — already not great for ops. A placeholder like `client`, `my-client`, `test` is strictly worse: every service in the fleet shows up as the same identity in broker metrics, and quota limits get applied unfairly because two unrelated apps share an id.")
+            .impact("On a multi-tenant cluster, an unattributed producer flooding the cluster cannot be pinned by `client.id` alone — the broker's metrics dashboard shows a hot client called 'producer' with no further information. Quotas configured per-client-id (the common pattern) apply collectively across every service that shares the placeholder. Audit logs (`org.apache.kafka.server.authorizer.AuthorizerAuditLogPattern`) become useless for forensics.")
+            .whyMatters("Pick a service-and-instance qualified value: `payments-fraud-screening-i07`, `audit-writer-v3-c0`. The cost is essentially zero (one config line), and the value at debug-time is enormous. INFO severity because it is operational hygiene rather than a correctness bug.")
+            .build());
+
     public static final RuleId SSL_ENDPOINT_IDENTIFICATION_DISABLED = register(builder("SSL_ENDPOINT_IDENTIFICATION_DISABLED")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("security")
             .docPath("security/SSL_ENDPOINT_IDENTIFICATION_DISABLED.md")

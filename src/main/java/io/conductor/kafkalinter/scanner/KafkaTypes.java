@@ -101,6 +101,13 @@ public final class KafkaTypes {
     public static final String SASL_MECHANISM_KEY = "sasl.mechanism";
     public static final String STREAMS_TOPOLOGY_OPTIMIZATION_KEY = "topology.optimization";
     public static final String SSL_KEYSTORE_TYPE_KEY = "ssl.keystore.type";
+    public static final String CLIENT_ID_KEY = "client.id";
+    public static final Set<String> KAFKA_GENERIC_CLIENT_IDS = Set.of(
+            "client", "my-client", "kafka-client", "test", "test-client", "demo", "demo-client",
+            "producer", "my-producer", "kafka-producer", "test-producer",
+            "consumer", "my-consumer", "kafka-consumer", "test-consumer",
+            "app", "application", "default", "tmp"
+    );
 
     // kafka-streams config keys
     public static final String STREAMS_APPLICATION_ID_KEY = "application.id";

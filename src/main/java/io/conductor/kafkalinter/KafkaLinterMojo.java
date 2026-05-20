@@ -284,6 +284,13 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_TRANSACTIONAL_ID_GENERIC, s, KafkaTypes.TRANSACTIONAL_ID_KEY,
                 v -> v != null && KafkaTypes.PRODUCER_GENERIC_TRANSACTIONAL_IDS.contains(v.trim().toLowerCase()),
                 "transactional.id={value} — a generic placeholder. Two producers with this id will fence each other across restarts."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_AUTO_OFFSET_RESET_NONE_EXPLICIT, s, KafkaTypes.AUTO_OFFSET_RESET_KEY, "none",
+                "auto.offset.reset=none — fresh consumer groups refuse to start (NoOffsetForPartitionException). Sometimes intentional; verify runbook."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_ID_GENERIC, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_CLIENT_ID_GENERIC, s, KafkaTypes.CLIENT_ID_KEY,
+                v -> v != null && KafkaTypes.KAFKA_GENERIC_CLIENT_IDS.contains(v.trim().toLowerCase()),
+                "client.id={value} — generic placeholder. Broker metrics, quotas and audit logs cannot attribute traffic; use a service-qualified id."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
@@ -589,6 +596,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.auto-commit-interval",
                     v -> { try { return v != null && Long.parseLong(v.trim()) > 60000L; } catch (NumberFormatException e) { return false; } },
                     "spring.kafka.consumer.auto-commit-interval={value} — above 60 s. Paired with auto-commit=true the loss window after a crash is this many ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC,
+                    sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC),
+                    "spring.kafka.producer.transaction-id-prefix",
+                    v -> {
+                        if (v == null) return false;
+                        String trimmed = v.trim().toLowerCase();
+                        if (trimmed.endsWith("-") || trimmed.endsWith(".")) {
+                            trimmed = trimmed.substring(0, trimmed.length() - 1);
+                        }
+                        return KafkaTypes.PRODUCER_GENERIC_TRANSACTIONAL_IDS.contains(trimmed);
+                    },
+                    "spring.kafka.producer.transaction-id-prefix={value} — a generic placeholder. Two apps with this prefix will fence each other across restarts.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {
