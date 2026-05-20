@@ -131,6 +131,9 @@ public final class KafkaTypes {
     public static final String STREAMS_MAX_TASK_IDLE_MS_KEY = "max.task.idle.ms";
     public static final String STREAMS_DEFAULT_PRODUCTION_HANDLER_KEY = "default.production.exception.handler";
     public static final String STREAMS_ALWAYS_CONTINUE_PRODUCTION_HANDLER_FQCN = "org.apache.kafka.streams.errors.AlwaysContinueProductionExceptionHandler";
+    public static final String STREAMS_NUM_STREAM_THREADS_KEY = "num.stream.threads";
+    public static final String CONNECTIONS_MAX_IDLE_MS_KEY = "connections.max.idle.ms";
+    public static final String MAX_PARTITION_FETCH_BYTES_KEY = "max.partition.fetch.bytes";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

@@ -368,6 +368,25 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE, s, KafkaTypes.STREAMS_DEFAULT_PRODUCTION_HANDLER_KEY,
                 v -> v != null && v.endsWith("AlwaysContinueProductionExceptionHandler"),
                 "default.production.exception.handler={value} — silently drops every failed produce. Use the default fail-fast handler or a selective one with DLQ."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STREAM_THREADS_ONE, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_NUM_STREAM_THREADS_ONE, s, KafkaTypes.STREAMS_NUM_STREAM_THREADS_KEY, "1",
+                "num.stream.threads=1 — single-thread topology cannot use multi-core pods. Set to min(input-partitions/instances, cpu-cores)."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW, s, KafkaTypes.CONNECTIONS_MAX_IDLE_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) < 30000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "connections.max.idle.ms={value} — below 30 s. Every brief lull triggers a full TCP/TLS/SASL re-handshake. Default 540000 ms is right."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_HIGH, s, KafkaTypes.MAX_PARTITION_FETCH_BYTES_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 16L * 1024 * 1024; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.partition.fetch.bytes={value} — above 16 MiB. Per-partition memory cost scales with assigned partitions; raises rebalance/GC pressure."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

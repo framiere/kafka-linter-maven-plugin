@@ -643,6 +643,26 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW.
+    public void kafkaConnectionsMaxIdleMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("connections.max.idle.ms", "5000");
+        p.put("compression.type", "snappy");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_HIGH.
+    public void consumerMaxPartitionFetchBytesTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "my-distinct-consumer-group-v1");
+        p.put("max.partition.fetch.bytes", "104857600");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
