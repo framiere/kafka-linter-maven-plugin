@@ -566,6 +566,22 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE, s, KafkaTypes.STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_KEY, "none",
                 "rack.aware.assignment.strategy=none — explicitly disables rack-aware task placement. Standby tasks may land in the same AZ as their active; an AZ outage kills both."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_LOW, s, KafkaTypes.MAX_PARTITION_FETCH_BYTES_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) < 1_048_576L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "max.partition.fetch.bytes={value} — below 1 MiB (the broker's default max.message.bytes). Any record above this cap stalls the partition or wastes a round-trip; default 1 MiB matches the broker's default by design."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.DEFAULT_API_TIMEOUT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 300_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "default.api.timeout.ms={value} — above 5 min. Blocking calls like commitSync()/position()/listTopics() hang the calling thread for the whole window before throwing; graceful shutdown stalls past the pod's terminationGracePeriod."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -856,6 +872,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.group-id",
                     v -> v != null && KafkaTypes.CONSUMER_GENERIC_GROUP_IDS.contains(v.trim().toLowerCase()),
                     "spring.kafka.consumer.group-id={value} — a generic placeholder. Two apps that share this group-id will collide on partition assignment and silently corrupt each other's offsets.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_RECORDS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_RECORDS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_RECORDS_TOO_LOW),
+                    "spring.kafka.consumer.max-poll-records",
+                    v -> { try { long n = v == null ? 0 : Long.parseLong(v.trim()); return n >= 1 && n <= 5; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.consumer.max-poll-records={value} — at or below 5. Each KafkaListener poll returns at most a handful of records; per-poll listener-container overhead dominates and throughput collapses 50-100× vs the default 500.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {
