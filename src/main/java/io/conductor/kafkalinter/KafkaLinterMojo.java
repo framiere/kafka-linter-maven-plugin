@@ -1282,6 +1282,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.transaction.timeout.ms={value} — above 15 min. A crashed transactional producer blocks the LSO on every partition it wrote to for the full window; downstream read_committed consumers stall with zero error signal. Default 60 s lets the broker self-heal in a minute.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_REQUEST_TIMEOUT_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_REQUEST_TIMEOUT_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_REQUEST_TIMEOUT_MS_TOO_LOW),
+                    "spring.kafka.producer.properties.request.timeout.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 10_000L; },
+                    "spring.kafka.producer.properties.request.timeout.ms={value} — below 10 s. Routine cross-AZ produce latency burns through retries; bound the application call instead. Default 30 s is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_IN_FLIGHT_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_IN_FLIGHT_TOO_HIGH),
+                    "spring.kafka.producer.properties.max.in.flight.requests.per.connection",
+                    v -> { long n = parseLongOrZero(v); return n > 5L; },
+                    "spring.kafka.producer.properties.max.in.flight.requests.per.connection={value} — above 5. Idempotent producer (default since 3.0) rejects this at startup with ConfigException; KafkaTemplate fails to wire.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_INTERVAL_MS_TOO_LOW),
+                    "spring.kafka.consumer.properties.max.poll.interval.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 60_000L; },
+                    "spring.kafka.consumer.properties.max.poll.interval.ms={value} — below 60 s. Any batch overrun evicts the consumer; group enters a poll/evict loop with unbounded re-delivery. Tighten max.poll.records instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
