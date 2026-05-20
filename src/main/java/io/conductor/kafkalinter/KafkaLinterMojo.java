@@ -658,6 +658,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH, s, KafkaTypes.STREAMS_PROBING_REBALANCE_INTERVAL_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 7_200_000L; },
+                "probing.rebalance.interval.ms={value} — above 2 h. Streams won't ask 'are warm-up standbys caught up?' for that long; the standby capacity you provisioned via num.standby.replicas/max.warmup.replicas sits idle, scale-out is delayed by the full interval, and failover to standbys takes hours not minutes. Default 600000 (10 min) is the right answer."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_RETRY_BACKOFF_MAX_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_RETRY_BACKOFF_MAX_MS_TOO_HIGH, s, KafkaTypes.RETRY_BACKOFF_MAX_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 60_000L; },
+                "retry.backoff.max.ms={value} — above 60 s. KIP-580 exponential backoff caps at this value, so after a few retries every subsequent retry waits the full cap — transient broker hiccups stretch into minutes of stalled requests. Default 1000 is right; over-raising harms the client without helping the broker."));
         addIfEnabled(rules, sev, RuleId.STREAMS_COMMIT_INTERVAL_TOO_HIGH, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_COMMIT_INTERVAL_TOO_HIGH, s, KafkaTypes.STREAMS_COMMIT_INTERVAL_MS_KEY,
                 v -> { long n = parseLongOrZero(v); return n > 60_000L; },
@@ -1079,6 +1087,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.auto-commit-interval",
                     v -> { try { return v != null && Long.parseLong(v.trim()) > 60000L; } catch (NumberFormatException e) { return false; } },
                     "spring.kafka.consumer.auto-commit-interval={value} — above 60 s. Paired with auto-commit=true the loss window after a crash is this many ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_LOW, sev.get(RuleId.SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_LOW),
+                    "spring.kafka.consumer.auto-commit-interval",
+                    v -> { try { long n = Long.parseLong(v.trim()); return n > 0 && n < 100L; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.consumer.auto-commit-interval={value} — below 100 ms. Combined with auto-commit=true, the consumer commits on essentially every poll, hammering __consumer_offsets and saturating the group coordinator with offset-commit traffic. Default 5000 (5 s) is right; for stronger guarantees switch to manual ack-mode instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC) != Severity.OFF) {

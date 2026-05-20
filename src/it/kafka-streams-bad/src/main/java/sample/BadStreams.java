@@ -390,4 +390,14 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH.
+    public Properties probingRebalanceIntervalMsTooHigh() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("probing.rebalance.interval.ms", "14400000");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }

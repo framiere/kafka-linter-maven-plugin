@@ -1161,6 +1161,15 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: KAFKA_RETRY_BACKOFF_MAX_MS_TOO_HIGH.
+    public Properties retryBackoffMaxMsTooHigh() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("retry.backoff.max.ms", "300000");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
