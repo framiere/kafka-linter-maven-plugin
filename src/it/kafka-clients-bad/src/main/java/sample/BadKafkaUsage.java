@@ -1093,6 +1093,30 @@ public final class BadKafkaUsage {
         return p;
     }
 
+    // RULE: KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_LOW.
+    public Properties saslLoginConnectTimeoutMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("sasl.login.connect.timeout.ms", "2000");
+        return p;
+    }
+
+    // RULE: KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_LOW.
+    public Properties saslLoginReadTimeoutMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("sasl.login.read.timeout.ms", "2000");
+        return p;
+    }
+
+    // RULE: SECURITY_SASL_OAUTHBEARER_TOKEN_ENDPOINT_HTTP.
+    public Properties saslOauthbearerTokenEndpointHttp() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("sasl.oauthbearer.token.endpoint.url", "http://idp.internal:8080/oauth2/token");
+        return p;
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

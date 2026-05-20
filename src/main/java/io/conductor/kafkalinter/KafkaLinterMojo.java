@@ -658,6 +658,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SASL_LOGIN_CONNECT_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SASL_LOGIN_CONNECT_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 5000; },
+                "sasl.login.connect.timeout.ms={value} — below 5000 ms. The TCP-connect timeout to the IdP (OAuth/OIDC token endpoint, Kerberos KDC) is tighter than realistic cold-start latency; every login attempt fails before the very first handshake completes. Raise to >=5000 (10000+ for cloud IdPs)."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SASL_LOGIN_READ_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SASL_LOGIN_READ_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 5000; },
+                "sasl.login.read.timeout.ms={value} — below 5000 ms. The socket-read timeout to the IdP is tighter than realistic JWT-issuance latency; client closes the socket mid-response and treats every cold-start as auth failure. Raise to >=5000 (10000+ for cloud IdPs)."));
+        addIfEnabled(rules, sev, RuleId.SECURITY_SASL_OAUTHBEARER_TOKEN_ENDPOINT_HTTP, s -> new ConfigKeyValueRule(
+                RuleId.SECURITY_SASL_OAUTHBEARER_TOKEN_ENDPOINT_HTTP, s, KafkaTypes.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL_KEY,
+                v -> v != null && v.trim().toLowerCase(java.util.Locale.ROOT).startsWith("http://"),
+                "sasl.oauthbearer.token.endpoint.url={value} — uses http://. The OAuth2 client_credentials POST (with client_secret) and the issued bearer JWT both traverse the network in cleartext; any on-path observer captures and replays them. Change to https:// with a verified cert chain."));
         addIfEnabled(rules, sev, RuleId.KAFKA_RETRY_BACKOFF_MAX_MS_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_RETRY_BACKOFF_MAX_MS_TOO_LOW, s, KafkaTypes.RETRY_BACKOFF_MAX_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 1000; },
