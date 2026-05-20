@@ -5,6 +5,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Printed;
 
 import java.util.Properties;
 
@@ -114,5 +115,11 @@ public final class BadStreams {
         p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         p.put("task.timeout.ms", "0");
         return p;
+    }
+
+    // RULE: STREAMS_KSTREAM_PRINT.
+    public void kstreamPrint(StreamsBuilder b) {
+        KStream<String, String> s = b.stream("in");
+        s.print(Printed.toSysOut());
     }
 }

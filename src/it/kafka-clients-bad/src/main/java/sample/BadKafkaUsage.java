@@ -410,6 +410,16 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW.
+    public void consumerDefaultApiTimeoutMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "g");
+        p.put("default.api.timeout.ms", "5000");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
     // RULE: CRED_SASL_JAAS_LITERAL.
     public void credSaslJaasLiteral() {
         Properties p = new Properties();

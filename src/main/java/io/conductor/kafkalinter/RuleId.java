@@ -772,6 +772,36 @@ public final class RuleId {
             .whyMatters("The motivation is usually 'send() should never block this thread' — which is reasonable, but the right shape is to keep `max.block.ms` at the default and put the call behind a circuit-breaker or worker pool that owns the latency budget. Treating `max.block.ms` as a per-call latency cap mistakes one knob for another.")
             .build());
 
+    public static final RuleId CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW = register(builder("CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW.md")
+            .message("default.api.timeout.ms below 30 s — routine commitSync / position / metadata calls bubble up TimeoutException on normal broker hiccups.")
+            .tagline("default.api.timeout.ms backs every consumer/admin call that doesn't take an explicit duration. Cut it short and routine cluster events become application errors.")
+            .mechanism("Consumer methods that don't take a `Duration` argument (`commitSync()`, `position(tp)`, `endOffsets(tps)`, `partitionsFor(topic)`) all use `default.api.timeout.ms` (default 60 s) as their wait budget. When a broker is mid-restart or a leader is moving, these calls retry internally; if the timeout is too short, the retry budget is exhausted before the cluster settles.")
+            .impact("With `default.api.timeout.ms=5000`, a routine partition-leader move (broker rolling restart, autoscaling event) causes the next `commitSync()` to throw TimeoutException. The application catches it, treats it as fatal, and restarts — or worse, silently retries and ends up double-processing the offset window.")
+            .whyMatters("60 s is the right floor; lower values do not 'fail fast' usefully, they just turn routine cluster operations into application errors. If a specific call needs a tighter timeout, use the overload that takes a `Duration` for that one call rather than tightening the default.")
+            .build());
+
+    public static final RuleId SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_HIGH = register(builder("SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_HIGH")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("spring-kafka")
+            .docPath("spring-kafka/SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_HIGH.md")
+            .message("spring.kafka.consumer.auto-commit-interval > 60 s — combined with auto-commit=true, every crash loses that much processed work.")
+            .tagline("auto.commit.interval.ms is the size of the window of records you can lose on a crash. Stretch it past a minute and the loss window becomes operationally painful.")
+            .mechanism("With `enable.auto.commit=true`, the consumer commits the highest in-memory offset every `auto.commit.interval.ms` (default 5 s). Between commits, the consumer has fetched + handed-to-application records whose offsets are not yet on the broker. A crash or rebalance during that window re-processes (at-least-once) those records.")
+            .impact("Setting `spring.kafka.consumer.auto-commit-interval=300000` (5 min) means up to 5 minutes of records are reprocessed after each crash. For idempotent consumers that's annoying duplication; for non-idempotent consumers (counters, side-effects), it's a correctness bug.")
+            .whyMatters("This setting is almost never the right knob to tune. The right shape is manual ack-mode + `commitSync()` after the unit-of-work completes — Spring's `AckMode.MANUAL_IMMEDIATE` is the well-trodden path. Raising the auto-commit interval just trades a smaller knob (commit RPC rate) against a much larger one (reprocessing window).")
+            .build());
+
+    public static final RuleId STREAMS_KSTREAM_PRINT = register(builder("STREAMS_KSTREAM_PRINT")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_KSTREAM_PRINT.md")
+            .message("KStream.print(Printed.toSysOut()) — debugging operator left in production topology.")
+            .tagline("KStream.print() pipes every record through System.out (or a writer). It is a debugging helper that has no business in a deployed topology.")
+            .mechanism("`KStream.print(Printed.toSysOut())` inserts a `PrintForeachAction` processor that calls `System.out.println(record)` on every key/value. Even when redirected to a file, this is a synchronous I/O step inserted in the middle of the processing graph.")
+            .impact("On a topology that handles thousands of records per second, this becomes the bottleneck — `System.out` is line-synchronized, so the print step serialises every Streams thread through one lock. In production, you also lose the records to a place nobody reads (the container stdout, often capped at a few MB).")
+            .whyMatters("This is a 'forgot to remove' bug — easy to write in a notebook or local test, easy to leave in code if not checked. If you genuinely need to inspect records, use `peek()` with a metrics counter, or write to a dedicated debug topic. Never wire `System.out` into a stream.")
+            .build());
+
     public static final RuleId STREAMS_TASK_TIMEOUT_MS_ZERO = register(builder("STREAMS_TASK_TIMEOUT_MS_ZERO")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_TASK_TIMEOUT_MS_ZERO.md")

@@ -228,6 +228,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_MAX_BLOCK_MS_TOO_LOW, s, KafkaTypes.MAX_BLOCK_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
                 "max.block.ms={value} — below 10 s. Routine metadata fetches bubble up as TimeoutException from send(); bound the upstream call instead."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.DEFAULT_API_TIMEOUT_MS_KEY,
+                v -> { int n = parseIntOrZero(v); return n > 0 && n < 30000; },
+                "default.api.timeout.ms={value} — below 30 s. Routine commitSync/position/metadata calls bubble up TimeoutException on normal broker hiccups."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
@@ -284,6 +288,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_TASK_TIMEOUT_MS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_TASK_TIMEOUT_MS_ZERO, s, KafkaTypes.STREAMS_TASK_TIMEOUT_MS_KEY, "0",
                 "task.timeout.ms=0 — first transient broker error kills the task. Default 300000 ms is the right starting point."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PRINT, s -> new MethodCallRule(
+                RuleId.STREAMS_KSTREAM_PRINT, s, Set.of(KafkaTypes.KSTREAM), Set.of("print"),
+                "KStream.print() — debugging operator left in production topology. Pipes every record through System.out; use peek() with a counter or a dedicated debug topic."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
@@ -481,6 +488,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.SPRING_BOOT_PRODUCER_RETRIES_ZERO, sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRIES_ZERO),
                     "spring.kafka.producer.retries", "0",
                     "spring.kafka.producer.retries=0 — transient broker errors become permanent send failures. Remove the override; defaults are correct.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_AUTO_COMMIT_INTERVAL_TOO_HIGH),
+                    "spring.kafka.consumer.auto-commit-interval",
+                    v -> { try { return v != null && Long.parseLong(v.trim()) > 60000L; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.consumer.auto-commit-interval={value} — above 60 s. Paired with auto-commit=true the loss window after a crash is this many ms.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_CONCURRENCY_ZERO) != Severity.OFF) {
