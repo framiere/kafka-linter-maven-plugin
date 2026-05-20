@@ -923,6 +923,26 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_GROUP_PROTOCOL_CLASSIC.
+    public void consumerGroupProtocolClassic() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("group.protocol", "classic");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: KAFKA_ENABLE_METRICS_PUSH_FALSE.
+    public void enableMetricsPushFalse() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("enable.metrics.push", "false");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

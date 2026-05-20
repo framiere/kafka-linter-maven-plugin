@@ -645,6 +645,15 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_INTERCEPTOR_CLASSES_LEGACY, s, KafkaTypes.INTERCEPTOR_CLASSES_KEY,
                 v -> v != null && KafkaTypes.LEGACY_MONITORING_INTERCEPTOR_FQCNS.stream().anyMatch(v::contains),
                 "interceptor.classes={value} — wires Confluent's legacy MonitoringConsumerInterceptor/MonitoringProducerInterceptor. On managed Kafka the monitoring topic doesn't exist; writes fail silently while per-record CPU is still paid. Migrate to Confluent Health+ and remove."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STATESTORE_CACHE_MAX_BYTES_ZERO, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_STATESTORE_CACHE_MAX_BYTES_ZERO, s, KafkaTypes.STREAMS_STATESTORE_CACHE_MAX_BYTES_KEY, "0",
+                "statestore.cache.max.bytes=0 — Streams state-store cache (KIP-770, replaces cache.max.bytes.buffering) disabled. Every put() flushes to RocksDB, the changelog and downstream; 10-100× write amplification on aggregations/KTables."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_PROTOCOL_CLASSIC, s -> ConfigKeyValueRule.literal(
+                RuleId.CONSUMER_GROUP_PROTOCOL_CLASSIC, s, KafkaTypes.GROUP_PROTOCOL_KEY, KafkaTypes.GROUP_PROTOCOL_CLASSIC_VALUE,
+                "group.protocol=classic — pins the consumer to the legacy heartbeat/JoinGroup protocol. Misses KIP-848's broker-side rebalance, decoupled heartbeat and incremental assignment. Remove the override on Kafka 4.0+."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_ENABLE_METRICS_PUSH_FALSE, s -> ConfigKeyValueRule.literal(
+                RuleId.KAFKA_ENABLE_METRICS_PUSH_FALSE, s, KafkaTypes.ENABLE_METRICS_PUSH_KEY, "false",
+                "enable.metrics.push=false — disables KIP-714 client telemetry to the broker. Cluster operators lose visibility into this client's latency/throughput/error metrics during incidents. Default true; only disable when explicitly required."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
