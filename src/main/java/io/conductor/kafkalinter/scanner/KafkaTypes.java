@@ -134,6 +134,10 @@ public final class KafkaTypes {
     public static final String STREAMS_NUM_STREAM_THREADS_KEY = "num.stream.threads";
     public static final String CONNECTIONS_MAX_IDLE_MS_KEY = "connections.max.idle.ms";
     public static final String MAX_PARTITION_FETCH_BYTES_KEY = "max.partition.fetch.bytes";
+    public static final String BOOTSTRAP_SERVERS_KEY = "bootstrap.servers";
+    public static final String STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_KEY = "default.timestamp.extractor";
+    public static final String STREAMS_WALLCLOCK_TIMESTAMP_EXTRACTOR_FQCN =
+            "org.apache.kafka.streams.processor.WallclockTimestampExtractor";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

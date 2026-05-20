@@ -291,6 +291,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.KAFKA_CLIENT_ID_GENERIC, s, KafkaTypes.CLIENT_ID_KEY,
                 v -> v != null && KafkaTypes.KAFKA_GENERIC_CLIENT_IDS.contains(v.trim().toLowerCase()),
                 "client.id={value} — generic placeholder. Broker metrics, quotas and audit logs cannot attribute traffic; use a service-qualified id."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_BOOTSTRAP_SERVERS_LOCALHOST, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_BOOTSTRAP_SERVERS_LOCALHOST, s, KafkaTypes.BOOTSTRAP_SERVERS_KEY,
+                v -> v != null && (v.contains("localhost") || v.contains("127.0.0.1") || v.contains("0.0.0.0")),
+                "bootstrap.servers={value} — points at the pod's own loopback. Externalize via env var or profile override."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TXN_TIMEOUT_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 10000; },
@@ -371,6 +375,10 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STREAM_THREADS_ONE, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_NUM_STREAM_THREADS_ONE, s, KafkaTypes.STREAMS_NUM_STREAM_THREADS_KEY, "1",
                 "num.stream.threads=1 — single-thread topology cannot use multi-core pods. Set to min(input-partitions/instances, cpu-cores)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK, s, KafkaTypes.STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_KEY,
+                v -> v != null && v.endsWith("WallclockTimestampExtractor"),
+                "default.timestamp.extractor={value} — wall clock replaces record event time; windows and joins silently bucket into the wrong window on replay."));
         addIfEnabled(rules, sev, RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_CONNECTIONS_MAX_IDLE_MS_TOO_LOW, s, KafkaTypes.CONNECTIONS_MAX_IDLE_MS_KEY,
                 v -> {
@@ -541,6 +549,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     RuleId.QK_INCOMING_AUTO_OFFSET_RESET_NONE, sev.get(RuleId.QK_INCOMING_AUTO_OFFSET_RESET_NONE),
                     "incoming", "auto.offset.reset", "none",
                     "mp.messaging.incoming.{channel}.auto.offset.reset=none — fresh consumer group throws NoOffsetForPartitionException and the pod crashloops on first deploy. Use 'earliest' or 'latest' unless you manage offsets manually."));
+        }
+        if (sev.get(RuleId.QK_BOOTSTRAP_SERVERS_LOCALHOST) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.QK_BOOTSTRAP_SERVERS_LOCALHOST, sev.get(RuleId.QK_BOOTSTRAP_SERVERS_LOCALHOST),
+                    "kafka.bootstrap.servers",
+                    v -> v != null && (v.contains("localhost") || v.contains("127.0.0.1") || v.contains("0.0.0.0")),
+                    "kafka.bootstrap.servers={value} — points at the pod's own loopback. Externalize via env var or %prod-prefixed override.",
+                    "io.quarkus", "quarkus-smallrye-reactive-messaging-kafka"));
         }
         if (sev.get(RuleId.QK_AUTO_COMMIT_ENABLED) != Severity.OFF) {
             rules.add(SmallRyeChannelConfigRule.literal(

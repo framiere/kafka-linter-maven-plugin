@@ -26,13 +26,13 @@ public final class GoodKafkaUsage {
 
     public GoodKafkaUsage() {
         Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", "localhost:9092");
+        producerProps.put("bootstrap.servers", "kafka.prod.example.com:9092");
         producerProps.put("compression.type", "snappy");
         producerProps.put("linger.ms", "20");
         this.producer = new KafkaProducer<>(producerProps);
 
         Properties consumerProps = new Properties();
-        consumerProps.put("bootstrap.servers", "localhost:9092");
+        consumerProps.put("bootstrap.servers", "kafka.prod.example.com:9092");
         consumerProps.put("group.id", "my-group");
         consumerProps.put("enable.auto.commit", "false");
         this.consumer = new KafkaConsumer<>(consumerProps);

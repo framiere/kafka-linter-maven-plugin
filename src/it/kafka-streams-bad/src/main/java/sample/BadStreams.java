@@ -172,4 +172,15 @@ public final class BadStreams {
         p.put("replication.factor", "3");
         return p;
     }
+
+    // RULE: STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK.
+    public Properties defaultTimestampExtractorWallClock() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+        p.put("default.timestamp.extractor",
+                "org.apache.kafka.streams.processor.WallclockTimestampExtractor");
+        p.put("replication.factor", "3");
+        return p;
+    }
 }
