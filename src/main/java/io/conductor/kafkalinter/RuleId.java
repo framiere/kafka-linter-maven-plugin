@@ -300,6 +300,36 @@ public final class RuleId {
             .whyMatters("Upgrade kafka-clients AND ensure the OAuthBearerValidatorCallbackHandler is configured with explicit audience checks. The fix is partly version, partly config — the lint catches the version half.")
             .build());
 
+    public static final RuleId KAFKA_CLIENTS_CVE_CONFIG_PROVIDER = register(builder("KAFKA_CLIENTS_CVE_CONFIG_PROVIDER")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/KAFKA_CLIENTS_CVE_CONFIG_PROVIDER.md")
+            .message("kafka-clients version is vulnerable to CVE-2024-31141 — ConfigProvider silently reads arbitrary files from any user-supplied placeholder.")
+            .tagline("CVE-2024-31141 — ConfigProvider was happy to read whatever file you named.")
+            .mechanism("In affected versions the client treated any `${...}` in a config value as a directive to resolve through the registered `ConfigProvider` set. `FileConfigProvider` and `DirectoryConfigProvider` are shipped by default and happily read any path the JVM user can — so a connector config of `${file:/etc/passwd:root}` returned the root entry interpolated into the config value.")
+            .impact("Privilege boundary crossed: a caller authorized to *create connector configs* gains read access to the JVM process's filesystem and environment. Auditable as 'why did our config include /etc/passwd?' — but typically discovered post-incident.")
+            .whyMatters("Fixed in 3.6.3 and 3.7.1. The vulnerable range covers `2.3.0`–`3.5.x`, `3.6.0`–`3.6.2`, and `3.7.0`. Upgrade now — the fix removes implicit ConfigProvider resolution, so applications relying on the implicit form will need to opt in explicitly (`config.providers=...`), which is the correct posture anyway.")
+            .build());
+
+    public static final RuleId KAFKA_CLIENTS_CVE_BUFFER_POOL = register(builder("KAFKA_CLIENTS_CVE_BUFFER_POOL")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/KAFKA_CLIENTS_CVE_BUFFER_POOL.md")
+            .message("kafka-clients version is vulnerable to CVE-2026-35554 — BufferPool reuse can send records to the wrong topic with no callback error.")
+            .tagline("CVE-2026-35554 — your producer ships messages to the wrong topic and never tells you.")
+            .mechanism("A race in `KafkaProducer`'s `BufferPool`: when a batch's `delivery.timeout.ms` expires while the network request carrying it is still pending, the buffer is returned to the pool. If a new batch reuses that buffer before the original network response arrives, the second batch's contents can be written into the in-flight request — silently delivering its records to whichever (topic, partition) the first request was bound for.")
+            .impact("Records intended for topic A appearing on topic B at low but non-zero rate, exactly during periods of broker slowness. No callback errors, no metric anomalies beyond `record-expiration-rate` ticking up. Discovered post-hoc as 'why are these records in this topic?' downstream.")
+            .whyMatters("Fixed in `3.9.2`, `4.0.2`, `4.1.2`, and `4.2.x`. Older lines are not getting backports per the Confluent advisory. If the project is on `< 3.9.2`, in `[4.0.0, 4.0.2)`, or in `[4.1.0, 4.1.2)`, upgrade. The exposure scales with `delivery.timeout.ms` expirations under load, so high-throughput producers are the highest-risk profile.")
+            .build());
+
+    public static final RuleId KAFKA_CLIENTS_CVE_SCRAM_REPLAY = register(builder("KAFKA_CLIENTS_CVE_SCRAM_REPLAY")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("versions")
+            .docPath("versions/KAFKA_CLIENTS_CVE_SCRAM_REPLAY.md")
+            .message("kafka-clients version mishandles SCRAM nonces (CVE-2024-56128); use SASL_SSL — and upgrade.")
+            .tagline("CVE-2024-56128 — SCRAM without TLS is a replay attack waiting to happen.")
+            .mechanism("SCRAM (RFC 5802) relies on per-exchange nonces to prevent replay. In the affected `kafka-clients` range, client-side nonce handling allows two distinct authentication attempts in close succession to reuse derived material — letting a man-in-the-middle replay a captured exchange and impersonate the client. The CVE only matters on the wire, i.e. when the listener is `SASL_PLAINTEXT` rather than `SASL_SSL`.")
+            .impact("Authentication impersonation: an attacker who captures one SCRAM exchange can establish an authenticated session as that user. Once authenticated, the attacker inherits the impersonated user's ACLs — service accounts often have broad rights, so this fans out cluster-wide.")
+            .whyMatters("Fixed in 3.9.1+ and 4.x. The *real* mitigation is `SASL_SSL` — TLS prevents the replay regardless of the client version. If the project resolves `kafka-clients < 3.9.1`, upgrade as a defensive layer, but the priority is the transport: a deployment on `SASL_PLAINTEXT` with strong SCRAM credentials is the worst combination.")
+            .build());
+
     public static final RuleId JAVA_VERSION_TOO_LOW = register(builder("JAVA_VERSION_TOO_LOW")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("versions")
             .docPath("versions/JAVA_VERSION_TOO_LOW.md")

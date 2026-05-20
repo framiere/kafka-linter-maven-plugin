@@ -27,8 +27,10 @@ import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDe
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
 import io.conductor.kafkalinter.rules.version.KafkaClientsCveJndiLdapRule;
+import io.conductor.kafkalinter.rules.version.KafkaClientsCveRule;
 import io.conductor.kafkalinter.rules.version.KafkaClientsCveSaslOAuthRule;
 import io.conductor.kafkalinter.rules.version.KafkaClientsEolRule;
+import io.conductor.kafkalinter.rules.version.SemVer;
 import io.conductor.kafkalinter.rules.version.QuarkusKafkaExtensionRenamedRule;
 import io.conductor.kafkalinter.rules.version.SpringKafkaBootMismatchRule;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
@@ -237,6 +239,30 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER) != Severity.OFF) {
             rules.add(new KafkaClientsCveSaslOAuthRule(sev.get(RuleId.KAFKA_CLIENTS_CVE_SASL_OAUTHBEARER)));
+        }
+        if (sev.get(RuleId.KAFKA_CLIENTS_CVE_CONFIG_PROVIDER) != Severity.OFF) {
+            // Vulnerable: 2.3.0 through 3.5.x, 3.6.0–3.6.2, 3.7.0. Fixed in 3.6.3 / 3.7.1.
+            rules.add(new KafkaClientsCveRule(
+                    RuleId.KAFKA_CLIENTS_CVE_CONFIG_PROVIDER, sev.get(RuleId.KAFKA_CLIENTS_CVE_CONFIG_PROVIDER),
+                    v -> v.lessThan(new SemVer(2, 3, 0)) ? false :
+                         v.lessThan(new SemVer(3, 6, 3)) || (v.atLeast(new SemVer(3, 7, 0)) && v.lessThan(new SemVer(3, 7, 1))),
+                    "is vulnerable to CVE-2024-31141 (ConfigProvider implicit resolution) — upgrade to >= 3.6.3 (3.6.x line) or >= 3.7.1 (3.7.x line)."));
+        }
+        if (sev.get(RuleId.KAFKA_CLIENTS_CVE_BUFFER_POOL) != Severity.OFF) {
+            // Vulnerable: < 3.9.2, [4.0.0, 4.0.2), [4.1.0, 4.1.2). Fixed in 3.9.2 / 4.0.2 / 4.1.2 / 4.2.x.
+            rules.add(new KafkaClientsCveRule(
+                    RuleId.KAFKA_CLIENTS_CVE_BUFFER_POOL, sev.get(RuleId.KAFKA_CLIENTS_CVE_BUFFER_POOL),
+                    v -> v.lessThan(new SemVer(3, 9, 2))
+                       || (v.atLeast(new SemVer(4, 0, 0)) && v.lessThan(new SemVer(4, 0, 2)))
+                       || (v.atLeast(new SemVer(4, 1, 0)) && v.lessThan(new SemVer(4, 1, 2))),
+                    "is vulnerable to CVE-2026-35554 (BufferPool reuse can deliver records to the wrong topic) — upgrade to >= 3.9.2 / 4.0.2 / 4.1.2 / 4.2.x."));
+        }
+        if (sev.get(RuleId.KAFKA_CLIENTS_CVE_SCRAM_REPLAY) != Severity.OFF) {
+            // Vulnerable: < 3.9.1. Fix landed in 3.9.1 and 4.x lines.
+            rules.add(new KafkaClientsCveRule(
+                    RuleId.KAFKA_CLIENTS_CVE_SCRAM_REPLAY, sev.get(RuleId.KAFKA_CLIENTS_CVE_SCRAM_REPLAY),
+                    v -> v.lessThan(new SemVer(3, 9, 1)),
+                    "has the SCRAM nonce-reuse flaw (CVE-2024-56128) — upgrade to >= 3.9.1 and prefer SASL_SSL on the wire."));
         }
         if (sev.get(RuleId.JAVA_VERSION_TOO_LOW) != Severity.OFF) {
             rules.add(new JavaVersionTooLowRule(sev.get(RuleId.JAVA_VERSION_TOO_LOW)));

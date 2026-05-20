@@ -29,6 +29,11 @@
             <artifactId>smallrye-reactive-messaging-api</artifactId>
             <version>4.21.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.9.2</version>
+        </dependency>
     </dependencies>
 
     <build>
