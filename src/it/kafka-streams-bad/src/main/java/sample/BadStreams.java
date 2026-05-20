@@ -5,11 +5,16 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
+import org.apache.kafka.streams.kstream.ValueJoiner;
+import org.apache.kafka.streams.kstream.ValueTransformerSupplier;
 import org.apache.kafka.streams.kstream.ValueTransformerWithKeySupplier;
 
+import java.time.Duration;
 import java.util.Properties;
 
 public final class BadStreams {
@@ -316,5 +321,25 @@ public final class BadStreams {
     public void branchDeprecated(StreamsBuilder b) {
         KStream<String, String> s = b.stream("in");
         KStream<String, String>[] branches = s.branch((k, v) -> true, (k, v) -> false);
+    }
+
+    // RULE: STREAMS_FLAT_TRANSFORM_DEPRECATED — KIP-820 replaced this with KStream.process(ProcessorSupplier).
+    @SuppressWarnings("deprecation")
+    public void flatTransformDeprecated(StreamsBuilder b) {
+        KStream<String, String> s = b.stream("in");
+        TransformerSupplier<String, String, Iterable<KeyValue<String, String>>> supplier = () -> null;
+        s.flatTransform(supplier);
+    }
+
+    // RULE: STREAMS_TIME_WINDOWS_OF_DEPRECATED — KIP-633 forces explicit grace period via ofSizeWithNoGrace/ofSizeAndGrace.
+    @SuppressWarnings("deprecation")
+    public void timeWindowsOfDeprecated() {
+        TimeWindows w = TimeWindows.of(Duration.ofMinutes(1));
+    }
+
+    // RULE: STREAMS_JOIN_WINDOWS_OF_DEPRECATED — KIP-633 forces explicit grace period via ofTimeDifferenceWithNoGrace.
+    @SuppressWarnings("deprecation")
+    public void joinWindowsOfDeprecated() {
+        JoinWindows w = JoinWindows.of(Duration.ofMinutes(1));
     }
 }
