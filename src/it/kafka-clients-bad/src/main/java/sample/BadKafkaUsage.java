@@ -993,6 +993,36 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
+    // RULE: KAFKA_METRICS_RECORDING_LEVEL_DEBUG.
+    public void metricsRecordingLevelDebug() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("metrics.recording.level", "DEBUG");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: KAFKA_RECONNECT_BACKOFF_MAX_MS_TOO_LOW.
+    public void reconnectBackoffMaxMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("reconnect.backoff.max.ms", "200");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
+    // RULE: KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MS_TOO_LOW.
+    public void socketConnectionSetupTimeoutMsTooLow() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("socket.connection.setup.timeout.ms", "1000");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

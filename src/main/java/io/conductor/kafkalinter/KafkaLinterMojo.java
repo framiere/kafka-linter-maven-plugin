@@ -658,6 +658,26 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_GROUP_ID_PLACEHOLDER, s, KafkaTypes.GROUP_ID_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
                 "group.id={value} — looks like an unresolved placeholder (${...}). Plain Java string literals never go through env-var or Spring property substitution; the consumer joins a group literally named with the placeholder text. Resolve via @Value/System.getenv/ConfigProvider before constructing the consumer."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_METRICS_RECORDING_LEVEL_DEBUG, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_METRICS_RECORDING_LEVEL_DEBUG, s, KafkaTypes.METRICS_RECORDING_LEVEL_KEY,
+                v -> v != null && KafkaTypes.METRICS_RECORDING_LEVEL_VERBOSE_VALUES.contains(v.trim().toUpperCase()),
+                "metrics.recording.level={value} — enables per-partition/per-thread (DEBUG) or per-record (TRACE) metric updates on the hot path. 5-30% throughput cost; usually left in place after a debugging session. Remove the override."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_RECONNECT_BACKOFF_MAX_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_RECONNECT_BACKOFF_MAX_MS_TOO_LOW, s, KafkaTypes.RECONNECT_BACKOFF_MAX_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n > 0 && n < 1000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "reconnect.backoff.max.ms={value} — caps exponential reconnect backoff below 1 s. During broker rolling restarts every client hammers the restarting broker every few hundred ms; the broker takes 5-20× longer to rejoin. Default 1000 is right."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { long n = Long.parseLong(v.trim()); return n > 0 && n < 5000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "socket.connection.setup.timeout.ms={value} — below 5 s. The entire TCP+TLS+SASL handshake must finish in this budget; cross-AZ or TLS-1.2 handshakes routinely take 2-5 s. Connections fail spuriously on healthy brokers."));
         addIfEnabled(rules, sev, RuleId.KAFKA_BOOTSTRAP_SERVERS_PLACEHOLDER, s -> new ConfigKeyValueRule(
                 RuleId.KAFKA_BOOTSTRAP_SERVERS_PLACEHOLDER, s, KafkaTypes.BOOTSTRAP_SERVERS_KEY,
                 v -> looksLikeUnresolvedPlaceholder(v),
