@@ -1160,6 +1160,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     null, "lazy-client", "true",
                     "mp.messaging.{direction}.{channel}.lazy-client=true — kafka-clients producer/consumer deferred to first subscribe. Broker connectivity, SASL, and topic-existence failures surface after the pod is already Ready instead of at boot."));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_LOW),
+                    "spring.kafka.producer.properties.transaction.timeout.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 10_000L; },
+                    "spring.kafka.producer.properties.transaction.timeout.ms={value} — below 10 s. Transactions abort spuriously inside normal commit windows (database write + downstream HTTP + producer.send routinely takes seconds); every abort rolls back the offset and the wrapped JDBC transaction. Default 60 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_BLOCK_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_MAX_BLOCK_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_BLOCK_MS_TOO_LOW),
+                    "spring.kafka.producer.properties.max.block.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 5_000L; },
+                    "spring.kafka.producer.properties.max.block.ms={value} — below 5 s. Routine metadata refreshes, transactional handshakes, and brief accumulator-full stalls surface as TimeoutException to the caller instead of being absorbed by the producer. Default 60 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_REQUEST_TIMEOUT_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_REQUEST_TIMEOUT_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_REQUEST_TIMEOUT_MS_TOO_HIGH),
+                    "spring.kafka.producer.properties.request.timeout.ms",
+                    v -> parseLongOrZero(v) > 120_000L,
+                    "spring.kafka.producer.properties.request.timeout.ms={value} — above 2 min. Each silent leader failure pins the Sender thread on the dead broker for the full window before retry; produce p99.9 jumps to request.timeout.ms, and delivery.timeout.ms math breaks. Default 30 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL),
