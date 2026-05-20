@@ -403,6 +403,28 @@ public class KafkaLinterMojo extends AbstractMojo {
                     catch (NumberFormatException e) { return false; }
                 },
                 "max.partition.fetch.bytes={value} — above 16 MiB. Per-partition memory cost scales with assigned partitions; raises rebalance/GC pressure."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TASK_TIMEOUT_MS_TOO_HIGH, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_TASK_TIMEOUT_MS_TOO_HIGH, s, KafkaTypes.STREAMS_TASK_TIMEOUT_MS_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try { return Long.parseLong(v.trim()) > 1_800_000L; }
+                    catch (NumberFormatException e) { return false; }
+                },
+                "task.timeout.ms={value} — above 30 minutes. Stuck tasks swallow broker errors silently instead of failing fast and triggering recovery."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_INSTANCE_ID_GENERIC, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_GROUP_INSTANCE_ID_GENERIC, s, KafkaTypes.GROUP_INSTANCE_ID_KEY,
+                v -> v != null && KafkaTypes.KAFKA_GENERIC_CLIENT_IDS.contains(v.trim().toLowerCase()),
+                "group.instance.id={value} — a generic placeholder. Static membership requires per-pod uniqueness; a shared literal makes replicas fence each other with FencedInstanceIdException."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BUFFER_BYTES_TOO_SMALL, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_SEND_BUFFER_BYTES_TOO_SMALL, s, KafkaTypes.SEND_BUFFER_BYTES_KEY,
+                v -> {
+                    if (v == null) return false;
+                    try {
+                        long n = Long.parseLong(v.trim());
+                        return n > 0 && n <= 16384L;
+                    } catch (NumberFormatException e) { return false; }
+                },
+                "send.buffer.bytes={value} — at or below 16 KiB. Caps TCP throughput to buffer/RTT; defeats OS autotuning. Use -1 or leave default (128 KiB)."));
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);

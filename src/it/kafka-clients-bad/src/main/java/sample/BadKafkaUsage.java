@@ -663,6 +663,26 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: CONSUMER_GROUP_INSTANCE_ID_GENERIC.
+    public void consumerGroupInstanceIdGeneric() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("group.id", "orders-fraud-detection-v3");
+        p.put("group.instance.id", "consumer");
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.close();
+    }
+
+    // RULE: PRODUCER_SEND_BUFFER_BYTES_TOO_SMALL.
+    public void producerSendBufferBytesTooSmall() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka:9092");
+        p.put("compression.type", "snappy");
+        p.put("send.buffer.bytes", "8192");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.close();
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
