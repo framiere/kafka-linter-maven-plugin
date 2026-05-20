@@ -1153,6 +1153,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.max-poll-records={value} — at or below 5. Each KafkaListener poll returns at most a handful of records; per-poll listener-container overhead dominates and throughput collapses 50-100× vs the default 500.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_RECORDS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_RECORDS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_POLL_RECORDS_TOO_HIGH),
+                    "spring.kafka.consumer.max-poll-records",
+                    v -> { try { long n = v == null ? 0 : Long.parseLong(v.trim()); return n > 5_000L; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.consumer.max-poll-records={value} — above 5000. Each poll hands the @KafkaListener a huge batch that must finish within max.poll.interval.ms (default 5 min) or the consumer is ejected from the group, triggering rolling rebalances and lag accumulation. Lower to <=2000 or raise max.poll.interval.ms in lock step.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_TOO_HIGH),
+                    "spring.kafka.producer.properties.linger.ms",
+                    v -> { try { long n = v == null ? 0 : Long.parseLong(v.trim()); return n > 1_000L; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.producer.properties.linger.ms={value} — above 1 s. Every send waits up to the full linger before the batch is shipped; under low-rate workloads every record eats the full linger as latency, KafkaTemplate.send().get() blocks for the full duration. Acceptable range 5-100 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_DELIVERY_TIMEOUT_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_DELIVERY_TIMEOUT_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_DELIVERY_TIMEOUT_MS_TOO_LOW),
+                    "spring.kafka.producer.properties.delivery.timeout.ms",
+                    v -> { try { long n = v == null ? 0 : Long.parseLong(v.trim()); return n > 0 && n < 30_000L; } catch (NumberFormatException e) { return false; } },
+                    "spring.kafka.producer.properties.delivery.timeout.ms={value} — below 30 s. Internal retry budget cannot satisfy retries × retry.backoff.ms + request.timeout.ms; every transient broker hiccup surfaces as final TimeoutException instead of being recoverable. Default 120000 (2 min) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE, sev.get(RuleId.SPRING_BOOT_PRODUCER_IDEMPOTENCE_FALSE),
