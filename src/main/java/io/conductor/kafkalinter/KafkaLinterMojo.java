@@ -337,6 +337,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_EOS_V1_DEPRECATED, s, KafkaTypes.STREAMS_PROCESSING_GUARANTEE_KEY,
                 KafkaTypes.STREAMS_EOS_V1_VALUES,
                 "processing.guarantee={value} — EOS-v1 was deprecated by KIP-732 and removed in Kafka 4.0. Use exactly_once_v2."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT, s -> ConfigKeyValueRule.literal(
+                RuleId.STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT, s, KafkaTypes.STREAMS_PROCESSING_GUARANTEE_KEY,
+                "at_least_once",
+                "processing.guarantee=at_least_once — explicit declaration of the default. On stateful topologies (joins, aggregations, windowed) this is almost always a regression: someone turned EOS off without leaving a paper trail. Set exactly_once_v2 explicitly or remove the override entirely."));
         addIfEnabled(rules, sev, RuleId.STREAMS_COMMIT_INTERVAL_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_COMMIT_INTERVAL_TOO_LOW, s, KafkaTypes.STREAMS_COMMIT_INTERVAL_MS_KEY,
                 v -> { int n = parseIntOrZero(v); return n > 0 && n < 100; },
@@ -1224,6 +1228,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.default.api.timeout.ms",
                     v -> { long n = parseLongOrZero(v); return n > 0 && n < 30_000L; },
                     "spring.kafka.consumer.properties.default.api.timeout.ms={value} — below 30 s. Routine partition-leader moves and broker rolling restarts exhaust the retry budget; commitSync, position, endOffsets, partitionsFor all start throwing TimeoutException during events the consumer should absorb. Default 60 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
+                    "spring.kafka.consumer.fetch-max-size",
+                    v -> parseSpringDataSizeBytes(v) > 100L * 1024L * 1024L,
+                    "spring.kafka.consumer.fetch-max-size={value} — above 100 MiB. Each fetch response delivers up to that much data in one shot; heap allocation per broker connection × consumer fleet adds up fast, and decompression on the listener thread takes seconds. Default 50 MiB is the right ceiling.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_LOW),
+                    "spring.kafka.consumer.fetch-max-size",
+                    v -> { long n = parseSpringDataSizeBytes(v); return n > 0 && n < 1024L * 1024L; },
+                    "spring.kafka.consumer.fetch-max-size={value} — below 1 MiB. Any single record larger than the cap risks a RecordTooLargeException + silent skip, or a stuck-fetch loop on the partition. Default 50 MiB; the floor is the largest expected record × 2.",
                     "org.springframework.kafka", "spring-kafka"));
         }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_NOT_ALL) != Severity.OFF) {

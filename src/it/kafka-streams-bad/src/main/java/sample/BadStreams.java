@@ -172,6 +172,16 @@ public final class BadStreams {
         return p;
     }
 
+    // RULE: STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT.
+    public Properties processingGuaranteeAtLeastOnceExplicit() {
+        Properties p = new Properties();
+        p.put(StreamsConfig.APPLICATION_ID_CONFIG, "my-streams-pipeline-v1");
+        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.put("processing.guarantee", "at_least_once");
+        p.put("replication.factor", "3");
+        return p;
+    }
+
     // RULE: STREAMS_NUM_STREAM_THREADS_ONE.
     public Properties numStreamThreadsOne() {
         Properties p = new Properties();
