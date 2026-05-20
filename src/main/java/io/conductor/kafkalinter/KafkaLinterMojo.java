@@ -1160,6 +1160,25 @@ public class KafkaLinterMojo extends AbstractMojo {
                     null, "lazy-client", "true",
                     "mp.messaging.{direction}.{channel}.lazy-client=true — kafka-clients producer/consumer deferred to first subscribe. Broker connectivity, SASL, and topic-existence failures surface after the pod is already Ready instead of at boot."));
         }
+        if (sev.get(RuleId.QK_OUTGOING_KEY_LITERAL) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.predicate(
+                    RuleId.QK_OUTGOING_KEY_LITERAL, sev.get(RuleId.QK_OUTGOING_KEY_LITERAL),
+                    "outgoing", "key",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "mp.messaging.outgoing.{channel}.key={value} — static literal key. Every record hashes to the same partition; topic effectively single-partition. Set the key per-record via OutgoingKafkaRecordMetadata instead."));
+        }
+        if (sev.get(RuleId.QK_INCOMING_BATCH_TRUE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_INCOMING_BATCH_TRUE, sev.get(RuleId.QK_INCOMING_BATCH_TRUE),
+                    "incoming", "batch", "true",
+                    "mp.messaging.incoming.{channel}.batch=true — listener receives Message<List<T>>; any single bad record fails the whole batch under default failure-strategy=fail and re-delivers the entire batch including successful records. Pair with explicit failure-strategy=dead-letter-queue and per-record error handling."));
+        }
+        if (sev.get(RuleId.QK_INCOMING_RETRY_TRUE) != Severity.OFF) {
+            rules.add(SmallRyeChannelConfigRule.literal(
+                    RuleId.QK_INCOMING_RETRY_TRUE, sev.get(RuleId.QK_INCOMING_RETRY_TRUE),
+                    "incoming", "retry", "true",
+                    "mp.messaging.incoming.{channel}.retry=true — smallrye retries the @Incoming method indefinitely (default retry-attempts=-1) before nacking. On a deterministic poison record the offset never advances and lag grows unbounded with no application error signal. Cap retry-attempts AND set failure-strategy=dead-letter-queue."));
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_LOW) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_TIMEOUT_TOO_LOW),
