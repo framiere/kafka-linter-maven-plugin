@@ -408,6 +408,19 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
                 RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.STORE_BUILDER), Set.of("withLoggingDisabled"),
                 "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.STREAMS_CLOSE_NO_TIMEOUT, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("close"),
+                desc -> desc != null && desc.equals("()V"),
+                "KafkaStreams.close() with no Duration — blocks for Long.MAX_VALUE waiting for every StreamThread to stop. A wedged user process()/punctuate() pins the shutdown thread; pods time out and get SIGKILLed mid-commit. Use close(Duration) or close(CloseOptions)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REMOVE_THREAD_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.STREAMS_REMOVE_THREAD_NO_TIMEOUT, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("removeStreamThread"),
+                desc -> desc != null && desc.equals("()Ljava/util/Optional;"),
+                "KafkaStreams.removeStreamThread() with no Duration — blocks for Long.MAX_VALUE waiting for the thread to drain. A stuck process() call pins the autoscaler / admin endpoint indefinitely. Use removeStreamThread(Duration)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED, s,
+                Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("setUncaughtExceptionHandler"),
+                desc -> desc != null && desc.equals("(Ljava/lang/Thread$UncaughtExceptionHandler;)V"),
+                "KafkaStreams.setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler) is deprecated since 2.8 (KIP-671) — use the StreamsUncaughtExceptionHandler overload to return REPLACE_THREAD / SHUTDOWN_CLIENT / SHUTDOWN_APPLICATION instead of letting threads die silently."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

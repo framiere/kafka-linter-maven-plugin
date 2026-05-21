@@ -509,4 +509,23 @@ public final class BadStreams {
                         Serdes.Long())
                 .withLoggingDisabled(); // Processor-API equivalent — no changelog, no fault tolerance
     }
+
+    // RULE: STREAMS_CLOSE_NO_TIMEOUT.
+    public void shutdownWithoutTimeout(KafkaStreams streams) {
+        // No-argument close() — blocks for Long.MAX_VALUE waiting for every StreamThread.
+        streams.close();
+    }
+
+    // RULE: STREAMS_REMOVE_THREAD_NO_TIMEOUT.
+    public java.util.Optional<String> scaleDownWithoutTimeout(KafkaStreams streams) {
+        // No-argument removeStreamThread() — blocks for Long.MAX_VALUE waiting for the thread to drain.
+        return streams.removeStreamThread();
+    }
+
+    // RULE: STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED.
+    public void wireLegacyExceptionHandler(KafkaStreams streams) {
+        // Deprecated Thread.UncaughtExceptionHandler overload — cannot REPLACE_THREAD.
+        streams.setUncaughtExceptionHandler((Thread t, Throwable e) ->
+                System.err.println("Stream thread " + t.getName() + " died: " + e));
+    }
 }
