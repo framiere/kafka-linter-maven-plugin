@@ -43,6 +43,7 @@ import io.conductor.kafkalinter.rules.quarkus.QkBlockingMissingOnIncomingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkDevservicesInProdRule;
 import io.conductor.kafkalinter.rules.quarkus.SmallRyeChannelConfigRule;
 import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDelegatesRule;
+import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackagesWildcardRule;
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
@@ -1405,6 +1406,8 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
         addIfEnabled(rules, sev, RuleId.SPRING_ERROR_HANDLING_DESERIALIZER_NO_DELEGATES,
                 SpringErrorHandlingDeserializerNoDelegatesRule::new);
+        addIfEnabled(rules, sev, RuleId.SPRING_JSON_DESERIALIZER_TRUSTED_PACKAGES_WILDCARD,
+                SpringJsonDeserializerTrustedPackagesWildcardRule::new);
 
         // ── quarkus-kafka ──────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.QK_BLOCKING_MISSING_ON_BLOCKING_LISTENER,
