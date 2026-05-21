@@ -1507,6 +1507,55 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS — no AlterPartitionReassignmentsOptions: ack timeout fires on busy controller.
+    public void adminAlterPartitionReassignmentsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<org.apache.kafka.common.TopicPartition,
+                java.util.Optional<org.apache.kafka.clients.admin.NewPartitionReassignment>> plan = java.util.Map.of(
+                new org.apache.kafka.common.TopicPartition("events-v1", 0),
+                java.util.Optional.of(new org.apache.kafka.clients.admin.NewPartitionReassignment(java.util.List.of(2, 3, 4))));
+        // No AlterPartitionReassignmentsOptions — controller ack timeout under default ~30s; retry hits duplicate-rejection.
+        admin.alterPartitionReassignments(plan).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_CREATE_ACLS_NO_OPTIONS — no CreateAclsOptions: security mutation under default timeout, masking all() future.
+    public void adminCreateAclsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.List<org.apache.kafka.common.acl.AclBinding> bindings = java.util.List.of(
+                new org.apache.kafka.common.acl.AclBinding(
+                        new org.apache.kafka.common.resource.ResourcePattern(
+                                org.apache.kafka.common.resource.ResourceType.TOPIC, "events-v1",
+                                org.apache.kafka.common.resource.PatternType.LITERAL),
+                        new org.apache.kafka.common.acl.AccessControlEntry(
+                                "User:new-tenant", "*",
+                                org.apache.kafka.common.acl.AclOperation.READ,
+                                org.apache.kafka.common.acl.AclPermissionType.ALLOW)));
+        // No CreateAclsOptions — security mutation under default ~30s timeout.
+        admin.createAcls(bindings).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_DELETE_ACLS_NO_OPTIONS — no DeleteAclsOptions: IRREVERSIBLE security wipe with broad-filter semantics.
+    public void adminDeleteAclsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.List<org.apache.kafka.common.acl.AclBindingFilter> filters = java.util.List.of(
+                new org.apache.kafka.common.acl.AclBindingFilter(
+                        new org.apache.kafka.common.resource.ResourcePatternFilter(
+                                org.apache.kafka.common.resource.ResourceType.TOPIC, "legacy-events",
+                                org.apache.kafka.common.resource.PatternType.LITERAL),
+                        org.apache.kafka.common.acl.AccessControlEntryFilter.ANY));
+        // No DeleteAclsOptions — irreversible mutation under default ~30s timeout.
+        admin.deleteAcls(filters).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS — no AlterConfigsOptions: validateOnly defaults false, no dry-run.
     public void adminIncrementalAlterConfigsNoOptions() throws Exception {
         Properties p = new Properties();

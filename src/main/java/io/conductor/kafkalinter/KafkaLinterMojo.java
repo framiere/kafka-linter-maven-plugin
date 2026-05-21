@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),
+                "Admin.alterPartitionReassignments() with no AlterPartitionReassignmentsOptions — controller-driven inter-broker move; the AdminClient ack queues behind other admin writes on busy controllers. Default ~30 s fires before the controller acks; retry sees duplicate-rejection while the original is in flight. Pass new AlterPartitionReassignmentsOptions().timeoutMs(120_000) and poll listPartitionReassignments() for progress."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("createAcls"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/CreateAclsOptions;"),
+                "Admin.createAcls() with no CreateAclsOptions — security mutation under default ~30 s timeout; mid-batch firing leaves some bindings persisted, others not. Pass new CreateAclsOptions().timeoutMs(120_000) AND inspect per-binding values() rather than relying on the masking all() future."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteAcls"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteAclsOptions;"),
+                "Admin.deleteAcls() with no DeleteAclsOptions — IRREVERSIBLE security mutation with broad-filter semantics under default ~30 s timeout. A single AclBindingFilter.ANY call can wipe thousands of bindings; mid-batch timeout firing leaves partial deletion with no enumeration. Pass new DeleteAclsOptions().timeoutMs(120_000) AND narrow every filter to a specific principal/resource."));
         addIfEnabled(rules, sev, RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("incrementalAlterConfigs"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterConfigsOptions;"),
