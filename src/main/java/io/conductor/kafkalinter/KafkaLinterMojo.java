@@ -25,6 +25,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWi
 import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
+import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
@@ -1711,6 +1712,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_ALIAS_UNDEFINED) != Severity.OFF) {
             rules.add(new ConnectTransformAliasUndefinedRule(sev.get(RuleId.CONNECT_TRANSFORM_ALIAS_UNDEFINED)));
+        }
+        if (sev.get(RuleId.CONNECT_PREDICATE_REFERENCE_UNDEFINED) != Severity.OFF) {
+            rules.add(new ConnectPredicateReferenceUndefinedRule(sev.get(RuleId.CONNECT_PREDICATE_REFERENCE_UNDEFINED)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
