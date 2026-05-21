@@ -612,6 +612,23 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED, s, Set.of(KafkaTypes.KAFKA_STREAMS),
                 Set.of("allMetadataForStore", "allMetadata"),
                 "KafkaStreams.allMetadataForStore() / allMetadata() is deprecated since Kafka 3.0 (KIP-744) — returns the old org.apache.kafka.streams.state.StreamsMetadata, which silently elides standby-replica information. Interactive-query routers built on these methods cannot fall over to a standby host while the active is restoring; the IQ endpoint returns 503 for the full restore window. Use streamsMetadataForStore() / metadataForAllStreamsClients() which return the new org.apache.kafka.streams.StreamsMetadata with standbyStateStoreNames() populated."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, s -> new MethodCallRule(
+                RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, s, KafkaTypes.CONSUMER_OWNERS, Set.of("committed"),
+                desc -> desc != null && desc.startsWith("(Lorg/apache/kafka/common/TopicPartition;"),
+                "Consumer.committed(TopicPartition) / committed(TopicPartition, Duration) deprecated since Kafka 2.4 (KIP-520). Each call is one OFFSET_FETCH round trip for a single partition; a loop over an N-partition assignment becomes N × broker-RTT of sequential serial fetches. Use the batched overloads consumer.committed(Set.of(tp1, tp2, ...)) and consumer.committed(Set<TopicPartition>, Duration) which return a Map<TopicPartition, OffsetAndMetadata> in a single round trip."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s,
+                Set.of(KafkaTypes.TIME_WINDOWS, KafkaTypes.JOIN_WINDOWS, KafkaTypes.SESSION_WINDOWS),
+                Set.of("grace"),
+                "TimeWindows.grace() / JoinWindows.grace() / SessionWindows.grace() chained-instance methods deprecated since Kafka 3.0 (KIP-633). The legacy `Windows.of(size).grace(grace)` pattern hid a 24-hour default grace period when `.grace()` was omitted, silently buffering late events for a day. Migrate to the new static factories that make grace explicit at construction: TimeWindows.ofSizeAndGrace(size, grace) / TimeWindows.ofSizeWithNoGrace(size); JoinWindows.ofTimeDifferenceAndGrace(diff, grace) / ofTimeDifferenceWithNoGrace(diff); SessionWindows.ofInactivityGapAndGrace(gap, grace) / ofInactivityGapWithNoGrace(gap). Calling `.grace()` after a new factory throws IllegalStateException at runtime."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, s,
+                Set.of(KafkaTypes.TOPOLOGY, KafkaTypes.STREAMS_BUILDER),
+                Set.of("addProcessor", "addGlobalStore"),
+                desc -> desc != null
+                        && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;")
+                        && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
+                "Topology.addProcessor / Topology.addGlobalStore / StreamsBuilder.addGlobalStore overloads taking the legacy org.apache.kafka.streams.processor.ProcessorSupplier are deprecated since Kafka 3.3 (KIP-820). The new org.apache.kafka.streams.processor.api.ProcessorSupplier returns Processor<KIn, VIn, KOut, VOut> with typed Record<KIn, VIn>, named-child fan-out via context.forward(record, childName), and a compile-time fixed-key variant (FixedKeyProcessor) that the legacy API lacks. Change the import from `org.apache.kafka.streams.processor.ProcessorSupplier` to `org.apache.kafka.streams.processor.api.ProcessorSupplier` and refactor the Processor's process(K, V) into process(Record<K, V> record)."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

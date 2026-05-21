@@ -1774,6 +1774,24 @@ public final class BadKafkaUsage {
         producer.close(Duration.ofSeconds(5));
     }
 
+    // RULE: CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED — single-partition committed() calls deprecated since Kafka 2.4.
+    public void committedSinglePartitionDeprecated() {
+        Properties p = consumerProps();
+        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p)) {
+            org.apache.kafka.common.TopicPartition tp =
+                    new org.apache.kafka.common.TopicPartition("orders", 0);
+            // Bug 1: single-partition no-timeout form — each call is one OFFSET_FETCH round trip.
+            org.apache.kafka.clients.consumer.OffsetAndMetadata om1 = consumer.committed(tp);
+            // Bug 2: single-partition explicit-timeout form — same trap with an explicit per-call timeout.
+            org.apache.kafka.clients.consumer.OffsetAndMetadata om2 =
+                    consumer.committed(tp, Duration.ofSeconds(5));
+            if (om1 != null && om2 != null) {
+                om1.offset();
+                om2.offset();
+            }
+        }
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

@@ -972,4 +972,61 @@ public final class BadStreams {
         }
     }
 
+    // RULE: STREAMS_WINDOWS_GRACE_DEPRECATED — TimeWindows/JoinWindows/SessionWindows.grace() chained instance method deprecated (KIP-633, Kafka 3.0).
+    public Topology windowsGraceDeprecated() {
+        StreamsBuilder b = new StreamsBuilder();
+        // Bug 1: TimeWindows.ofSizeWithNoGrace(...).grace(...) — the chained .grace() is deprecated AND throws
+        // IllegalStateException at runtime because the new factory marks grace-as-set.
+        TimeWindows tw = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5)).grace(Duration.ofMinutes(1));
+        // Bug 2: JoinWindows.ofTimeDifferenceWithNoGrace(...).grace(...) — same deprecated chain.
+        JoinWindows jw = JoinWindows.ofTimeDifferenceWithNoGrace(Duration.ofMinutes(5)).grace(Duration.ofSeconds(30));
+        // Bug 3: SessionWindows.ofInactivityGapWithNoGrace(...).grace(...) — same deprecated chain.
+        SessionWindows sw = SessionWindows.ofInactivityGapWithNoGrace(Duration.ofMinutes(5)).grace(Duration.ofSeconds(10));
+        b.<String, String>stream("input-windows-grace",
+                        org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("input-windows-grace-source"))
+                .groupByKey(org.apache.kafka.streams.kstream.Grouped.with("windows-grace-grouped", Serdes.String(), Serdes.String()))
+                .windowedBy(tw)
+                .count(org.apache.kafka.streams.kstream.Named.as("windows-grace-count"),
+                        Materialized.<String, Long, org.apache.kafka.streams.state.WindowStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("windows-grace-store"));
+        // Reference jw and sw so the compiler does not optimize them away.
+        if (jw.gracePeriodMs() < 0 || sw.gracePeriodMs() < 0) {
+            throw new IllegalStateException();
+        }
+        return b.build();
+    }
+
+    // RULE: STREAMS_LEGACY_PROCESSOR_API_DEPRECATED — Topology.addProcessor / addGlobalStore / StreamsBuilder.addGlobalStore
+    // taking the legacy org.apache.kafka.streams.processor.ProcessorSupplier (pre-KIP-820, deprecated since Kafka 3.3).
+    public Topology legacyProcessorApiDeprecated() {
+        StreamsBuilder b = new StreamsBuilder();
+        Topology t = b.build();
+        // Bug 1: Topology.addProcessor with LEGACY ProcessorSupplier from org.apache.kafka.streams.processor.
+        // The legacy Processor<K, V> interface has process(K, V) and ProcessorContext.forward(K, V) — replaced by
+        // org.apache.kafka.streams.processor.api.ProcessorSupplier returning Processor<KIn, VIn, KOut, VOut>
+        // with process(Record<KIn, VIn>) and typed ProcessorContext<KOut, VOut>.
+        org.apache.kafka.streams.processor.ProcessorSupplier<String, String> legacySupplier =
+                () -> new org.apache.kafka.streams.processor.AbstractProcessor<String, String>() {
+                    @Override public void process(String key, String value) { /* legacy API */ }
+                };
+        t.addSource("legacy-src", "legacy-input");
+        t.addProcessor("legacy-proc", legacySupplier, "legacy-src");
+        // Bug 2: StreamsBuilder.addGlobalStore(StoreBuilder, String, Consumed, ProcessorSupplier) with legacy supplier.
+        StoreBuilder<KeyValueStore<String, String>> globalStoreBuilder =
+                Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore("legacy-global-store"),
+                        Serdes.String(), Serdes.String());
+        b.addGlobalStore(globalStoreBuilder, "legacy-global-input",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("legacy-global-source"),
+                legacySupplier);
+        // Bug 3: Topology.addGlobalStore(StoreBuilder, String, Deserializer, Deserializer, String, String, ProcessorSupplier).
+        StoreBuilder<KeyValueStore<String, String>> globalStoreBuilder2 =
+                Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore("legacy-global-store-2"),
+                        Serdes.String(), Serdes.String());
+        t.addGlobalStore(globalStoreBuilder2, "legacy-global-source-2",
+                Serdes.String().deserializer(), Serdes.String().deserializer(),
+                "legacy-global-input-2", "legacy-global-proc-2", legacySupplier);
+        return t;
+    }
+
 }
