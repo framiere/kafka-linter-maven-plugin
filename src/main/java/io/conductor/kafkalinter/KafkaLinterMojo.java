@@ -154,8 +154,8 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "Consumer.poll(long) is deprecated since Kafka 2.0 (KIP-266) — replaced by poll(Duration). The long variant blocks indefinitely waiting for an initial group-coordinator assignment regardless of the timeout argument; the Duration variant returns an empty record set when the duration elapses, making coordinator-unavailability visible to the caller. The deprecated method is slated for removal in Kafka 4.x."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitSync"),
-                "()V"::equals,
-                "Consumer.commitSync() (no-arg) blocks indefinitely on coordinator unavailability — equivalent to commitSync(Duration.ofMillis(Long.MAX_VALUE)). Use commitSync(Duration) so coordinator outages surface as recoverable TimeoutException instead of silent stalls."));
+                desc -> desc != null && (desc.equals("()V") || desc.equals("(Ljava/util/Map;)V")),
+                "Consumer.commitSync() / commitSync(Map) (no Duration) blocks indefinitely on coordinator unavailability — equivalent to commitSync(Duration.ofMillis(Long.MAX_VALUE)). Use commitSync(Duration) / commitSync(Map, Duration) so coordinator outages surface as recoverable TimeoutException instead of silent stalls."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("endOffsets"),
                 desc -> desc != null && desc.equals("(Ljava/util/Collection;)Ljava/util/Map;"),
@@ -475,10 +475,6 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_CLOSE_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("close"),
                 desc -> desc != null && desc.equals("()V"),
                 "Consumer.close() with no Duration — blocks for default.api.timeout.ms (default 60 s) waiting for LeaveGroup and final commits. Pod terminationGracePeriodSeconds (typically 30 s) fires SIGKILL before close returns; rebalance stalls until session.timeout.ms. Use close(Duration)."));
-        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_SYNC_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_COMMIT_SYNC_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitSync"),
-                desc -> desc != null && (desc.equals("()V") || desc.equals("(Ljava/util/Map;)V")),
-                "Consumer.commitSync() / commitSync(Map) with no Duration — blocks for default.api.timeout.ms (default 60 s) retrying on transient coordinator errors. A slow commit pushes the next poll past max.poll.interval.ms and triggers a rebalance storm. Use commitSync(Duration)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
                 RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KTABLE), Set.of("groupBy"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedTable;"),
