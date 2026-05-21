@@ -22,6 +22,7 @@ import io.conductor.kafkalinter.rules.clients.AdminNewTopicReplicationFactorOneR
 import io.conductor.kafkalinter.rules.clients.AdminNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
+import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
@@ -1703,6 +1704,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DLQ_REPLICATION_FACTOR_LOW) != Severity.OFF) {
             rules.add(new ConnectDlqReplicationFactorLowRule(sev.get(RuleId.CONNECT_DLQ_REPLICATION_FACTOR_LOW)));
+        }
+        if (sev.get(RuleId.CONNECT_CONSUMER_OVERRIDE_GROUP_ID) != Severity.OFF) {
+            rules.add(new ConnectConsumerOverrideGroupIdRule(sev.get(RuleId.CONNECT_CONSUMER_OVERRIDE_GROUP_ID)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
