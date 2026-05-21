@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -63,16 +64,22 @@ public final class GoodKafkaUsage {
             }
             @Override public void onPartitionsAssigned(java.util.Collection<TopicPartition> partitions) {}
         });
-        while (running()) {
-            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
-            for (ConsumerRecord<String, String> r : records) {
-                handle(r);
+        try {
+            while (running()) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
+                for (ConsumerRecord<String, String> r : records) {
+                    handle(r);
+                }
+                consumer.commitSync(Duration.ofSeconds(10));
             }
-            consumer.commitSync(Duration.ofSeconds(10));
+        } catch (WakeupException expectedDuringShutdown) {
+            // poll() was interrupted by shutdown() calling consumer.wakeup().
         }
     }
 
     public void shutdown() {
+        // Wake the polling thread so the next poll() throws WakeupException and the loop exits.
+        consumer.wakeup();
         producer.flush();
         producer.close(Duration.ofSeconds(20));
         consumer.close(Duration.ofSeconds(20));
