@@ -11,6 +11,7 @@ import io.conductor.kafkalinter.rules.ProducerSendBlockingGetRule;
 import io.conductor.kafkalinter.rules.ProducerSendNoCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
+import io.conductor.kafkalinter.rules.clients.AdminNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
@@ -175,6 +176,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_NOT_CLOSED, ProducerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_PER_RECORD_ALLOCATION, ProducerPerRecordAllocationRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_CLOSED, ConsumerNotClosedRule::new);
+        addIfEnabled(rules, sev, RuleId.ADMIN_NOT_CLOSED, AdminNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_THREAD_SAFE, ConsumerNotThreadSafeRule::new);
         addIfEnabled(rules, sev, RuleId.STRING_SERIALIZER_NON_STRING, StringSerializerNonStringRule::new);
