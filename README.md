@@ -158,19 +158,24 @@ mvn kafka-linter:check
 
 ## What it detects
 
-Each rule has a stable ID (used in config) and a default severity. All rules act on compiled bytecode, so they catch the problem wherever it lives — in your code, in a transitively compiled module, in a generated source, anywhere there is a `.class`.
+Each rule has a stable ID (used in config) and a default severity. All rules act on compiled bytecode (or, for property-file rules, on the YAML/properties files under `src/main/resources/`), so they catch the problem wherever it lives — in your code, in a transitively compiled module, in a generated source, anywhere there is a `.class`.
+
+The full machine-readable catalog (all 232 rule IDs, defaults, categories, doc paths) is in [`docs/rules/_CATALOG.md`](docs/rules/_CATALOG.md). A small sampler from the core `kafka-clients` category:
 
 | Rule ID                        | Default   | What it catches                                                                                                  |
 |--------------------------------|-----------|------------------------------------------------------------------------------------------------------------------|
 | `PRODUCER_IN_LOOP`             | `ERROR`   | `new KafkaProducer(...)` inside a `for`/`while`/`do-while` loop or inside an iterating lambda (`forEach`, `Stream.map`, …). Producers must be long-lived. |
 | `CONSUMER_IN_LOOP`             | `ERROR`   | Same idea for `KafkaConsumer`.                                                                                   |
 | `PRODUCER_NO_COMPRESSION`      | `ERROR`   | A method constructs a `KafkaProducer` but never sets `compression.type` anywhere in the same method.             |
+| `CLIENT_ID_MISSING`            | `WARNING` | A `KafkaProducer`/`KafkaConsumer`/`KafkaStreams` is constructed but `client.id` is never set in the same method — broker logs see `producer-1` instead of your service. |
 | `PRODUCER_SEND_BLOCKING_GET`   | `ERROR`   | `producer.send(record).get()` — synchronous, kills batching. Use a `Callback`.                                    |
 | `PRODUCER_SEND_NO_CALLBACK`    | `WARNING` | `producer.send(record)` called without a `Callback` **and** the returned `Future` is discarded — errors will go unnoticed. |
 | `PRODUCER_FLUSH_IN_LOOP`       | `ERROR`   | `producer.flush()` inside a loop — defeats batching.                                                              |
 | `CONSUMER_AUTO_COMMIT_TRUE`    | `WARNING` | `enable.auto.commit=true` in the consumer config — risks message loss / double processing on rebalance.           |
 | `CONSUMER_COMMIT_PER_RECORD`   | `ERROR`   | `consumer.commitSync()` inside the **per-record** loop of a `poll()` cycle (commit per record). Commit per batch instead. |
 | `CONSUMER_POLL_ZERO`           | `ERROR`   | `consumer.poll(0L)` or `poll(Duration.ZERO)` — busy-loops the consumer thread.                                    |
+| `KAFKA_BOOTSTRAP_SERVERS_LOCALHOST` | `ERROR` | `bootstrap.servers` contains `localhost` or `127.0.0.1` in a packaged artifact — that's a build-config leak, not a default. |
+| `KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER` | `ERROR` | `bootstrap.servers` lists exactly one broker — defeats the bootstrap failover contract clients rely on. |
 
 ### How "in a loop" is detected
 
@@ -303,10 +308,14 @@ Two layers of tests live in this repo.
 
 Two sample Maven projects exercise the plugin end-to-end through [`maven-invoker-plugin`](https://maven.apache.org/plugins/maven-invoker-plugin/):
 
-IT projects are named `<framework>-good` (clean usage, build should succeed) and `<framework>-bad` (one method per anti-pattern, build should fail). Today only `kafka-clients-good` and `kafka-clients-bad` exist; framework-specific IT pairs (`kafka-streams-*`, `spring-kafka-*`, `quarkus-kafka-*`) are added alongside the rules that exercise them.
+IT projects are named `<framework>-good` (clean usage, build should succeed) and `<framework>-bad` (one method per anti-pattern, build should fail). Four framework pairs exist:
 
-- `src/it/kafka-clients-good/` — producer/consumer as singletons, `compression.type=snappy`, `enable.auto.commit=false`, `commitSync()` per batch, `poll(Duration.ofMillis(500))`, `send(...)` with a `Callback`. Expected outcome: `kafka-linter: 0 violations.` and `BUILD SUCCESS`.
-- `src/it/kafka-clients-bad/` — one method per anti-pattern; every implemented rule fires at least once. Expected outcome: `kafka-linter: N violation(s) — …` and `BUILD FAILURE`.
+- `kafka-clients-{good,bad}` — plain Apache Kafka producer/consumer surface.
+- `kafka-streams-{good,bad}` — DSL + processor API, state stores, EOS.
+- `spring-kafka-{good,bad}` — `@KafkaListener`, `KafkaTemplate`, error handlers, Spring DSL property paths.
+- `quarkus-kafka-{good,bad}` — SmallRye Reactive Messaging channels, `@Incoming`/`@Outgoing`, `Emitter`.
+
+`-good` projects expect `kafka-linter: 0 violations.` and `BUILD SUCCESS`. `-bad` projects expect `BUILD FAILURE` with at least one violation per anti-pattern method.
 
 Each IT has an `invoker.properties` declaring the expected build result:
 
@@ -341,12 +350,15 @@ With `<streamLogs>true</streamLogs>`, you'll see every IT's log inline — usefu
 
 ### Adding a new rule
 
-1. Add a `RuleId` constant in `RuleId.java` with its default severity, confidence, category, doc path, message, and tagline.
-2. Create `rules/MyNewRule.java` implementing `Rule`. Use `RuleContext` if you need loop/lambda info.
-3. Wire it into `KafkaLinterMojo.buildRules(...)`.
-4. Add an anti-pattern method to the matching `src/it/<framework>-bad/` source tree (create the IT pair if it doesn't exist yet).
-5. Optionally add the counter-example to `<framework>-good/` to prove the rule doesn't false-positive.
-6. `mvn verify` — the bad IT should report one more violation; the IT will pass because the declared failure result still matches.
+1. Write the doc first: `docs/rules/<category>/<RULE_ID>.md`. Treat it as the spec — tagline, what's happening (mechanism), operational impact, how to fix, when it's a false positive, detection strategy, references.
+2. Register the `RuleId` in `RuleId.java` with default severity, confidence, category, doc path, message, and the four didactic blocks (`tagline`/`mechanism`/`impact`/`whyMatters`). Cross-link related rules with `[[rule-id-in-lowercase-with-hyphens]]`.
+3. Implement the rule:
+   - **Bytecode rule**: create `rules/<category>/MyNewRule.java` implementing `Rule`. Use `RuleContext` for loop/lambda info. Same-method scope unless cross-method is essential — keeps the heuristic predictable.
+   - **Property-file rule**: no Java class needed — call `PropertyFileRule.predicate(...)` or `PropertyFileRule.literal(...)` directly in `KafkaLinterMojo`.
+4. Wire it into `KafkaLinterMojo.buildRules(...)`.
+5. Add an anti-pattern method (or property) to the matching `src/it/<framework>-bad/` source tree.
+6. Add the counter-example to `<framework>-good/` to prove the rule doesn't false-positive — the `-good` IT must keep `0 violations`.
+7. `mvn install -DskipTests=false` — all 8 ITs must pass.
 
 ---
 
@@ -364,18 +376,36 @@ With `<streamLogs>true</streamLogs>`, you'll see every IT's log inline — usefu
 ```
 .
 ├── pom.xml                                            # io.conductor:kafka-linter-maven-plugin
+├── docs/
+│   └── rules/                                         # one .md per rule, grouped by category
+│       ├── _CATALOG.md                                # generated machine-readable index of all 232 rules
+│       ├── kafka-clients/                             # 40 rule docs + _INDEX.md
+│       ├── kafka-streams/                             # 47 rule docs + _INDEX.md
+│       ├── spring-kafka/                              # 32 rule docs + _INDEX.md
+│       ├── quarkus-kafka/                             # 36 rule docs + _INDEX.md
+│       ├── observability/                             # 14 rule docs + _INDEX.md
+│       ├── schema-registry/                           # 7 rule docs + _INDEX.md
+│       ├── warpstream/                                # 4 rule docs + _INDEX.md
+│       ├── versions/                                  # 28 rule docs + _INDEX.md
+│       └── good-practices/                            # 24 rule docs + _INDEX.md
 ├── src/
 │   ├── main/java/io/conductor/kafkalinter/
-│   │   ├── KafkaLinterMojo.java                       # @Mojo(name="check")
-│   │   ├── RuleId.java                                # implemented rules + metadata registry
+│   │   ├── KafkaLinterMojo.java                       # @Mojo(name="check") — wires the rule list
+│   │   ├── RuleId.java                                # rule registry: id, severity, confidence, doc path, tagline/mechanism/impact/whyMatters
 │   │   ├── Severity.java                              # ERROR | WARNING | INFO | OFF
 │   │   ├── Confidence.java                            # HIGH | MEDIUM | CONTEXT
 │   │   ├── Violation.java                             # reporting record
 │   │   ├── report/                                    # SimpleReporter, VerboseReporter
-│   │   ├── rules/                                     # one .java per rule
-│   │   └── scanner/                                   # LoopFinder, LambdaTracker, etc.
+│   │   ├── rules/                                     # one .java per bytecode rule, grouped by category
+│   │   │   ├── clients/                               # KafkaProducer/KafkaConsumer bytecode rules
+│   │   │   ├── streams/                               # KafkaStreams bytecode rules
+│   │   │   ├── spring/                                # Spring-Kafka bytecode rules
+│   │   │   └── ...
+│   │   └── scanner/                                   # LoopFinder, LambdaTracker, PropertyFileRule, RuleContext
 │   └── it/
-│       ├── kafka-clients-good/                        # 0 expected violations
-│       └── kafka-clients-bad/                         # N expected violations
+│       ├── kafka-clients-{good,bad}/                  # plain producer/consumer ITs
+│       ├── kafka-streams-{good,bad}/                  # streams DSL ITs
+│       ├── spring-kafka-{good,bad}/                   # @KafkaListener / KafkaTemplate ITs
+│       └── quarkus-kafka-{good,bad}/                  # SmallRye Reactive Messaging ITs
 └── README.md
 ```
