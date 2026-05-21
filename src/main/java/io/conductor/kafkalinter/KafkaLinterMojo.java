@@ -25,6 +25,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWi
 import io.conductor.kafkalinter.rules.connect.ConnectAvroAutoRegisterSchemasTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectConfigProviderReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumIncludeAndExcludeListBothSetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdRandomRelianceRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotNameSharedRule;
@@ -1776,6 +1777,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_SINK_CONSUMER_AUTO_OFFSET_RESET_LATEST) != Severity.OFF) {
             rules.add(new ConnectSinkConsumerAutoOffsetResetLatestRule(sev.get(RuleId.CONNECT_SINK_CONSUMER_AUTO_OFFSET_RESET_LATEST)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_INCLUDE_AND_EXCLUDE_LIST_BOTH_SET) != Severity.OFF) {
+            rules.add(new ConnectDebeziumIncludeAndExcludeListBothSetRule(sev.get(RuleId.CONNECT_DEBEZIUM_INCLUDE_AND_EXCLUDE_LIST_BOTH_SET)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
