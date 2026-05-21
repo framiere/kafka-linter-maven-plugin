@@ -11,6 +11,7 @@ import io.conductor.kafkalinter.rules.ProducerSendBlockingGetRule;
 import io.conductor.kafkalinter.rules.ProducerSendNoCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
+import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
@@ -23,6 +24,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerHeartbeatSessionRatioRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNotThreadSafeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNoWakeupShutdownRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerSeekBeforePollRule;
 import io.conductor.kafkalinter.rules.clients.HeadersSensitiveKeysRule;
@@ -186,7 +188,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, ProducerCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_PER_RECORD_ALLOCATION, ProducerPerRecordAllocationRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_CLOSED, ConsumerNotClosedRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_NO_TIMEOUT, ConsumerCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_NOT_CLOSED, AdminNotClosedRule::new);
+        addIfEnabled(rules, sev, RuleId.ADMIN_CLOSE_NO_TIMEOUT, AdminCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_NOT_CLOSED, StreamsNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STORE_QUERY_PARAMETERS_NO_STALE_STORES,
                 StreamsStoreQueryParametersNoStaleStoresRule::new);
