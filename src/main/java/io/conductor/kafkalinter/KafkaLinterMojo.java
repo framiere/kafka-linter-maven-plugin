@@ -890,6 +890,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.ADMIN_ALTER_CLIENT_QUOTAS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterClientQuotas"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterClientQuotasOptions;"),
                 "Admin.alterClientQuotas(Collection<ClientQuotaAlteration>) with no AlterClientQuotasOptions — defaults validateOnly=false (the destructive quota mutation EXECUTES with no preview) and inherits the default request.timeout.ms (~30 s). On partial failure mid-batch some alterations are persisted and others not, with no caller-visible record of which is which. Pass new AlterClientQuotasOptions().validateOnly(true) first to preview, then re-run with validateOnly(false).timeoutMs(60_000) to apply."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_USER_SCRAM_CREDENTIALS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_ALTER_USER_SCRAM_CREDENTIALS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterUserScramCredentials"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterUserScramCredentialsOptions;"),
+                "Admin.alterUserScramCredentials(List<UserScramCredentialAlteration>) with no AlterUserScramCredentialsOptions — security-sensitive credential mutation that inherits the AdminClient default request.timeout.ms (~30 s); on partial-failure mid-batch some users have already had their SCRAM credentials rotated/deleted while others have not, with no built-in rollback and no validateOnly dry-run (the options class doesn't expose one). Pass new AlterUserScramCredentialsOptions().timeoutMs(120_000) and issue alterations one user at a time so each KafkaFuture's outcome can be inspected independently."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
