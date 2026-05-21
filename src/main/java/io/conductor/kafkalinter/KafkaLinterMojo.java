@@ -14,6 +14,7 @@ import io.conductor.kafkalinter.rules.ProducerInLoopRule;
 import io.conductor.kafkalinter.rules.ProducerNoCompressionRule;
 import io.conductor.kafkalinter.rules.ProducerSendBlockingGetRule;
 import io.conductor.kafkalinter.rules.ProducerSendNoCallbackRule;
+import io.conductor.kafkalinter.rules.ProducerSendNullCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
@@ -217,6 +218,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.HEADERS_SENSITIVE_KEYS, HeadersSensitiveKeysRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BLOCKING_GET, ProducerSendBlockingGetRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NO_CALLBACK, ProducerSendNoCallbackRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NULL_CALLBACK, ProducerSendNullCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_LOOP, ProducerFlushInLoopRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_IN_LOOP, ConsumerSubscribeInLoopRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_INFINITE_DURATION, ConsumerPollInfiniteDurationRule::new);
