@@ -2367,6 +2367,38 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.num.stream.threads above 64 — threads beyond the assignable task count sit idle, claiming heap and metric overhead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_TOO_HIGH),
+                    "spring.kafka.streams.replication-factor",
+                    v -> parseLongOrZero(v) > 5L,
+                    "spring.kafka.streams.replication-factor above 5 — internal-topic disk and follower-fetch bandwidth scale linearly; RF=3 already survives any single AZ outage.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_SERVER_LOCALHOST) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_APPLICATION_SERVER_LOCALHOST,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_SERVER_LOCALHOST),
+                    "spring.kafka.streams.properties.application.server",
+                    v -> {
+                        if (v == null) return false;
+                        String host = v.trim().toLowerCase();
+                        int colon = host.indexOf(':');
+                        if (colon > 0) host = host.substring(0, colon);
+                        return KafkaTypes.LOCALHOST_HOST_TOKENS.contains(host);
+                    },
+                    "spring.kafka.streams.properties.application.server points at loopback — interactive queries from peer instances dial their own loopback. Resolve the advertised hostname at startup (k8s downward API / InetAddress.getLocalHost()).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_NONE),
+                    "spring.kafka.streams.properties.rack.aware.assignment.strategy", "none",
+                    "spring.kafka.streams.properties.rack.aware.assignment.strategy=none — disables rack-aware task assignment. Active+standby may colocate in one AZ, defeating cross-AZ failover. Default min_traffic is correct.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
