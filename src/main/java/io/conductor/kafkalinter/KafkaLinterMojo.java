@@ -27,6 +27,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule
 import io.conductor.kafkalinter.rules.connect.ConnectDlqContextHeadersDisabledRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqTopicEqualsInputTopicRule;
+import io.conductor.kafkalinter.rules.connect.ConnectFileStreamDemoConnectorRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJsonConverterSchemasEnableUnsetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectNameMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBothSetRule;
@@ -1747,6 +1748,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_TASKS_MAX_LESS_THAN_ONE) != Severity.OFF) {
             rules.add(new ConnectTasksMaxLessThanOneRule(sev.get(RuleId.CONNECT_TASKS_MAX_LESS_THAN_ONE)));
+        }
+        if (sev.get(RuleId.CONNECT_FILE_STREAM_DEMO_CONNECTOR) != Severity.OFF) {
+            rules.add(new ConnectFileStreamDemoConnectorRule(sev.get(RuleId.CONNECT_FILE_STREAM_DEMO_CONNECTOR)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
