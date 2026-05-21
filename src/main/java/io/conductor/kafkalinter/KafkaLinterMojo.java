@@ -898,6 +898,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.ADMIN_FENCE_PRODUCERS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("fenceProducers"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/FenceProducersOptions;"),
                 "Admin.fenceProducers(Collection<String>) with no FenceProducersOptions — KIP-664 destructive operation that bumps the transactional.id epoch on the transaction coordinator, forcibly invalidating any live producer using that tx-id. The no-options form inherits the default request.timeout.ms (~30 s); on a busy transaction coordinator (typical during the EOS-v2 recovery scenarios where fenceProducers is actually called) a mid-batch TimeoutException leaves some tx-ids fenced and others NOT, producing a split-brain state. Pass new FenceProducersOptions().timeoutMs(120_000) and fence one transactional.id per call when possible."));
+        addIfEnabled(rules, sev, RuleId.TOPOLOGY_ADD_PROCESSOR_LEGACY_SUPPLIER, s -> new MethodCallRule(
+                RuleId.TOPOLOGY_ADD_PROCESSOR_LEGACY_SUPPLIER, s, Set.of(KafkaTypes.TOPOLOGY), Set.of("addProcessor"),
+                desc -> desc != null && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;"),
+                "Topology.addProcessor(name, ProcessorSupplier, ...) called with the LEGACY org.apache.kafka.streams.processor.ProcessorSupplier — KIP-820 (Kafka 3.0+) replaced it with the typed org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, KOut, VOut>. The legacy interface is on a deprecation timer (removal scheduled for a future Kafka major) and uses untyped K/V Processor#process(K, V) instead of the new Record-based typed API. Migrate to api.ProcessorSupplier and Processor#process(Record)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
