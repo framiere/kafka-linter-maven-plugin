@@ -1043,4 +1043,23 @@ public final class BadStreams {
         return props;
     }
 
+    // RULE: STREAMS_RETRIES_CONFIG_DEPRECATED — KIP-572, deprecated since Kafka 2.7.
+    // RULE: STREAMS_DEFAULT_DSL_STORE_KEY_DEPRECATED — KIP-954, deprecated since Kafka 3.5.
+    // RULE: AUTO_INCLUDE_JMX_REPORTER_KEY_DEPRECATED — KIP-830, deprecated since Kafka 3.3.
+    public Properties streamsRetriesAndDslStoreAndJmxKeysDeprecated() {
+        Properties props = new Properties();
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "retries-dsl-jmx-app");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "broker:9092");
+        // Bug 1: retries is a no-op at the Streams framework level (KIP-572) and overrides the embedded
+        // producer's MAX_INT default downstream — a regression.
+        props.put("retries", "5");
+        // Bug 2: default.dsl.store is the deprecated string-based key (KIP-954); replace with
+        // dsl.store.suppliers.class. The value here is the (also-deprecated) "rocksDB" constant.
+        props.put("default.dsl.store", "rocksDB");
+        // Bug 3: auto.include.jmx.reporter is deprecated as a key (KIP-830); JMX is on by default.
+        // Setting =true is redundant; the line should simply be removed.
+        props.put("auto.include.jmx.reporter", "true");
+        return props;
+    }
+
 }

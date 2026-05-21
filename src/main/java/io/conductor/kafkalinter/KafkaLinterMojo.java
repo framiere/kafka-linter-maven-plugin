@@ -677,6 +677,21 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of("<init>"),
                 desc -> desc != null && (desc.contains("Lorg/apache/kafka/common/record/TimestampType;J") || desc.contains("Lorg/apache/kafka/common/record/TimestampType;Ljava/lang/Long;")),
                 "ConsumerRecord constructor with checksum parameter deprecated since Kafka 2.0 (KIP-101 / KIP-82) — the per-record CRC field carries no useful information after the v2 message format moved CRCs to the batch level (KIP-98 in 0.11). Replace with ConsumerRecord(topic, partition, offset, ts, TimestampType.CREATE_TIME, keySize, valueSize, key, value, new RecordHeaders(), Optional.empty()) or the 5-arg shortcut ConsumerRecord(topic, partition, offset, key, value). Affects test/mock scaffolding that hand-rolls ConsumerRecord instances."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_RETRIES_CONFIG_DEPRECATED, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_RETRIES_CONFIG_DEPRECATED, s,
+                KafkaTypes.STREAMS_RETRIES_KEY,
+                v -> v != null && !v.isEmpty(),
+                "Streams-level `retries` config deprecated since Kafka 2.7 (KIP-572) — Streams ignores it at the framework level (uses task.timeout.ms instead) but forwards the value to the embedded producer, where it OVERRIDES the KIP-91 MAX_INT default. A `retries=3` on a Streams config silently caps the embedded producer at 3 retries; a single 30-second broker-roll then kills the task with TimeoutException. Remove the entry and use `StreamsConfig.TASK_TIMEOUT_MS_CONFIG` for task-level retry budget. This rule is Streams-specific — plain KafkaProducer.retries is a different legitimate config."));
+        addIfEnabled(rules, sev, RuleId.AUTO_INCLUDE_JMX_REPORTER_KEY_DEPRECATED, s -> new ConfigKeyValueRule(
+                RuleId.AUTO_INCLUDE_JMX_REPORTER_KEY_DEPRECATED, s,
+                KafkaTypes.AUTO_INCLUDE_JMX_REPORTER_KEY,
+                v -> v != null && !v.isEmpty(),
+                "`auto.include.jmx.reporter` config key deprecated since Kafka 3.3 (KIP-830) — JMX reporter is now always installed by default across all kafka-clients (Producer/Consumer/AdminClient/Streams). The key is scheduled for removal in Kafka 4.0+. Setting `=true` is redundant; setting `=false` is an observability antipattern (hides metrics from Prometheus/Datadog/Cruise Control). Remove the line. For non-JMX-only deployments, set `metric.reporters=` (empty) explicitly — that's the post-3.3 supported mechanism."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_DSL_STORE_KEY_DEPRECATED, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DEFAULT_DSL_STORE_KEY_DEPRECATED, s,
+                KafkaTypes.DEFAULT_DSL_STORE_KEY,
+                v -> v != null && !v.isEmpty(),
+                "`default.dsl.store` config key deprecated since Kafka 3.5 (KIP-954) — the string-valued key accepted only `rocksDB` / `in_memory` and locks users out of new built-in stores (KIP-986 versioned stores) and any third-party DslStoreSuppliers. Replace with `StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG` and pass `BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class.getName()` (default) or `InMemoryDslStoreSuppliers.class.getName()`. Remove entirely if you want the RocksDB default — that's the right move for almost all production apps."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

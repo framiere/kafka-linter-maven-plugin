@@ -225,6 +225,8 @@ public final class KafkaTypes {
     public static final String STREAMS_REPARTITION_PURGE_INTERVAL_MS_KEY = "repartition.purge.interval.ms";
     public static final String STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_KEY = "default.windowed.key.serde.inner";
     public static final String STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_KEY = "default.windowed.value.serde.inner";
+    public static final String STREAMS_RETRIES_KEY = "retries";
+    public static final String DEFAULT_DSL_STORE_KEY = "default.dsl.store";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(
