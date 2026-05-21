@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_CONSUMER_GROUPS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_CONSUMER_GROUPS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeConsumerGroups"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeConsumerGroupsOptions;"),
+                "Admin.describeConsumerGroups() with no DescribeConsumerGroupsOptions — defaults includeAuthorizedOperations=false; the ConsumerGroupDescription's authorizedOperations() returns null, hiding group-level ACL state (READ, DELETE, DESCRIBE) from capability-check tooling. Pass new DescribeConsumerGroupsOptions().includeAuthorizedOperations(true).timeoutMs(60_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listConsumerGroupOffsets"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListConsumerGroupOffsetsOptions;"),
+                "Admin.listConsumerGroupOffsets() with no ListConsumerGroupOffsetsOptions — returns committed offsets for EVERY partition the group has committed to within offsets.retention.minutes (default 7 days), including topics the group no longer subscribes to. For long-running groups this is hundreds of partitions. Pass new ListConsumerGroupOffsetsOptions().topicPartitions(currentPartitions).timeoutMs(60_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_CONSUMER_GROUP_OFFSETS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_ALTER_CONSUMER_GROUP_OFFSETS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterConsumerGroupOffsets"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterConsumerGroupOffsetsOptions;"),
+                "Admin.alterConsumerGroupOffsets() with no AlterConsumerGroupOffsetsOptions — inherits default ~30s timeout on an IRREVERSIBLE per-partition offset rewrite. Timeout firing leaves the group in a half-reset state (some partitions advanced, others at original offset); restart of consumer will process partitions inconsistently. Pass new AlterConsumerGroupOffsetsOptions().timeoutMs(120_000)."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_RECORDS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DELETE_RECORDS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteRecords"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteRecordsOptions;"),

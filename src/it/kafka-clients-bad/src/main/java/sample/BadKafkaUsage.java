@@ -1507,6 +1507,49 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DESCRIBE_CONSUMER_GROUPS_NO_OPTIONS — no DescribeConsumerGroupsOptions: includeAuthorizedOperations defaults to false.
+    public void adminDescribeConsumerGroupsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<String, org.apache.kafka.clients.admin.ConsumerGroupDescription> descs =
+                admin.describeConsumerGroups(java.util.List.of("g1", "g2")).all().get();
+        for (org.apache.kafka.clients.admin.ConsumerGroupDescription d : descs.values()) {
+            System.out.println(d.groupId() + " state=" + d.state());
+        }
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_LIST_CONSUMER_GROUP_OFFSETS_NO_OPTIONS — no ListConsumerGroupOffsetsOptions: returns ALL historical partitions.
+    public void adminListConsumerGroupOffsetsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        // No ListConsumerGroupOffsetsOptions — returns every partition the group has committed to in the retention window.
+        java.util.Map<org.apache.kafka.common.TopicPartition,
+                org.apache.kafka.clients.consumer.OffsetAndMetadata> offsets =
+                        admin.listConsumerGroupOffsets("my-group").partitionsToOffsetAndMetadata().get();
+        for (java.util.Map.Entry<org.apache.kafka.common.TopicPartition,
+                org.apache.kafka.clients.consumer.OffsetAndMetadata> e : offsets.entrySet()) {
+            System.out.println(e.getKey() + " -> " + e.getValue());
+        }
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_ALTER_CONSUMER_GROUP_OFFSETS_NO_OPTIONS — no AlterConsumerGroupOffsetsOptions: IRREVERSIBLE rewrite with default ~30s timeout.
+    public void adminAlterConsumerGroupOffsetsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<org.apache.kafka.common.TopicPartition,
+                org.apache.kafka.clients.consumer.OffsetAndMetadata> resets =
+                        java.util.Map.of(new org.apache.kafka.common.TopicPartition("events", 0),
+                                new org.apache.kafka.clients.consumer.OffsetAndMetadata(0L));
+        // No AlterConsumerGroupOffsetsOptions — IRREVERSIBLE per-partition rewrite with default timeout.
+        admin.alterConsumerGroupOffsets("my-group", resets).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_DELETE_RECORDS_NO_OPTIONS — no DeleteRecordsOptions: timeout defaults to ~30s, half-truncation hazard.
     public void adminDeleteRecordsNoOptions() throws Exception {
         Properties p = new Properties();
