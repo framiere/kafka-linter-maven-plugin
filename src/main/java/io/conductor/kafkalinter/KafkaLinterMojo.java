@@ -2194,6 +2194,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.state-dir={value} — Streams RocksDB state stores on ephemeral /tmp or /var/tmp. systemd-tmpfiles wipes it on reboot; containers wipe it on restart. Every restart triggers a full restore-from-changelog (minutes-to-hours). Mount a persistent volume (e.g. /var/lib/<service>/streams).",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_CLEANUP_ON_STARTUP) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_CLEANUP_ON_STARTUP, sev.get(RuleId.SPRING_BOOT_STREAMS_CLEANUP_ON_STARTUP),
+                    "spring.kafka.streams.cleanup.on-startup", "true",
+                    "spring.kafka.streams.cleanup.on-startup=true — Spring invokes KafkaStreams.cleanUp() on every boot, deleting the local state directory. Every restart then triggers a full restore-from-changelog (minutes-to-hours). Set to false (or remove the line; default is false).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROCESSING_GUARANTEE_EOS_V1) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROCESSING_GUARANTEE_EOS_V1, sev.get(RuleId.SPRING_BOOT_STREAMS_PROCESSING_GUARANTEE_EOS_V1),
+                    "spring.kafka.streams.properties.processing.guarantee",
+                    v -> v != null && KafkaTypes.STREAMS_EOS_V1_VALUES.contains(v.trim()),
+                    "spring.kafka.streams.properties.processing.guarantee={value} — deprecated EOS-v1/EOS-beta value (KIP-732, Kafka 3.0). Removed in Kafka 4.0; app refuses to start on 4.x clusters. Use exactly_once_v2 (functionally identical to exactly_once_beta, available since 2.6).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_COMMIT_INTERVAL_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_COMMIT_INTERVAL_TOO_LOW, sev.get(RuleId.SPRING_BOOT_STREAMS_COMMIT_INTERVAL_TOO_LOW),
+                    "spring.kafka.streams.properties.commit.interval.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 100L; },
+                    "spring.kafka.streams.properties.commit.interval.ms={value} — below 100 ms. Pathological commit rate: every cycle is a RocksDB flush + changelog produce + offset commit. The runtime spends most of its time committing instead of processing. Kafka default is 100 ms under EOS-v2; lower than that is almost always a misunderstanding.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
