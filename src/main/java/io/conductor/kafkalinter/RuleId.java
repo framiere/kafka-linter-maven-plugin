@@ -1310,6 +1310,16 @@ public final class RuleId {
             .whyMatters("This is INFO severity because `none` can be the right choice for offset-sensitive pipelines (you'd rather fail loudly than silently skip or replay). But it should be a deliberate choice with operational runbook attached, not a copy-paste survival from a tutorial. The rule prompts a review; it does not assert wrongness.")
             .build());
 
+    public static final RuleId CLIENT_ID_MISSING = register(builder("CLIENT_ID_MISSING")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .docPath("kafka-clients/CLIENT_ID_MISSING.md")
+            .message("Kafka client (Producer/Consumer/Streams) is constructed but client.id is never set in this method — broker logs and metrics will see an auto-generated id.")
+            .tagline("`client.id` is the human-readable handle the broker stamps onto every request from this client. When you do not set one, kafka-clients auto-generates `producer-<n>` / `consumer-<n>` / `<streams-app-id>-StreamThread-<n>-<role>` — opaque, unstable across restarts (the number resets each JVM), and indistinguishable from every other unconfigured client in the fleet.")
+            .mechanism("Detection is intentionally local: the rule visits each method that contains a `new KafkaProducer(...)`, `new KafkaConsumer(...)`, or `new KafkaStreams(...)` and scans the same method's instruction list for an LDC of the literal string `\"client.id\"`. The `*_CONFIG` constants on `ProducerConfig`/`ConsumerConfig`/`StreamsConfig`/`CommonClientConfigs` are `public static final String` values which javac inlines at the call site, so `props.put(ProducerConfig.CLIENT_ID_CONFIG, ...)` and `props.put(\"client.id\", ...)` produce identical bytecode and both satisfy the rule. If no such LDC is found in the same method, the constructor site is flagged — the rule does not chase cross-method config builders by design (false-negatives are quieter than false-positives).")
+            .impact("Three observable failures: (1) **broker-side metrics** (`kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec,client-id=*`) get a meaningless `producer-1` dimension — the on-call cannot answer 'which service is sending this traffic?' from the dashboard. (2) **client-side quotas** are configured per client-id; an unset client-id either escapes the intended quota or, worse, shares the auto-generated default with every other unconfigured client and gets throttled collectively. (3) **request-log forensics** (when `request.logger=DEBUG`) cannot pin the culprit during an incident — every line says `producer-1`. The auto-generated value is also a per-JVM counter, so a pod restart silently renames the client in every dashboard.")
+            .whyMatters("Set a service-and-instance qualified value (`payments-fraud-screening-i07`, `cdc-postgres-v3-c0`) on every Kafka client at construction. The cost is one line; the value at incident-time is enormous. Pair this rule with [[kafka-client-id-generic]] (which catches placeholder values like `'producer'`, `'test'`, `'my-client'`) and [[kafka-client-id-placeholder]] (which catches unsubstituted `${...}` templates). This rule fires when client.id is **not set at all**; the sibling rules fire when it is set but to a useless value.")
+            .build());
+
     public static final RuleId KAFKA_CLIENT_ID_GENERIC = register(builder("KAFKA_CLIENT_ID_GENERIC")
             .defaultSeverity(Severity.INFO).confidence(Confidence.MEDIUM).category("kafka-clients")
             .docPath("kafka-clients/KAFKA_CLIENT_ID_GENERIC.md")
@@ -1431,7 +1441,7 @@ public final class RuleId {
             .build());
 
     public static final RuleId KAFKA_BOOTSTRAP_SERVERS_LOCALHOST = register(builder("KAFKA_BOOTSTRAP_SERVERS_LOCALHOST")
-            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/KAFKA_BOOTSTRAP_SERVERS_LOCALHOST.md")
             .message("bootstrap.servers points at localhost — production deployment will connect to itself instead of the broker cluster.")
             .tagline("`bootstrap.servers` is the initial broker list the client contacts to discover the cluster. A hard-coded localhost (or 127.0.0.1 or 0.0.0.0) means the pod will try to reach a broker on its own loopback interface — which only ever works on a developer laptop.")
@@ -1741,7 +1751,7 @@ public final class RuleId {
             .build());
 
     public static final RuleId KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER = register(builder("KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER")
-            .defaultSeverity(Severity.WARNING).confidence(Confidence.MEDIUM).category("kafka-clients")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER.md")
             .message("bootstrap.servers contains a single host:port — no fallback if that broker is unreachable at startup; the client cannot discover the cluster.")
             .tagline("`bootstrap.servers` is the comma-separated list of brokers the client contacts on startup to fetch cluster metadata. With only one entry, that one broker becoming unreachable (rolling restart, AZ outage, DNS hiccup) leaves the client unable to discover the cluster at all — startup fails or stalls.")
