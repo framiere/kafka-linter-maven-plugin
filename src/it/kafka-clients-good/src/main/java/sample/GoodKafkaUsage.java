@@ -40,17 +40,17 @@ public final class GoodKafkaUsage {
         this.consumer = new KafkaConsumer<>(consumerProps);
     }
 
-    public void publish(String topic, String message) {
-        producer.send(new ProducerRecord<>(topic, message), (md, ex) -> {
+    public void publish(String topic, String key, String message) {
+        producer.send(new ProducerRecord<>(topic, key, message), (md, ex) -> {
             if (ex != null) {
                 System.err.println("send failed: " + ex.getMessage());
             }
         });
     }
 
-    public void publishBatch(List<String> messages) {
-        for (String m : messages) {
-            producer.send(new ProducerRecord<>("topic", m), (md, ex) -> {});
+    public void publishBatch(List<String> keys, List<String> messages) {
+        for (int i = 0; i < messages.size(); i++) {
+            producer.send(new ProducerRecord<>("topic", keys.get(i), messages.get(i)), (md, ex) -> {});
         }
     }
 

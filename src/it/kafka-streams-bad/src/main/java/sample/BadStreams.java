@@ -595,4 +595,15 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_STREAM_JOIN_NO_NAMED — join() with no StreamJoined → auto-named state stores.
+    public Topology unnamedStreamJoin() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> a = b.stream("a");
+        KStream<String, String> c = b.stream("c");
+        ValueJoiner<String, String, String> joiner = (x, y) -> x + "/" + y;
+        a.join(c, joiner, JoinWindows.ofTimeDifferenceWithNoGrace(Duration.ofMinutes(5)))
+         .to("out");
+        return b.build();
+    }
+
 }

@@ -456,6 +456,21 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_REDUCE_NO_MATERIALIZED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("reduce"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
                 "reduce() without a Materialized argument — the underlying state store and changelog topic are auto-named from the topology graph index, so any upstream edit renames the changelog and the reduction restarts from the first incoming record on the next deploy. Pass Materialized.as(\"name\")."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_JOIN_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_STREAM_JOIN_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("join", "leftJoin", "outerJoin"),
+                desc -> desc != null
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/StreamJoined;")
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/Joined;")
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.join() / leftJoin() / outerJoin() without a naming argument (StreamJoined for KStream-KStream, Joined for KStream-KTable, Named for KStream-GlobalKTable) — auto-generated repartition topic and join state-store names are derived from the topology graph index, so any upstream edit renames them and the join produces nulls on the next deploy."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, s -> new MethodCallRule(
+                RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitAsync"),
+                desc -> desc != null && desc.equals("()V"),
+                "Consumer.commitAsync() with no callback — failed commits (rebalance, coordinator unreachable, network error) are silently swallowed and the application has no signal to detect or retry. Pass an OffsetCommitCallback."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, s -> new MethodCallRule(
+                RuleId.PRODUCER_RECORD_NO_KEY, s, Set.of(KafkaTypes.PRODUCER_RECORD), Set.of("<init>"),
+                desc -> desc != null && desc.equals("(Ljava/lang/String;Ljava/lang/Object;)V"),
+                "new ProducerRecord<>(topic, value) — 2-arg constructor sets the key to null. Records have no per-key ordering, log-compacted topics cannot dedupe by key, and the default partitioner uses sticky-batching across partitions. Pass an explicit key as the second argument."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

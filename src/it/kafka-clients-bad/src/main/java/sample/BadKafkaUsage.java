@@ -1416,6 +1416,25 @@ public final class BadKafkaUsage {
         consumer.close(Duration.ofSeconds(5));
     }
 
+    // RULE: CONSUMER_COMMIT_ASYNC_NO_CALLBACK — failures silently swallowed.
+    public void commitAsyncNoCallback() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        consumer.subscribe(java.util.List.of("topic"));
+        consumer.poll(Duration.ofMillis(500));
+        // No callback — rebalance/coordinator-down failures vanish.
+        consumer.commitAsync();
+        consumer.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: PRODUCER_RECORD_NO_KEY — 2-arg ctor with null key.
+    public void noKeyProducerRecord() {
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props());
+        // 2-arg ctor — null key, no per-key ordering, no compaction.
+        producer.send(new ProducerRecord<>("events", "{\"payload\":\"x\"}"), (md, ex) -> {});
+        producer.close(Duration.ofSeconds(5));
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
