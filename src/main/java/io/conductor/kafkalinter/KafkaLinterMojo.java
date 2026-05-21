@@ -2424,6 +2424,33 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.num.standby.replicas above 3 — every standby maintains a full hot replica of every state store. Changelog write amplification and disk usage scale linearly; broker fetch traffic balloons. Above 3 the marginal failover gain is dwarfed by steady-state cost.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_LOW,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_LOW),
+                    "spring.kafka.streams.properties.probing.rebalance.interval.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 60_000L; },
+                    "spring.kafka.streams.properties.probing.rebalance.interval.ms below 60 s — every probe is a group-wide cooperative rebalance. Topology spends more time rebalancing than processing. Default 600000 (10 min) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_PROBING_REBALANCE_INTERVAL_MS_TOO_HIGH),
+                    "spring.kafka.streams.properties.probing.rebalance.interval.ms",
+                    v -> parseLongOrZero(v) > 7_200_000L,
+                    "spring.kafka.streams.properties.probing.rebalance.interval.ms above 2 h — Streams won't check whether warm-up standbys are caught up for that long. Scale-out and failover wait the full interval; num.standby.replicas/max.warmup.replicas capacity sits idle. Default 600000 (10 min) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_HIGH),
+                    "spring.kafka.streams.properties.repartition.purge.interval.ms",
+                    v -> parseLongOrZero(v) > 300_000L,
+                    "spring.kafka.streams.properties.repartition.purge.interval.ms above 5 min — repartition-topic records sit on broker disk for the full interval after they're consumed; tens of GB of avoidable disk on busy topologies. Default 30000 (30 s) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
