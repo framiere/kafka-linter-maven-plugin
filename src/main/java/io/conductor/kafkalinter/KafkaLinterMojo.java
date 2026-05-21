@@ -2191,6 +2191,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.bootstrap.servers={value} — overrides spring.kafka.bootstrap-servers for the Streams runtime only. Streams reads from and writes to a different cluster than the producer and consumer of the same application; records the producer writes never reach the Streams app. Remove this key.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_KEY_DESERIALIZER_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_KEY_DESERIALIZER_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_KEY_DESERIALIZER_SET),
+                    "spring.kafka.consumer.properties.key.deserializer",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.key.deserializer={value} — silently overrides spring.kafka.consumer.key-deserializer. The @KafkaListener method signature no longer matches the runtime deserializer; first poll throws ClassCastException or — worse — silently decodes garbage. Remove this key and use spring.kafka.consumer.key-deserializer.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_VALUE_DESERIALIZER_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_VALUE_DESERIALIZER_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_VALUE_DESERIALIZER_SET),
+                    "spring.kafka.consumer.properties.value.deserializer",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.value.deserializer={value} — silently overrides spring.kafka.consumer.value-deserializer. Spring's ErrorHandlingDeserializer wrapper (which routes poison records to the DLT) is bypassed, so a single malformed record kills the listener container. Remove this key and use spring.kafka.consumer.value-deserializer.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_SET),
+                    "spring.kafka.consumer.properties.bootstrap.servers",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.bootstrap.servers={value} — overrides spring.kafka.bootstrap-servers for the consumer only. The consumer reads from a different cluster than the producer of the same application; messages the producer writes never reach this consumer. Remove this key.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
