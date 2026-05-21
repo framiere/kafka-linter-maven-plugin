@@ -28,6 +28,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
+import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
 import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
@@ -1707,6 +1708,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_CONSUMER_OVERRIDE_GROUP_ID) != Severity.OFF) {
             rules.add(new ConnectConsumerOverrideGroupIdRule(sev.get(RuleId.CONNECT_CONSUMER_OVERRIDE_GROUP_ID)));
+        }
+        if (sev.get(RuleId.CONNECT_TRANSFORM_ALIAS_UNDEFINED) != Severity.OFF) {
+            rules.add(new ConnectTransformAliasUndefinedRule(sev.get(RuleId.CONNECT_TRANSFORM_ALIAS_UNDEFINED)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
