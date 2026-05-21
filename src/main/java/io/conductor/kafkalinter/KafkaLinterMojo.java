@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeCluster"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeClusterOptions;"),
+                "Admin.describeCluster() with no DescribeClusterOptions — defaults includeAuthorizedOperations=false; the result's authorizedOperations() returns null, hiding cluster-level ACL state (CREATE, DELETE, ALTER, DESCRIBE, CLUSTER_ACTION, ALTER_CONFIGS, DESCRIBE_CONFIGS, IDEMPOTENT_WRITE) from ACL-audit / capability-check tooling. Pass new DescribeClusterOptions().timeoutMs(60_000).includeAuthorizedOperations(true)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_OFFSETS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_OFFSETS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listOffsets"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListOffsetsOptions;"),
+                "Admin.listOffsets() with no ListOffsetsOptions — defaults isolationLevel=READ_UNCOMMITTED. On topics with active transactional producers (including Streams apps with EOS-v2), end-offsets include records from in-flight (potentially-aborted) transactions; lag-monitoring tools report phantom lag. Pass new ListOffsetsOptions().isolationLevel(IsolationLevel.READ_COMMITTED).timeoutMs(60_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_PARTITIONS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_CREATE_PARTITIONS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("createPartitions"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/CreatePartitionsOptions;"),
+                "Admin.createPartitions() with no CreatePartitionsOptions — no validateOnly dry-run available (the change is applied immediately) and timeout inherits AdminClient default (~30 s). Partition-add is IRREVERSIBLE and breaks keyed-record ordering across the cutover. Pass new CreatePartitionsOptions().validateOnly(true) first to verify, then re-run with validateOnly(false).timeoutMs(120_000) to apply."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeTopicsOptions;"),

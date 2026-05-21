@@ -1507,6 +1507,44 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS — no DescribeClusterOptions: includeAuthorizedOperations defaults to false; cluster-level ACL state hidden.
+    public void adminDescribeClusterNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        String clusterId = admin.describeCluster().clusterId().get();
+        System.out.println("cluster: " + clusterId);
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_LIST_OFFSETS_NO_OPTIONS — no ListOffsetsOptions: isolationLevel defaults to READ_UNCOMMITTED; transactional topics over-report lag.
+    public void adminListOffsetsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<org.apache.kafka.common.TopicPartition, org.apache.kafka.clients.admin.OffsetSpec> specs =
+                java.util.Map.of(new org.apache.kafka.common.TopicPartition("orders", 0),
+                        org.apache.kafka.clients.admin.OffsetSpec.latest());
+        // No ListOffsetsOptions — defaults to READ_UNCOMMITTED, misreporting end-offsets on transactional topics.
+        java.util.Map<org.apache.kafka.common.TopicPartition,
+                org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo> r = admin.listOffsets(specs).all().get();
+        System.out.println(r);
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_CREATE_PARTITIONS_NO_OPTIONS — no CreatePartitionsOptions: validateOnly dry-run unavailable; partition-add is irreversible.
+    public void adminCreatePartitionsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<String, org.apache.kafka.clients.admin.NewPartitions> specs =
+                java.util.Map.of("payments",
+                        org.apache.kafka.clients.admin.NewPartitions.increaseTo(24));
+        // No CreatePartitionsOptions — no way to dry-run with validateOnly(true); change is applied immediately.
+        admin.createPartitions(specs).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED — String-groupId overload bypasses KIP-447 fencing.
     public void sendOffsetsToTxnDeprecatedGroupId() {
         Properties pp = props();
