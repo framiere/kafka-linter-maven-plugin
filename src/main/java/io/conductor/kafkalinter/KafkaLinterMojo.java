@@ -768,6 +768,12 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of("thenApply"),
                 desc -> desc != null && desc.contains("Lorg/apache/kafka/common/KafkaFuture$Function;"),
                 "KafkaFuture.thenApply(KafkaFuture.Function) deprecated since Kafka 3.0 (KIP-707) — the legacy `Function` interface declared a checked-exception apply() that forces awkward try/catch wrapping at every callsite. Replace with `KafkaFuture.BaseFunction` (same `apply(T)` shape, no checked exception) or, for new code, switch to `kafkaFuture.toCompletionStage().thenApply(...)` with standard java.util.function.Function. The plugin distinguishes the deprecated overload from the modern thenApply(BaseFunction) via descriptor."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, s,
+                Set.of(KafkaTypes.KAFKA_FUTURE),
+                Set.of("get"),
+                desc -> "()Ljava/lang/Object;".equals(desc),
+                "KafkaFuture.get() (no-argument, unbounded) — parks the calling thread until the kafka-clients machinery resolves the future, with no caller-side deadline. In AdminClient code paths (createTopics, deleteTopics, describeCluster, alterConfigs, listConsumerGroupOffsets, ...), a slow/unreachable controller can hang the caller indefinitely; the AdminClient's `default.api.timeout.ms` is the only escape and it is configurable to Long.MAX_VALUE. Replace with the bounded overload `.get(timeout, TimeUnit)` matched to the surrounding deadline (HTTP request budget, reconciliation interval, terminationGracePeriodSeconds minus a buffer). The plugin matches `INVOKEVIRTUAL`/`INVOKEINTERFACE org/apache/kafka/common/KafkaFuture.get()Ljava/lang/Object;` — the bounded `.get(long, TimeUnit)` overload has a different descriptor and is not flagged."));
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, s,
                 Set.of(KafkaTypes.KSTREAM),
