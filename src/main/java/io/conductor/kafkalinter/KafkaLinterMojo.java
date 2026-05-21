@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_RECORDS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DELETE_RECORDS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteRecords"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteRecordsOptions;"),
+                "Admin.deleteRecords() with no DeleteRecordsOptions — inherits default timeout (~30 s), often too short for multi-partition delete. deleteRecords is IRREVERSIBLE and per-partition: timeout firing leaves the topic in a half-truncated state. Pass new DeleteRecordsOptions().timeoutMs(120_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUPS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_CONSUMER_GROUPS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listConsumerGroups"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListConsumerGroupsOptions;"),
+                "Admin.listConsumerGroups() with no ListConsumerGroupsOptions — returns ALL groups (Stable, Empty, Dead, in-rebalance) regardless of state; on big clusters with accumulated Dead/Empty groups this is multi-MB payload and seconds-scale latency. Pass new ListConsumerGroupsOptions().inStates(Set.of(ConsumerGroupState.STABLE)).timeoutMs(60_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_TRANSACTIONS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_TRANSACTIONS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listTransactions"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListTransactionsOptions;"),
+                "Admin.listTransactions() with no ListTransactionsOptions — returns ALL transactional-IDs (Ongoing, CompleteCommit, CompleteAbort, Empty, Dead) regardless of state; on Streams/EOS-v2 clusters with accumulated transactional-IDs this is 10MB+ payload. Pass new ListTransactionsOptions().filterStates(Set.of(TransactionState.ONGOING)).timeoutMs(60_000)."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeCluster"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeClusterOptions;"),

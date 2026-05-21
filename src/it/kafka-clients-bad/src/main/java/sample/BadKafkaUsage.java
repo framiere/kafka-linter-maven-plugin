@@ -1507,6 +1507,47 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DELETE_RECORDS_NO_OPTIONS — no DeleteRecordsOptions: timeout defaults to ~30s, half-truncation hazard.
+    public void adminDeleteRecordsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<org.apache.kafka.common.TopicPartition, org.apache.kafka.clients.admin.RecordsToDelete> specs =
+                java.util.Map.of(new org.apache.kafka.common.TopicPartition("events", 0),
+                        org.apache.kafka.clients.admin.RecordsToDelete.beforeOffset(1_000_000L));
+        // No DeleteRecordsOptions — IRREVERSIBLE truncation with default ~30s timeout.
+        admin.deleteRecords(specs).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_LIST_CONSUMER_GROUPS_NO_OPTIONS — no ListConsumerGroupsOptions: returns all states, multi-MB on big clusters.
+    public void adminListConsumerGroupsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        // No ListConsumerGroupsOptions — returns Stable + Empty + Dead + in-rebalance, all in one payload.
+        java.util.Collection<org.apache.kafka.clients.admin.ConsumerGroupListing> groups =
+                admin.listConsumerGroups().all().get();
+        for (org.apache.kafka.clients.admin.ConsumerGroupListing g : groups) {
+            System.out.println(g.groupId());
+        }
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_LIST_TRANSACTIONS_NO_OPTIONS — no ListTransactionsOptions: returns all states, 10MB+ on EOS-v2 clusters.
+    public void adminListTransactionsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        // No ListTransactionsOptions — returns Ongoing + Complete* + Empty + Dead, full historical population.
+        java.util.Collection<org.apache.kafka.clients.admin.TransactionListing> txns =
+                admin.listTransactions().all().get();
+        for (org.apache.kafka.clients.admin.TransactionListing t : txns) {
+            System.out.println(t.transactionalId());
+        }
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS — no DescribeClusterOptions: includeAuthorizedOperations defaults to false; cluster-level ACL state hidden.
     public void adminDescribeClusterNoOptions() throws Exception {
         Properties p = new Properties();
