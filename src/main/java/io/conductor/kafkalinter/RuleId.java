@@ -286,6 +286,16 @@ public final class RuleId {
             .whyMatters("Pick one model up front. Manual assignment is for stateful single-consumer cases (CDC, replays, debug tools). Everything else is `subscribe()`.")
             .build());
 
+    public static final RuleId CONSUMER_SUBSCRIBE_IN_LOOP = register(builder("CONSUMER_SUBSCRIBE_IN_LOOP")
+            .defaultSeverity(Severity.ERROR).confidence(Confidence.HIGH).category("kafka-clients")
+            .docPath("kafka-clients/CONSUMER_SUBSCRIBE_IN_LOOP.md")
+            .message("consumer.subscribe(...) (or .assign(...)) inside a loop body — every iteration resets the subscription and re-triggers a group rebalance.")
+            .tagline("`subscribe()` is a one-shot lifecycle call, not a per-poll setup step. Inside a loop it turns every iteration into a coordinator rebalance.")
+            .mechanism("`KafkaConsumer.subscribe(topics)` records the desired topic set on the consumer instance and tells the group coordinator (via the next heartbeat / `poll()`) that the assignment must be re-computed. Each subscribe() call is treated as a *new* subscription request: even if the topic set is identical, the coordinator schedules a rebalance to revalidate. `assign(partitions)` is the equivalent reset for manual-assignment mode — same pattern, different API. Calling either inside a `while`/`for` body, an iterating lambda body, or any code path that re-enters at high frequency means each iteration redoes the subscription handshake.")
+            .impact("Per-iteration: the coordinator rebalances the whole group, all partitions are revoked and reassigned, in-flight processing is interrupted, offsets that haven't been committed get reprocessed by whichever consumer picks them up, and the coordinator's rebalance throttle starts kicking in (newer broker versions enforce `group.max.session.timeout.ms` and rate-limit rebalances). On a topology that loops once per second, you get one rebalance per second — the group never converges, lag grows monotonically, and broker logs fill with `Preparing to rebalance group X in state PreparingRebalance` lines. Often presents as 'consumers stuck at 0 records/s with no error message'.")
+            .whyMatters("`subscribe()` belongs *outside* the poll loop, called exactly once during consumer setup, before the first poll. The Kafka client tracks topic-membership changes internally through `subscribe(Pattern)` if you need dynamic discovery — re-subscribing manually is never the right tool. This rule catches the copy-paste-tutorial bug where someone moves the subscribe inside the while(true) by mistake, and the not-as-obvious bug where the subscribe was put inside a helper that gets called per request handler.")
+            .build());
+
     public static final RuleId CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE = register(builder("CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-clients")
             .docPath("kafka-clients/CONSUMER_ALLOW_AUTO_CREATE_TOPICS_TRUE.md")
