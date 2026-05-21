@@ -1766,6 +1766,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.fetch-max-size={value} — above 100 MiB. A single FetchResponse can stall the consumer for seconds and pin that many bytes in heap per request; defaults around 50 MiB are safer.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_INVALID) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_ACKS_INVALID, sev.get(RuleId.SPRING_BOOT_PRODUCER_ACKS_INVALID),
+                    "spring.kafka.producer.acks",
+                    v -> { if (v == null) return false; String t = v.trim().toLowerCase(); return !t.isEmpty() && !KafkaTypes.PRODUCER_ACKS_VALID_VALUES.contains(t); },
+                    "spring.kafka.producer.acks={value} — not one of 0/1/-1/all. The producer throws ConfigException at construction; the pod crash-loops on first deploy.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_BLOCK_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_MAX_BLOCK_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_BLOCK_MS_TOO_HIGH),
+                    "spring.kafka.producer.properties.max.block.ms",
+                    v -> parseLongOrZero(v) > 60_000L,
+                    "spring.kafka.producer.properties.max.block.ms={value} — above 60 s. producer.send() and partitionsFor() block the calling thread for the full window when the buffer is full or metadata is stale; request-handler thread pools drain within seconds during transient broker hiccups. Default 60 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_REQUEST_SIZE_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_MAX_REQUEST_SIZE_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_MAX_REQUEST_SIZE_TOO_LOW),
+                    "spring.kafka.producer.properties.max.request.size",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 65536L; },
+                    "spring.kafka.producer.properties.max.request.size={value} — below 64 KiB. Defeats batching, and any single record above the cap throws RecordTooLargeException at send time with no retry. Default 1 MiB.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
