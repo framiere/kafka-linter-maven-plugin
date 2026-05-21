@@ -48,6 +48,7 @@ import io.conductor.kafkalinter.rules.quarkus.SmallRyeChannelConfigRule;
 import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDelegatesRule;
 import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackagesWildcardRule;
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
+import io.conductor.kafkalinter.rules.streams.StreamsCleanupInProdRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerRule;
@@ -185,6 +186,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_NOT_CLOSED, StreamsNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STORE_QUERY_PARAMETERS_NO_STALE_STORES,
                 StreamsStoreQueryParametersNoStaleStoresRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_CLEANUP_IN_PROD, StreamsCleanupInProdRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_THREAD_SAFE, ConsumerNotThreadSafeRule::new);
         addIfEnabled(rules, sev, RuleId.STRING_SERIALIZER_NON_STRING, StringSerializerNonStringRule::new);
