@@ -62,6 +62,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadNoTimeoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStoreQueryParametersNoStaleStoresRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
+import io.conductor.kafkalinter.rules.spring.SpringListenerThreadSleepRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
 import io.conductor.kafkalinter.rules.version.KafkaClientsCveJndiLdapRule;
 import io.conductor.kafkalinter.rules.version.KafkaClientsCveRule;
@@ -1409,6 +1410,7 @@ public class KafkaLinterMojo extends AbstractMojo {
 
         // ── spring-kafka ───────────────────────────────────────────────────────
         addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_ASYNC_ANNOTATION, SpringListenerAsyncRule::new);
+        addIfEnabled(rules, sev, RuleId.SPRING_LISTENER_THREAD_SLEEP, SpringListenerThreadSleepRule::new);
         addIfEnabled(rules, sev, RuleId.SPRING_ERROR_HANDLING_DESERIALIZER_NO_DELEGATES,
                 SpringErrorHandlingDeserializerNoDelegatesRule::new);
         addIfEnabled(rules, sev, RuleId.SPRING_JSON_DESERIALIZER_TRUSTED_PACKAGES_WILDCARD,
