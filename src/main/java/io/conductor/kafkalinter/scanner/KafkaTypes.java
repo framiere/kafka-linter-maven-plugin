@@ -6,6 +6,8 @@ public final class KafkaTypes {
     private KafkaTypes() {}
 
     public static final String PRODUCER_RECORD = "org/apache/kafka/clients/producer/ProducerRecord";
+    public static final String CONSUMER_RECORD = "org/apache/kafka/clients/consumer/ConsumerRecord";
+    public static final String TIMESTAMP_TYPE = "org/apache/kafka/common/record/TimestampType";
     public static final String KAFKA_PRODUCER = "org/apache/kafka/clients/producer/KafkaProducer";
     public static final String PRODUCER_INTERFACE = "org/apache/kafka/clients/producer/Producer";
     public static final String KAFKA_CONSUMER = "org/apache/kafka/clients/consumer/KafkaConsumer";
@@ -221,6 +223,8 @@ public final class KafkaTypes {
     public static final String STREAMS_RACK_AWARE_ASSIGNMENT_STRATEGY_KEY = "rack.aware.assignment.strategy";
     public static final String STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_KEY = "windowstore.changelog.additional.retention.ms";
     public static final String STREAMS_REPARTITION_PURGE_INTERVAL_MS_KEY = "repartition.purge.interval.ms";
+    public static final String STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_KEY = "default.windowed.key.serde.inner";
+    public static final String STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_KEY = "default.windowed.value.serde.inner";
 
     // Schema-registry deserializer FQCNs
     public static final Set<String> SR_SERIALIZER_OWNERS = Set.of(

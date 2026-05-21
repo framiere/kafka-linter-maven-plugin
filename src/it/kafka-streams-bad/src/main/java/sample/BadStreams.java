@@ -1029,4 +1029,18 @@ public final class BadStreams {
         return t;
     }
 
+    // RULE: STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED — KIP-684, deprecated since Kafka 2.7.
+    // RULE: STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_DEPRECATED — KIP-684, deprecated since Kafka 2.7.
+    public Properties defaultWindowedSerdeInnerDeprecated() {
+        Properties props = new Properties();
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "windowed-serde-inner-app");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "broker:9092");
+        // Bug 1: default.windowed.key.serde.inner — global implicit inner key-serde for the default windowed serde.
+        // Deprecated in favor of per-operator Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(...), ...).
+        props.put("default.windowed.key.serde.inner", "org.apache.kafka.common.serialization.Serdes$StringSerde");
+        // Bug 2: default.windowed.value.serde.inner — same problem on the value side.
+        props.put("default.windowed.value.serde.inner", "org.apache.kafka.common.serialization.Serdes$LongSerde");
+        return props;
+    }
+
 }

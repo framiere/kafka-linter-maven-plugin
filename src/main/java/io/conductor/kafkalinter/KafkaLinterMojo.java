@@ -661,6 +661,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of("<init>"),
                 desc -> desc != null && desc.equals("(Ljava/lang/String;Z)V"),
                 "TopicListing(String name, boolean isInternal) constructor deprecated since Kafka 3.0 (KIP-516) — predates topic IDs and constructs a TopicListing whose topicId() returns Uuid.ZERO_UUID (the sentinel for pre-2.8 brokers). Replace with new TopicListing(name, topicId, isInternal). If you genuinely don't have a topic-ID, pass Uuid.ZERO_UUID explicitly to make the intent visible. Affects test/mock/scaffolding code that hand-rolls TopicListing instances — Admin.listTopics() callers are unaffected."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED, s,
+                KafkaTypes.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_KEY,
+                v -> v != null && !v.isEmpty(),
+                "default.windowed.key.serde.inner Streams config key deprecated since Kafka 2.7 (KIP-684) — global implicit inner-serde for the default windowed key-serde. A topology with multiple windowed operators having different key-types cannot satisfy one global setting; misconfiguration surfaces only at runtime as ClassCastException deep inside the windowed processor. Replace with explicit per-operator Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(InnerKey.class), valueSerde) so the key-type is compile-time checked."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_DEPRECATED, s -> new ConfigKeyValueRule(
+                RuleId.STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_DEPRECATED, s,
+                KafkaTypes.STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_KEY,
+                v -> v != null && !v.isEmpty(),
+                "default.windowed.value.serde.inner Streams config key deprecated since Kafka 2.7 (KIP-684) — global implicit inner-serde for the default windowed value-serde. A topology with multiple windowed aggregations producing different value-types cannot satisfy one global setting; wrong wiring writes corrupt bytes to the changelog topic that surface as deserialization errors on state-store recovery. Replace with explicit per-operator Materialized.with(keySerde, innerValueSerde) at every windowed-aggregation site."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED, s -> new MethodCallRule(
+                RuleId.CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED, s,
+                Set.of(KafkaTypes.CONSUMER_RECORD),
+                Set.of("<init>"),
+                desc -> desc != null && (desc.contains("Lorg/apache/kafka/common/record/TimestampType;J") || desc.contains("Lorg/apache/kafka/common/record/TimestampType;Ljava/lang/Long;")),
+                "ConsumerRecord constructor with checksum parameter deprecated since Kafka 2.0 (KIP-101 / KIP-82) — the per-record CRC field carries no useful information after the v2 message format moved CRCs to the batch level (KIP-98 in 0.11). Replace with ConsumerRecord(topic, partition, offset, ts, TimestampType.CREATE_TIME, keySize, valueSize, key, value, new RecordHeaders(), Optional.empty()) or the 5-arg shortcut ConsumerRecord(topic, partition, offset, key, value). Affects test/mock scaffolding that hand-rolls ConsumerRecord instances."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

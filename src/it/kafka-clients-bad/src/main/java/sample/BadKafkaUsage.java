@@ -1881,4 +1881,30 @@ public final class BadKafkaUsage {
 
     private boolean running() { return true; }
     private void handle(ConsumerRecord<String, String> r) {}
+
+    // RULE: CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED — KIP-101 / KIP-82, deprecated since Kafka 2.0.
+    public ConsumerRecord<String, String> consumerRecordLegacyChecksumCtor() {
+        // Bug: ConsumerRecord constructor with `long checksum` after TimestampType — descriptor segment
+        // `Lorg/apache/kafka/common/record/TimestampType;J`. The v2 message format moved CRCs to the batch level;
+        // per-record checksum is meaningless. Replace with the no-checksum constructor.
+        return new ConsumerRecord<>(
+                "topic", 0, 0L, 0L,
+                org.apache.kafka.common.record.TimestampType.CREATE_TIME,
+                0L,    // deprecated checksum field (primitive long)
+                0, 0,
+                "k", "v");
+    }
+
+    // RULE: CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED — boxed Long variant.
+    public ConsumerRecord<String, String> consumerRecordLegacyChecksumCtorBoxedLong() {
+        // Bug: same as above but with boxed Long checksum + headers. Descriptor segment
+        // `Lorg/apache/kafka/common/record/TimestampType;Ljava/lang/Long;`.
+        return new ConsumerRecord<>(
+                "topic", 0, 0L, 0L,
+                org.apache.kafka.common.record.TimestampType.CREATE_TIME,
+                Long.valueOf(0L),    // deprecated checksum field (boxed Long)
+                0, 0,
+                "k", "v",
+                new org.apache.kafka.common.header.internals.RecordHeaders());
+    }
 }
