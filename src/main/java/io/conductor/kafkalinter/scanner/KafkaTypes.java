@@ -13,6 +13,7 @@ public final class KafkaTypes {
     public static final String CALLBACK = "org/apache/kafka/clients/producer/Callback";
     public static final String KAFKA_STREAMS = "org/apache/kafka/streams/KafkaStreams";
     public static final String KSTREAM = "org/apache/kafka/streams/kstream/KStream";
+    public static final String KTABLE = "org/apache/kafka/streams/kstream/KTable";
     public static final String KGROUPED_STREAM = "org/apache/kafka/streams/kstream/KGroupedStream";
     public static final String KGROUPED_TABLE = "org/apache/kafka/streams/kstream/KGroupedTable";
     public static final String TIME_WINDOWED_KSTREAM = "org/apache/kafka/streams/kstream/TimeWindowedKStream";

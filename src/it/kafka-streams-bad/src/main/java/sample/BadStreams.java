@@ -606,4 +606,16 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_KTABLE_GROUP_BY_NO_GROUPED — KTable.groupBy(KeyValueMapper) no-Grouped → auto-named repartition.
+    public Topology unnamedKTableGroupBy() {
+        StreamsBuilder b = new StreamsBuilder();
+        org.apache.kafka.streams.kstream.KTable<String, String> t =
+                b.table("in", Materialized.<String, String, KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("t-store"));
+        t.groupBy((k, v) -> KeyValue.pair(v, k))
+         .count(Materialized.as("ktable-grouped-count-store"))
+         .toStream()
+         .to("out");
+        return b.build();
+    }
+
 }

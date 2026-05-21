@@ -471,6 +471,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_RECORD_NO_KEY, s, Set.of(KafkaTypes.PRODUCER_RECORD), Set.of("<init>"),
                 desc -> desc != null && desc.equals("(Ljava/lang/String;Ljava/lang/Object;)V"),
                 "new ProducerRecord<>(topic, value) — 2-arg constructor sets the key to null. Records have no per-key ordering, log-compacted topics cannot dedupe by key, and the default partitioner uses sticky-batching across partitions. Pass an explicit key as the second argument."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_CLOSE_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("close"),
+                desc -> desc != null && desc.equals("()V"),
+                "Consumer.close() with no Duration — blocks for default.api.timeout.ms (default 60 s) waiting for LeaveGroup and final commits. Pod terminationGracePeriodSeconds (typically 30 s) fires SIGKILL before close returns; rebalance stalls until session.timeout.ms. Use close(Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_SYNC_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.CONSUMER_COMMIT_SYNC_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitSync"),
+                desc -> desc != null && (desc.equals("()V") || desc.equals("(Ljava/util/Map;)V")),
+                "Consumer.commitSync() / commitSync(Map) with no Duration — blocks for default.api.timeout.ms (default 60 s) retrying on transient coordinator errors. A slow commit pushes the next poll past max.poll.interval.ms and triggers a rebalance storm. Use commitSync(Duration)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
+                RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KTABLE), Set.of("groupBy"),
+                desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedTable;"),
+                "KTable.groupBy(KeyValueMapper) with no Grouped argument — the implicit repartition topic name is derived from the topology graph index; any upstream edit renames it and the downstream aggregation restarts from offset 0 of an empty repartition. Use groupBy(mapper, Grouped.as(\"name\"))."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
