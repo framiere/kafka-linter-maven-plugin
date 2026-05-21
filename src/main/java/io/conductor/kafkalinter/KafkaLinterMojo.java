@@ -1883,6 +1883,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.exclude.internal.topics=false — consumer can subscribe to __consumer_offsets / __transaction_state via regex; subscribing to internal topics either grants read access to sensitive cluster metadata or causes deserialization crashes.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT, sev.get(RuleId.SPRING_BOOT_PRODUCER_CLIENT_DNS_LOOKUP_DEFAULT),
+                    "spring.kafka.producer.properties.client.dns.lookup", "default",
+                    "spring.kafka.producer.properties.client.dns.lookup=default — removed in kafka-clients 3.0; the producer throws ConfigException at startup and the pod crash-loops on first deploy. Switch to use_all_dns_ips.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_PLACEHOLDER),
+                    "spring.kafka.producer.transaction-id-prefix",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.producer.transaction-id-prefix={value} — unresolved ${...} placeholder reaches Spring; the literal string is taken as the transactional.id prefix, producer instances collide on the broker, and InvalidProducerEpochException fences live producers.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_GROUP_ID_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_GROUP_ID_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_CONSUMER_GROUP_ID_PLACEHOLDER),
+                    "spring.kafka.consumer.group-id",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.consumer.group-id={value} — unresolved ${...} placeholder; the literal string becomes group.id, consumers across pods land in the wrong (or empty) group, partitions get reassigned the moment the real value lands.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
