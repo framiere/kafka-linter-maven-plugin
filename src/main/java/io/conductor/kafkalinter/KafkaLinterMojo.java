@@ -2239,6 +2239,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.fetch.min.bytes={value} — silently overrides spring.kafka.consumer.fetch-min-size. Bypasses the typed DataSize parser; the operator's tuning knob in the DSL has no effect. Remove this key and use spring.kafka.consumer.fetch-min-size instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MAX_BYTES_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MAX_BYTES_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MAX_BYTES_SET),
+                    "spring.kafka.consumer.properties.fetch.max.bytes",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.fetch.max.bytes={value} — silently overrides spring.kafka.consumer.fetch-max-size. Bypasses the typed DataSize parser. Remove this key and use spring.kafka.consumer.fetch-max-size instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MAX_WAIT_MS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MAX_WAIT_MS_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MAX_WAIT_MS_SET),
+                    "spring.kafka.consumer.properties.fetch.max.wait.ms",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.fetch.max.wait.ms={value} — silently overrides spring.kafka.consumer.fetch-max-wait. Bypasses the typed Duration parser. Remove this key and use spring.kafka.consumer.fetch-max-wait instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_AUTO_COMMIT_INTERVAL_MS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_AUTO_COMMIT_INTERVAL_MS_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_AUTO_COMMIT_INTERVAL_MS_SET),
+                    "spring.kafka.consumer.properties.auto.commit.interval.ms",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.auto.commit.interval.ms={value} — silently overrides spring.kafka.consumer.auto-commit-interval. Hides the duplicate-or-loss window from review. Remove this key and use spring.kafka.consumer.auto-commit-interval instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
