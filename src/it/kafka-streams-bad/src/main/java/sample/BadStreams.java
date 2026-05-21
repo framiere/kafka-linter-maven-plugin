@@ -709,4 +709,34 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_BRANCHED_NO_NAMED — split().branch(predicate) with no Branched.as(...).
+    public Topology branchedNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> orders = b.stream("orders");
+        java.util.Map<String, KStream<String, String>> branches = orders
+                .split()
+                .branch((k, v) -> v != null && v.length() > 5)
+                .branch((k, v) -> v != null && v.length() <= 5)
+                .defaultBranch();
+        if (branches.isEmpty()) { throw new IllegalStateException(); }
+        return b.build();
+    }
+
+    // RULE: STREAMS_STREAM_NO_CONSUMED — StreamsBuilder.stream(topic) with no Consumed.
+    public Topology streamNoConsumed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events");
+        s.foreach((k, v) -> { if (v == null) { throw new IllegalStateException(); } });
+        return b.build();
+    }
+
+    // RULE: STREAMS_TO_NO_PRODUCED — KStream.to(topic) with no Produced.
+    public Topology toNoProduced() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.to("raw-events-out");
+        return b.build();
+    }
+
 }

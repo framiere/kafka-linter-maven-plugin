@@ -519,6 +519,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupByKey"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Grouped;"),
                 "KStream.groupByKey() without Grouped — if the upstream stream is repartition-required (any prior selectKey/map/flatMap), the auto-named repartition topic is graph-index-derived. Topology edits rename it; downstream aggregations restart from offset 0. Use groupByKey(Grouped.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BRANCHED_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_BRANCHED_NO_NAMED, s, Set.of(KafkaTypes.BRANCHED_KSTREAM), Set.of("branch"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Branched;"),
+                "BranchedKStream.branch(Predicate) with no Branched — each branch's sub-graph is named from the topology graph index; the returned Map<String, KStream> uses those auto-names as keys, so branches.get(\"X-PREDICATE-N\") returns null after any topology edit. Use branch(predicate, Branched.as(\"branchName\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_NO_CONSUMED, s -> new MethodCallRule(
+                RuleId.STREAMS_STREAM_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("stream"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
+                "StreamsBuilder.stream(topic) with no Consumed — source node name is graph-index-derived (KSTREAM-SOURCE-<N>, breaks source-tagged metrics on topology edits) AND serdes default to global default.key.serde / default.value.serde, so config-level changes silently corrupt this source's deserialization. Use stream(topic, Consumed.with(keySerde, valueSerde).withName(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TO_NO_PRODUCED, s -> new MethodCallRule(
+                RuleId.STREAMS_TO_NO_PRODUCED, s, Set.of(KafkaTypes.KSTREAM), Set.of("to"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Produced;"),
+                "KStream.to(topic) with no Produced — sink node name is graph-index-derived (KSTREAM-SINK-<N>) AND serdes default to global default.key.serde / default.value.serde, so config-level changes silently corrupt this sink's serialization. Use to(topic, Produced.with(keySerde, valueSerde).withName(\"...\"))."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

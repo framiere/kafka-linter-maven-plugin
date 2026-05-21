@@ -1,8 +1,11 @@
 package sample;
 
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Repartitioned;
 
 import java.util.Properties;
@@ -20,7 +23,8 @@ public final class GoodStreams {
     }
 
     public void topology(StreamsBuilder b) {
-        KStream<String, String> s = b.stream("in");
-        s.repartition(Repartitioned.<String, String>as("in-repartition")).to("out");
+        KStream<String, String> s = b.stream("in", Consumed.with(Serdes.String(), Serdes.String()).withName("in-source"));
+        s.repartition(Repartitioned.<String, String>as("in-repartition"))
+         .to("out", Produced.with(Serdes.String(), Serdes.String()).withName("out-sink"));
     }
 }
