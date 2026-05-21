@@ -2071,6 +2071,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.auto.offset.reset={value} — silently overrides spring.kafka.consumer.auto-offset-reset. The passthrough wins at runtime, so the Spring DSL value becomes dead config. Remove this key and use spring.kafka.consumer.auto-offset-reset instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_SET),
+                    "spring.kafka.consumer.properties.enable.auto.commit",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.enable.auto.commit={value} — overrides spring.kafka.consumer.enable-auto-commit. Spring's listener container makes ack-mode decisions from the DSL value while kafka-clients runs with the passthrough value; ack-mode commits and kafka-clients auto-commits race for the same partitions, breaking at-least-once semantics. Remove this key and use spring.kafka.consumer.enable-auto-commit instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_MAX_POLL_RECORDS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_MAX_POLL_RECORDS_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_MAX_POLL_RECORDS_SET),
+                    "spring.kafka.consumer.properties.max.poll.records",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.max.poll.records={value} — silently overrides spring.kafka.consumer.max-poll-records. The passthrough wins for kafka-clients but Spring's batch-listener sizing still reads the DSL value; the two values drift. Remove this key and use spring.kafka.consumer.max-poll-records instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_COMPRESSION_TYPE_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_COMPRESSION_TYPE_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_COMPRESSION_TYPE_SET),
+                    "spring.kafka.producer.properties.compression.type",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.compression.type={value} — silently overrides spring.kafka.producer.compression-type. The passthrough wins at runtime, so the Spring DSL value becomes dead config and compression-bug fixes that touch the DSL line have no effect. Remove this key and use spring.kafka.producer.compression-type instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
