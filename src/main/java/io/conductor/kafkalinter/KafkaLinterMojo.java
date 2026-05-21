@@ -2451,6 +2451,32 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.repartition.purge.interval.ms above 5 min — repartition-topic records sit on broker disk for the full interval after they're consumed; tens of GB of avoidable disk on busy topologies. Default 30000 (30 s) is right.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_LOW,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_REPARTITION_PURGE_INTERVAL_MS_TOO_LOW),
+                    "spring.kafka.streams.properties.repartition.purge.interval.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 5_000L; },
+                    "spring.kafka.streams.properties.repartition.purge.interval.ms below 5 s — DeleteRecords admin RPCs hammer the controller queue and the admin-client inflight slots, contending with topic create/delete and leader election. Default 30000 (30 s) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT),
+                    "spring.kafka.streams.replication-factor", "-1",
+                    "spring.kafka.streams.replication-factor=-1 — defers to broker default.replication.factor, which is 1 on every managed Kafka platform's default. Internal changelog/repartition topics silently end up at RF=1 on prod. Set an explicit positive value (3 is the canonical answer).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_WINDOWSTORE_CHANGELOG_ADDITIONAL_RETENTION_MS_TOO_HIGH),
+                    "spring.kafka.streams.properties.windowstore.changelog.additional.retention.ms",
+                    v -> parseLongOrZero(v) > 604_800_000L,
+                    "spring.kafka.streams.properties.windowstore.changelog.additional.retention.ms above 7 days — changelog-side safety buffer for windowed-store changelogs; bloats internal-topic disk and multiplies restore time after rebalances. Default 86400000 (24 h) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
