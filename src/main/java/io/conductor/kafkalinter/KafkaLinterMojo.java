@@ -14,6 +14,7 @@ import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
+import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
 import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
@@ -181,6 +182,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BLOCKING_GET, ProducerSendBlockingGetRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NO_CALLBACK, ProducerSendNoCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_LOOP, ProducerFlushInLoopRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_CALLBACK, ProducerFlushInCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);
