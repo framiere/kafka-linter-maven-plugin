@@ -2023,6 +2023,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.log-container-config=true — Spring dumps the full effective consumer config at INFO on every container start, including credentials (sasl.jaas.config, ssl.*-password) and other sensitive properties; production logs leak secrets and bury real signal in restart noise.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_MISSING_TRAILING_HYPHEN) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_MISSING_TRAILING_HYPHEN, sev.get(RuleId.SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_MISSING_TRAILING_HYPHEN),
+                    "spring.kafka.producer.transaction-id-prefix",
+                    v -> v != null && !v.trim().isEmpty() && !looksLikeUnresolvedPlaceholder(v) && !v.trim().endsWith("-"),
+                    "spring.kafka.producer.transaction-id-prefix={value} — does not end with '-'. Spring appends a per-instance numeric suffix directly to the prefix, producing tx-ids like '{value}0', '{value}1' that are hard to grep on the broker and visually confusable with other applications sharing the prefix. End the prefix with '-'.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_TRANSACTIONAL_ID_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_TRANSACTIONAL_ID_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_TRANSACTIONAL_ID_SET),
+                    "spring.kafka.producer.properties.transactional.id",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.transactional.id={value} — bypasses Spring's per-instance tx-id-prefix machinery. Every replica boots with the same transactional.id and the broker fences them in a permanent ProducerFencedException loop. Remove this key and use spring.kafka.producer.transaction-id-prefix instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_GROUP_ID_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_GROUP_ID_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_GROUP_ID_SET),
+                    "spring.kafka.consumer.properties.group.id",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.group.id={value} — bypasses Spring's group-id resolution and silently overrides @KafkaListener(groupId=...) annotations. Remove this key and use spring.kafka.consumer.group-id (or the per-listener annotation) instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
