@@ -1838,6 +1838,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.receive.buffer.bytes={value} — at or below 16 KiB. Strangles SO_RCVBUF to a value smaller than a single TCP receive window; throughput collapses and the consumer pays an order-of-magnitude latency hit per fetch. Set to -1 and let Linux autotune.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_RECONNECT_BACKOFF_MS_TOO_LOW),
+                    "spring.kafka.producer.properties.reconnect.backoff.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 100L; },
+                    "spring.kafka.producer.properties.reconnect.backoff.ms={value} — below 100 ms. Broker outage turns into a tight reconnect loop from this client; the producer hammers the broker with TCP connect attempts faster than the kernel can clean up failed sockets. Default 50 ms; recommended floor 100 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRY_BACKOFF_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_RETRY_BACKOFF_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRY_BACKOFF_MS_TOO_LOW),
+                    "spring.kafka.producer.properties.retry.backoff.ms",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 50L; },
+                    "spring.kafka.producer.properties.retry.backoff.ms={value} — below 50 ms. Retry loop pounds the broker before it has time to recover from the retriable error that just happened. Default 100 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_WAIT_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_WAIT_MS_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_WAIT_MS_TOO_LOW),
+                    "spring.kafka.consumer.fetch-max-wait",
+                    v -> { long n = parseSpringDurationMs(v); return n > 0 && n < 50L; },
+                    "spring.kafka.consumer.fetch-max-wait={value} — below 50 ms. Broker returns immediately even when fetch.min.bytes is not satisfied; consumer spins in tight empty-fetch loop on quiet topics. Default 500 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
