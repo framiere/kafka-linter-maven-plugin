@@ -1454,6 +1454,22 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_ALTER_CONFIGS_DEPRECATED — KIP-339: full-replacement alterConfigs resets every key not in payload.
+    @SuppressWarnings("deprecation")
+    public void adminAlterConfigsDeprecated() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        org.apache.kafka.common.config.ConfigResource topic =
+                new org.apache.kafka.common.config.ConfigResource(
+                        org.apache.kafka.common.config.ConfigResource.Type.TOPIC, "events-v1");
+        org.apache.kafka.clients.admin.Config cfg = new org.apache.kafka.clients.admin.Config(
+                java.util.List.of(new org.apache.kafka.clients.admin.ConfigEntry("retention.ms", "604800000")));
+        // Deprecated since Kafka 2.3 — every unlisted key (cleanup.policy, segment.ms, ...) resets to broker default.
+        admin.alterConfigs(java.util.Map.of(topic, cfg));
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED — String-groupId overload bypasses KIP-447 fencing.
     public void sendOffsetsToTxnDeprecatedGroupId() {
         Properties pp = props();

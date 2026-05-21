@@ -751,4 +751,28 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_KTABLE_FILTER_NO_NAMED — KTable.filter without Named, name graph-index-derived.
+    public Topology ktableFilterNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        org.apache.kafka.streams.kstream.KTable<String, String> users = b.table("users",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("users-source"));
+        users.filter((k, v) -> v != null && v.length() > 3)
+                .toStream(org.apache.kafka.streams.kstream.Named.as("filtered-to-stream"))
+                .to("filtered-users",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("filtered-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_KTABLE_MAP_VALUES_NO_NAMED — KTable.mapValues without Named, name graph-index-derived.
+    public Topology ktableMapValuesNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        org.apache.kafka.streams.kstream.KTable<String, String> users = b.table("users",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("users-source"));
+        users.mapValues(v -> v == null ? "" : v.toUpperCase())
+                .toStream(org.apache.kafka.streams.kstream.Named.as("upper-to-stream"))
+                .to("users-upper",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("upper-sink"));
+        return b.build();
+    }
+
 }

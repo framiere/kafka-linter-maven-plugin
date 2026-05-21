@@ -543,6 +543,17 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteTopicsOptions;"),
                 "Admin.deleteTopics() with no DeleteTopicsOptions — destructive operation using the default request.timeout.ms (~30s) with no caller-visible bound; TimeoutException does NOT mean the delete failed. Pass new DeleteTopicsOptions().timeoutMs(60_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_CONFIGS_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_ALTER_CONFIGS_DEPRECATED, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterConfigs"),
+                "Admin.alterConfigs(Map<ConfigResource, Config>) is deprecated since Kafka 2.3 (KIP-339) — it performs a FULL REPLACEMENT, so any key not present in the Config payload gets reset to broker default. Use incrementalAlterConfigs(Map<ConfigResource, Collection<AlterConfigOp>>) which mutates only the keys you name."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_FILTER_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_KTABLE_FILTER_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("filter", "filterNot"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KTable.filter/filterNot with no Named — the filter node name is graph-index-derived (KTABLE-FILTER-<N>); editing the topology renumbers the index and silently rebrands every metric tag and (for materialized variants) the changelog/state-store name. Use filter(predicate, Named.as(\"...\")) or filter(predicate, Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("mapValues"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KTable.mapValues with no Named — the mapValues node name is graph-index-derived (KTABLE-MAPVALUES-<N>); editing the topology renumbers the index and silently rebrands every metric tag and (for materialized variants) the changelog/state-store name. Use mapValues(mapper, Named.as(\"...\")) or mapValues(mapper, Materialized.as(\"...\"))."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
