@@ -249,8 +249,8 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_LINGER_MS_TOO_HIGH, s, KafkaTypes.LINGER_MS_KEY,
                 v -> parseIntOrZero(v) > 60000,
                 "linger.ms={value} — above 60 s. Every record sits in the accumulator that long before send; almost certainly a units/typo mistake."));
-        addIfEnabled(rules, sev, RuleId.PRODUCER_PARTITIONER_CLASS_DEPRECATED, s -> ConfigKeyValueRule.literalAny(
-                RuleId.PRODUCER_PARTITIONER_CLASS_DEPRECATED, s, KafkaTypes.PARTITIONER_CLASS_KEY,
+        addIfEnabled(rules, sev, RuleId.PRODUCER_DEPRECATED_PARTITIONER, s -> ConfigKeyValueRule.literalAny(
+                RuleId.PRODUCER_DEPRECATED_PARTITIONER, s, KafkaTypes.PARTITIONER_CLASS_KEY,
                 KafkaTypes.PARTITIONER_DEPRECATED_FQCNS,
                 "partitioner.class={value} — deprecated by KIP-794. Delete this line; the built-in strategy (queue+RTT aware) is strictly better."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_FETCH_MAX_BYTES_TOO_LOW, s -> new ConfigKeyValueRule(

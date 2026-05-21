@@ -398,8 +398,8 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
-    // RULE: PRODUCER_PARTITIONER_CLASS_DEPRECATED.
-    public void producerPartitionerClassDeprecated() {
+    // RULE: PRODUCER_DEPRECATED_PARTITIONER.
+    public void producerDeprecatedPartitioner() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "kafka:9092");
         p.put("partitioner.class", "org.apache.kafka.clients.producer.UniformStickyPartitioner");
