@@ -886,6 +886,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeTopicsOptions;"),
                 "Admin.describeTopics() with no DescribeTopicsOptions — inherits default timeout AND defaults includeAuthorizedOperations=false; the TopicDescription's authorizedOperations() returns null, silently breaking ACL-audit / migration tooling. Pass new DescribeTopicsOptions().timeoutMs(60_000).includeAuthorizedOperations(true)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_CLIENT_QUOTAS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_ALTER_CLIENT_QUOTAS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterClientQuotas"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterClientQuotasOptions;"),
+                "Admin.alterClientQuotas(Collection<ClientQuotaAlteration>) with no AlterClientQuotasOptions — defaults validateOnly=false (the destructive quota mutation EXECUTES with no preview) and inherits the default request.timeout.ms (~30 s). On partial failure mid-batch some alterations are persisted and others not, with no caller-visible record of which is which. Pass new AlterClientQuotasOptions().validateOnly(true) first to preview, then re-run with validateOnly(false).timeoutMs(60_000) to apply."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
