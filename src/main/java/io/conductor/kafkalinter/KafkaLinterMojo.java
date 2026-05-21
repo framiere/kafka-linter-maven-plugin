@@ -709,6 +709,26 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of("thenApply"),
                 desc -> desc != null && desc.contains("Lorg/apache/kafka/common/KafkaFuture$Function;"),
                 "KafkaFuture.thenApply(KafkaFuture.Function) deprecated since Kafka 3.0 (KIP-707) — the legacy `Function` interface declared a checked-exception apply() that forces awkward try/catch wrapping at every callsite. Replace with `KafkaFuture.BaseFunction` (same `apply(T)` shape, no checked exception) or, for new code, switch to `kafkaFuture.toCompletionStage().thenApply(...)` with standard java.util.function.Function. The plugin distinguishes the deprecated overload from the modern thenApply(BaseFunction) via descriptor."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, s,
+                Set.of(KafkaTypes.KSTREAM),
+                Set.of("process"),
+                desc -> desc != null
+                        && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;")
+                        && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
+                "KStream.process(legacy org.apache.kafka.streams.processor.ProcessorSupplier, String...) is deprecated since Kafka Streams 3.3 (KIP-820). The legacy Processor API uses untyped process(K, V) returning void with context.forward(K, V), preventing downstream DSL chaining. Switch the import to `org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, KOut, VOut>` and refactor the Processor's process(K, V) to process(Record<KIn, VIn> record). The modern overload returns KStream<KOut, VOut> so subsequent .filter()/.map()/.to(...) DSL operators chain naturally."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWED_DESERIALIZER_NO_SIZE_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_TIME_WINDOWED_DESERIALIZER_NO_SIZE_DEPRECATED, s,
+                Set.of(KafkaTypes.TIME_WINDOWED_DESERIALIZER),
+                Set.of("<init>"),
+                desc -> "(Lorg/apache/kafka/common/serialization/Deserializer;)V".equals(desc),
+                "new TimeWindowedDeserializer(Deserializer) — the 1-arg ctor that omits windowSize — is deprecated since Kafka Streams 2.8 (KIP-659). It defaults windowSize to Long.MAX_VALUE, so every reconstructed Windowed<K>.window().end() is meaningless (start + Long.MAX_VALUE overflows to a wrap-around negative long). Pass an explicit windowSize matching the topology's TimeWindows: new TimeWindowedDeserializer<>(inner, Duration.ofMinutes(5).toMillis())."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, s,
+                Set.of(KafkaTypes.WINDOWED_SERDES),
+                Set.of("timeWindowedSerdeFrom"),
+                desc -> "(Ljava/lang/Class;)Lorg/apache/kafka/common/serialization/Serde;".equals(desc),
+                "WindowedSerdes.timeWindowedSerdeFrom(Class) — the 1-arg static factory that omits windowSize — is deprecated since Kafka Streams 2.8 (KIP-659). Internally it wires a TimeWindowedDeserializer without windowSize, so the resulting Serde<Windowed<T>> produces Windowed<T> instances with bogus windowEnd. Use the 2-arg form: WindowedSerdes.timeWindowedSerdeFrom(InnerKey.class, Duration.ofMinutes(5).toMillis())."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

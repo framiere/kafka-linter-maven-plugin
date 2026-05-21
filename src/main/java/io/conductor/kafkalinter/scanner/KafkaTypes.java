@@ -24,6 +24,8 @@ public final class KafkaTypes {
     public static final String SESSION_WINDOWED_KSTREAM = "org/apache/kafka/streams/kstream/SessionWindowedKStream";
     public static final String BRANCHED_KSTREAM = "org/apache/kafka/streams/kstream/BranchedKStream";
     public static final String STREAMS_STORES = "org/apache/kafka/streams/state/Stores";
+    public static final String TIME_WINDOWED_DESERIALIZER = "org/apache/kafka/streams/kstream/TimeWindowedDeserializer";
+    public static final String WINDOWED_SERDES = "org/apache/kafka/streams/kstream/WindowedSerdes";
     public static final Set<String> GROUPED_KSTREAM_OWNERS = Set.of(
             KGROUPED_STREAM, KGROUPED_TABLE, TIME_WINDOWED_KSTREAM, SESSION_WINDOWED_KSTREAM
     );

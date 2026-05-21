@@ -11,7 +11,15 @@ import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.kstream.SessionWindows;
 import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.TimeWindowedDeserializer;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
+import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.kstream.WindowedSerdes;
+import org.apache.kafka.streams.processor.AbstractProcessor;
+import org.apache.kafka.streams.processor.ProcessorSupplier;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.streams.kstream.ValueJoiner;
 import org.apache.kafka.streams.kstream.ValueTransformerSupplier;
 import org.apache.kafka.streams.kstream.ValueTransformerWithKeySupplier;
@@ -1060,6 +1068,41 @@ public final class BadStreams {
         // Setting =true is redundant; the line should simply be removed.
         props.put("auto.include.jmx.reporter", "true");
         return props;
+    }
+
+    /** Batch 124 — KStream.process(legacy ProcessorSupplier) deprecated by KIP-820 (Kafka 3.3). */
+    @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
+    void kstreamProcessLegacyDeprecated() {
+        StreamsBuilder builder = new StreamsBuilder();
+        KStream<String, String> stream = builder.stream("input");
+        ProcessorSupplier legacySupplier = () -> new AbstractProcessor<String, String>() {
+            @Override
+            public void process(String key, String value) {
+                context().forward(key, value);
+            }
+        };
+        // Bug: KStream.process(legacy ProcessorSupplier, String...) — the legacy
+        // org.apache.kafka.streams.processor.ProcessorSupplier (no `.api.`) is deprecated.
+        // Replace with org.apache.kafka.streams.processor.api.ProcessorSupplier whose
+        // process(Record<KIn, VIn>) returns typed output via context.forward(record).
+        stream.process(legacySupplier);
+    }
+
+    /** Batch 124 — new TimeWindowedDeserializer(Deserializer) (no windowSize) deprecated by KIP-659 (Kafka 2.8). */
+    @SuppressWarnings("deprecation")
+    Deserializer<Windowed<String>> timeWindowedDeserializerNoWindowSize() {
+        // Bug: 1-arg ctor defaults windowSize to Long.MAX_VALUE; every Windowed<K>.window().end()
+        // overflows and is meaningless. Pass an explicit windowSize matching the topology.
+        return new TimeWindowedDeserializer<>(new StringDeserializer());
+    }
+
+    /** Batch 124 — WindowedSerdes.timeWindowedSerdeFrom(Class) (no windowSize) deprecated by KIP-659. */
+    @SuppressWarnings("deprecation")
+    Serde<Windowed<String>> windowedSerdesTimeFromClassNoSize() {
+        // Bug: 1-arg static factory uses windowSize=Long.MAX_VALUE internally; downstream
+        // consumers and IQ clients reconstruct Windowed<K> with bogus windowEnd. Use the
+        // 2-arg form: WindowedSerdes.timeWindowedSerdeFrom(String.class, sizeMs).
+        return WindowedSerdes.timeWindowedSerdeFrom(String.class);
     }
 
 }
