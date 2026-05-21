@@ -2399,6 +2399,31 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.rack.aware.assignment.strategy=none — disables rack-aware task assignment. Active+standby may colocate in one AZ, defeating cross-AZ failover. Default min_traffic is correct.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_ACCEPTABLE_RECOVERY_LAG_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_ACCEPTABLE_RECOVERY_LAG_ZERO,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_ACCEPTABLE_RECOVERY_LAG_ZERO),
+                    "spring.kafka.streams.properties.acceptable.recovery.lag", "0",
+                    "spring.kafka.streams.properties.acceptable.recovery.lag=0 — a warm standby is only considered \"caught up\" when its lag is exactly zero, which is essentially never under live traffic. Rebalances will refuse to promote standbys and instead replay the changelog on the active node, multiplying downtime. Default 10000 records is the right starting point.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_MAX_WARMUP_REPLICAS_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_MAX_WARMUP_REPLICAS_ZERO,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_MAX_WARMUP_REPLICAS_ZERO),
+                    "spring.kafka.streams.properties.max.warmup.replicas", "0",
+                    "spring.kafka.streams.properties.max.warmup.replicas=0 — disables the high-availability task assignor's warmup phase. Scale-out and rolling restarts will move active tasks immediately to cold instances and replay the changelog inline, blocking processing until restore finishes. Default 2 is the right starting point.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STANDBY_REPLICAS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_NUM_STANDBY_REPLICAS_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STANDBY_REPLICAS_TOO_HIGH),
+                    "spring.kafka.streams.properties.num.standby.replicas",
+                    v -> parseLongOrZero(v) > 3L,
+                    "spring.kafka.streams.properties.num.standby.replicas above 3 — every standby maintains a full hot replica of every state store. Changelog write amplification and disk usage scale linearly; broker fetch traffic balloons. Above 3 the marginal failover gain is dwarfed by steady-state cost.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
