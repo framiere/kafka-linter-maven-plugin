@@ -48,6 +48,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutT
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetResetLatestRule;
+import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtractorWallclockRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
@@ -1780,6 +1781,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_INCLUDE_AND_EXCLUDE_LIST_BOTH_SET) != Severity.OFF) {
             rules.add(new ConnectDebeziumIncludeAndExcludeListBothSetRule(sev.get(RuleId.CONNECT_DEBEZIUM_INCLUDE_AND_EXCLUDE_LIST_BOTH_SET)));
+        }
+        if (sev.get(RuleId.CONNECT_STORAGE_SINK_TIMESTAMP_EXTRACTOR_WALLCLOCK) != Severity.OFF) {
+            rules.add(new ConnectStorageSinkTimestampExtractorWallclockRule(sev.get(RuleId.CONNECT_STORAGE_SINK_TIMESTAMP_EXTRACTOR_WALLCLOCK)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
