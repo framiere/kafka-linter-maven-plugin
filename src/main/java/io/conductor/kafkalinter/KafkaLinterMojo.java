@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_CONSUMER_GROUPS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DELETE_CONSUMER_GROUPS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteConsumerGroups"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteConsumerGroupsOptions;"),
+                "Admin.deleteConsumerGroups() with no DeleteConsumerGroupsOptions — IRREVERSIBLE per-group deletion under default ~30 s timeout; timeout firing mid-batch leaves some groups deleted, others alive, with no atomic rollback. Pass new DeleteConsumerGroupsOptions().timeoutMs(120_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_LOG_DIRS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_LOG_DIRS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeLogDirs"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeLogDirsOptions;"),
+                "Admin.describeLogDirs() with no DescribeLogDirsOptions — broker-side disk scan that traverses every log segment on every requested broker; on multi-TB brokers it routinely exceeds the default ~30 s timeout, breaking capacity-planning and rebalance-planning tooling. Pass new DescribeLogDirsOptions().timeoutMs(180_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_ACLS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_ACLS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeAcls"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeAclsOptions;"),
+                "Admin.describeAcls() with no DescribeAclsOptions — full ACL-store scan on the controller; on multi-tenant clusters with tens of thousands of bindings it exceeds the default ~30 s timeout. Pass new DescribeAclsOptions().timeoutMs(120_000) and narrow the AclBindingFilter to the principal/resource you actually care about."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_CONSUMER_GROUPS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DESCRIBE_CONSUMER_GROUPS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeConsumerGroups"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeConsumerGroupsOptions;"),

@@ -1507,6 +1507,42 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DELETE_CONSUMER_GROUPS_NO_OPTIONS — no DeleteConsumerGroupsOptions: irreversible group deletion under default ~30s timeout.
+    public void adminDeleteConsumerGroupsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        // No DeleteConsumerGroupsOptions — half-deletion on timeout leaves some groups gone, others alive.
+        admin.deleteConsumerGroups(java.util.List.of("legacy-group-1", "legacy-group-2", "legacy-group-3")).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_DESCRIBE_LOG_DIRS_NO_OPTIONS — no DescribeLogDirsOptions: broker disk scan often exceeds default ~30s timeout.
+    public void adminDescribeLogDirsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        // No DescribeLogDirsOptions — multi-TB log-dir scan blows past default timeout on large brokers.
+        java.util.Map<Integer, java.util.Map<String, org.apache.kafka.clients.admin.LogDirDescription>> logDirs =
+                admin.describeLogDirs(java.util.List.of(1, 2, 3, 4, 5)).allDescriptions().get();
+        for (java.util.Map.Entry<Integer, java.util.Map<String, org.apache.kafka.clients.admin.LogDirDescription>> e : logDirs.entrySet()) {
+            System.out.println("broker=" + e.getKey() + " dirs=" + e.getValue().keySet());
+        }
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_DESCRIBE_ACLS_NO_OPTIONS — no DescribeAclsOptions: full ACL-store scan often exceeds default ~30s timeout.
+    public void adminDescribeAclsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        // No DescribeAclsOptions — controller-side full ACL scan; multi-tenant clusters with tens of thousands of bindings time out.
+        java.util.Collection<org.apache.kafka.common.acl.AclBinding> acls =
+                admin.describeAcls(org.apache.kafka.common.acl.AclBindingFilter.ANY).values().get();
+        System.out.println("acl-count=" + acls.size());
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_DESCRIBE_CONSUMER_GROUPS_NO_OPTIONS — no DescribeConsumerGroupsOptions: includeAuthorizedOperations defaults to false.
     public void adminDescribeConsumerGroupsNoOptions() throws Exception {
         Properties p = new Properties();
