@@ -462,36 +462,17 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_CACHE_DISABLED, s, KafkaTypes.STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY,
                 "0"::equals,
                 "cache.max.bytes.buffering=0 — every state-store update is forwarded; changelog write rate explodes."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_CLEANUP_IN_PROD, s -> new MethodCallRule(
-                RuleId.STREAMS_CLEANUP_IN_PROD, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("cleanUp"),
-                "KafkaStreams.cleanUp() — wipes local state. Acceptable in tests; in prod it forces full changelog rebuild."));
         addIfEnabled(rules, sev, RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
                 RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.MATERIALIZED), Set.of("withLoggingDisabled"),
                 "Materialized.withLoggingDisabled() — state-store changelog topic disabled. The store is no longer fault-tolerant: on task reassignment or pod restart it starts empty and downstream aggregates/joins silently return wrong answers."));
         addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
                 RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.STORE_BUILDER), Set.of("withLoggingDisabled"),
                 "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.STREAMS_CLOSE_NO_TIMEOUT, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("close"),
-                desc -> desc != null && desc.equals("()V"),
-                "KafkaStreams.close() with no Duration — blocks for Long.MAX_VALUE waiting for every StreamThread to stop. A wedged user process()/punctuate() pins the shutdown thread; pods time out and get SIGKILLed mid-commit. Use close(Duration) or close(CloseOptions)."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_REMOVE_THREAD_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.STREAMS_REMOVE_THREAD_NO_TIMEOUT, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("removeStreamThread"),
-                desc -> desc != null && desc.equals("()Ljava/util/Optional;"),
-                "KafkaStreams.removeStreamThread() with no Duration — blocks for Long.MAX_VALUE waiting for the thread to drain. A stuck process() call pins the autoscaler / admin endpoint indefinitely. Use removeStreamThread(Duration)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED, s,
                 Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("setUncaughtExceptionHandler"),
                 desc -> desc != null && desc.equals("(Ljava/lang/Thread$UncaughtExceptionHandler;)V"),
                 "KafkaStreams.setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler) is deprecated since 2.8 (KIP-671) — use the StreamsUncaughtExceptionHandler overload to return REPLACE_THREAD / SHUTDOWN_CLIENT / SHUTDOWN_APPLICATION instead of letting threads die silently."));
-        addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.PRODUCER_CLOSE_NO_TIMEOUT, s, KafkaTypes.PRODUCER_OWNERS, Set.of("close"),
-                desc -> desc != null && desc.equals("()V"),
-                "Producer.close() with no Duration — blocks for Long.MAX_VALUE waiting for every in-flight send to complete. On a broker outage, every pending record burns its full delivery.timeout.ms before close() returns; pods get SIGKILLed mid-flush. Use close(Duration)."));
-        addIfEnabled(rules, sev, RuleId.ADMIN_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.ADMIN_CLOSE_NO_TIMEOUT, s, KafkaTypes.ADMIN_OWNERS, Set.of("close"),
-                desc -> desc != null && desc.equals("()V"),
-                "Admin.close() / AdminClient.close() with no Duration — blocks for Long.MAX_VALUE waiting for every in-flight admin request to complete. A slow controller pins shutdown indefinitely. Use close(Duration)."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s -> new MethodCallRule(
                 RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s, KafkaTypes.CONSUMER_OWNERS, Set.of("subscribe"),
                 desc -> desc != null && (desc.equals("(Ljava/util/Collection;)V") || desc.equals("(Ljava/util/regex/Pattern;)V")),
@@ -534,10 +515,6 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_RECORD_NO_KEY, s, Set.of(KafkaTypes.PRODUCER_RECORD), Set.of("<init>"),
                 desc -> desc != null && desc.equals("(Ljava/lang/String;Ljava/lang/Object;)V"),
                 "new ProducerRecord<>(topic, value) — 2-arg constructor sets the key to null. Records have no per-key ordering, log-compacted topics cannot dedupe by key, and the default partitioner uses sticky-batching across partitions. Pass an explicit key as the second argument."));
-        addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_CLOSE_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("close"),
-                desc -> desc != null && desc.equals("()V"),
-                "Consumer.close() with no Duration — blocks for default.api.timeout.ms (default 60 s) waiting for LeaveGroup and final commits. Pod terminationGracePeriodSeconds (typically 30 s) fires SIGKILL before close returns; rebalance stalls until session.timeout.ms. Use close(Duration)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
                 RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KTABLE), Set.of("groupBy"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedTable;"),
