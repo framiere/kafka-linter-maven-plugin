@@ -1831,6 +1831,40 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED — values()/.all() return internal LogDirInfo (KIP-743).
+    public void describeLogDirsResultLegacyAccessors() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        org.apache.kafka.clients.admin.DescribeLogDirsResult r = admin.describeLogDirs(java.util.List.of(0));
+        // Bug 1: legacy values() — returns Map<Integer, KafkaFuture<Map<String, DescribeLogDirsResponse$LogDirInfo>>>.
+        java.util.Map<Integer, org.apache.kafka.common.KafkaFuture<java.util.Map<String, org.apache.kafka.common.requests.DescribeLogDirsResponse.LogDirInfo>>> v = r.values();
+        v.size();
+        // Bug 2: legacy all() — same internal-type leak; use allDescriptions() returning LogDirDescription.
+        java.util.Map<Integer, java.util.Map<String, org.apache.kafka.common.requests.DescribeLogDirsResponse.LogDirInfo>> a = r.all().get();
+        a.size();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED — dryRun() renamed to validateOnly() (KIP-919).
+    public void updateFeaturesOptionsDryRunDeprecated() {
+        org.apache.kafka.clients.admin.UpdateFeaturesOptions opts =
+                new org.apache.kafka.clients.admin.UpdateFeaturesOptions();
+        // Bug 1: deprecated dryRun(boolean) setter — rename to validateOnly(true).
+        opts.dryRun(true);
+        // Bug 2: deprecated dryRun() getter — rename to validateOnly().
+        boolean dry = opts.dryRun();
+        System.out.println(dry);
+    }
+
+    // RULE: ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED — two-arg constructor predates topic IDs (KIP-516).
+    public void topicListingNameInternalCtorDeprecated() {
+        // Bug: deprecated (String, boolean) constructor — topicId() defaults to Uuid.ZERO_UUID.
+        org.apache.kafka.clients.admin.TopicListing tl =
+                new org.apache.kafka.clients.admin.TopicListing("orders", false);
+        System.out.println(tl.name() + " internal=" + tl.isInternal());
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

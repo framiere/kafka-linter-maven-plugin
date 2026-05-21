@@ -645,6 +645,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of(KafkaTypes.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_OPTIONS),
                 Set.of("topicPartitions"),
                 "ListConsumerGroupOffsetsOptions.topicPartitions(List<TopicPartition>) / topicPartitions() deprecated since Kafka 3.3 (KIP-709) — the per-Options TP filter is silently IGNORED by the new batched Admin.listConsumerGroupOffsets(Map<String, ListConsumerGroupOffsetsSpec>) overload, where each Spec carries its own per-group TP filter. Use new ListConsumerGroupOffsetsSpec().topicPartitions(tps) per-group inside the Map; the batched form fans out OFFSET_FETCH RPCs to all coordinators in parallel instead of N × broker-RTT sequential per-group queries."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_DESCRIBE_LOG_DIRS_RESULT),
+                Set.of("values", "all"),
+                "DescribeLogDirsResult.values() / DescribeLogDirsResult.all() deprecated since Kafka 3.0 (KIP-743) — both return the INTERNAL `org.apache.kafka.common.requests.DescribeLogDirsResponse$LogDirInfo` type, leaking wire-protocol shape into AdminClient consumers and missing newer fields (totalBytes, usableBytes). Migrate to descriptions() / allDescriptions() returning the public `org.apache.kafka.clients.admin.LogDirDescription`. The internal LogDirInfo lives in the `common.requests` non-public package and its field layout changes between minor Kafka releases."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_UPDATE_FEATURES_OPTIONS),
+                Set.of("dryRun"),
+                "UpdateFeaturesOptions.dryRun() / dryRun(boolean) deprecated since Kafka 3.5 (KIP-919) — UpdateFeaturesOptions was the only AdminClient *Options class that called the validate-without-apply mode `dryRun` instead of the canonical `validateOnly`. Rename callsites to validateOnly() / validateOnly(boolean) — wire-equivalent (same internal field), purely a naming-consistency cleanup with the rest of the AdminClient Options surface."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_TOPIC_LISTING),
+                Set.of("<init>"),
+                desc -> desc != null && desc.equals("(Ljava/lang/String;Z)V"),
+                "TopicListing(String name, boolean isInternal) constructor deprecated since Kafka 3.0 (KIP-516) — predates topic IDs and constructs a TopicListing whose topicId() returns Uuid.ZERO_UUID (the sentinel for pre-2.8 brokers). Replace with new TopicListing(name, topicId, isInternal). If you genuinely don't have a topic-ID, pass Uuid.ZERO_UUID explicitly to make the intent visible. Affects test/mock/scaffolding code that hand-rolls TopicListing instances — Admin.listTopics() callers are unaffected."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),
