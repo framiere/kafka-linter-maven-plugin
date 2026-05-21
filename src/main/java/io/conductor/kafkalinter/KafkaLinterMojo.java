@@ -2238,6 +2238,32 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.topology.optimization=none — optimizer disabled. Redundant repartition and duplicate source-KTable changelog topics are created on the broker. For new applications, set to 'all'.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_TASK_TIMEOUT_MS_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_TASK_TIMEOUT_MS_ZERO, sev.get(RuleId.SPRING_BOOT_STREAMS_TASK_TIMEOUT_MS_ZERO),
+                    "spring.kafka.streams.properties.task.timeout.ms", "0",
+                    "spring.kafka.streams.properties.task.timeout.ms=0 — Streams' per-task transient-error retry budget is zero. Routine leader elections (1-3 s on a healthy cluster) immediately kill the task. Default is 300000 (5 min); set that or remove the line.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_CACHE_DISABLED) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_CACHE_DISABLED, sev.get(RuleId.SPRING_BOOT_STREAMS_CACHE_DISABLED),
+                    "spring.kafka.streams.properties.cache.max.bytes.buffering", "0",
+                    "spring.kafka.streams.properties.cache.max.bytes.buffering=0 — Streams record cache disabled. Every state-store update produces an immediate changelog write and an immediate downstream record (potential 100× broker write-rate explosion on hot-key workloads). Default 10 MB; either remove or use statestore.cache.max.bytes (KIP-770).",
+                    "org.springframework.kafka", "spring-kafka"));
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_CACHE_DISABLED, sev.get(RuleId.SPRING_BOOT_STREAMS_CACHE_DISABLED),
+                    "spring.kafka.streams.properties.statestore.cache.max.bytes", "0",
+                    "spring.kafka.streams.properties.statestore.cache.max.bytes=0 — Streams record cache disabled (KIP-770 replacement key for cache.max.bytes.buffering). Every state-store update bypasses the cache and produces an immediate changelog write. Set to a non-zero value (default 10 MB).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_TWO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_TWO, sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_TWO),
+                    "spring.kafka.streams.replication-factor", "2",
+                    "spring.kafka.streams.replication-factor=2 — one follower only. Any rolling restart leaves changelogs single-replicated; min.insync.replicas=2 then blocks produces. Use 3 (with min.insync.replicas=2) for real fault-tolerance.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
