@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_COUNT_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("count"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "Aggregator.count() with no Named — KSTREAM-AGGREGATE-<N> processor node, state store, changelog topic, and (when key-changing upstream) repartition topic are ALL graph-index-derived. Any topology edit upstream shifts <N> and silently invalidates the count's persistent state. Use count(Named.as(\"...\")) AND count(Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_REDUCE_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("reduce"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "Aggregator.reduce(Reducer) with no Named — KSTREAM-REDUCE-<N> processor, state store, changelog topic all graph-index-derived. Topology edits silently invalidate the reduce's persistent state (running sum/max/min/custom-combine restarts from empty). Use reduce(reducer, Named.as(\"...\")) AND reduce(reducer, Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_AGGREGATE_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("aggregate"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "Aggregator.aggregate(Initializer, Aggregator) with no Named — KSTREAM-AGGREGATE-<N> processor, state store, changelog topic all graph-index-derived. Of count/reduce/aggregate, aggregate typically carries the LARGEST per-key state (custom VA type); losing it across a topology edit is the most expensive to rebuild. Use aggregate(initializer, aggregator, Named.as(\"...\"), Materialized.as(\"...\"))."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

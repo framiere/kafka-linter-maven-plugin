@@ -872,6 +872,47 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_COUNT_NO_NAMED — KGroupedStream.count() with no Named, state-store/changelog auto-named.
+    public Topology countNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.groupByKey(org.apache.kafka.streams.kstream.Grouped.with("by-key", Serdes.String(), Serdes.String()))
+                .count()
+                .toStream(org.apache.kafka.streams.kstream.Named.as("count-to-stream"))
+                .to("counted-events",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.Long()).withName("counted-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_REDUCE_NO_NAMED — KGroupedStream.reduce(Reducer) with no Named.
+    public Topology reduceNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.groupByKey(org.apache.kafka.streams.kstream.Grouped.with("by-key", Serdes.String(), Serdes.String()))
+                .reduce((a, bb) -> a.length() >= bb.length() ? a : bb)
+                .toStream(org.apache.kafka.streams.kstream.Named.as("reduce-to-stream"))
+                .to("reduced-events",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("reduced-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_AGGREGATE_NO_NAMED — KGroupedStream.aggregate(Initializer, Aggregator) with no Named.
+    public Topology aggregateNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.groupByKey(org.apache.kafka.streams.kstream.Grouped.with("by-key", Serdes.String(), Serdes.String()))
+                .aggregate(() -> 0L, (k, v, agg) -> agg + (v == null ? 0L : v.length()),
+                        Materialized.<String, Long, org.apache.kafka.streams.state.KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("agg-store")
+                                .withKeySerde(Serdes.String()).withValueSerde(Serdes.Long()))
+                .toStream(org.apache.kafka.streams.kstream.Named.as("agg-to-stream"))
+                .to("aggregated-events",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.Long()).withName("aggregated-sink"));
+        return b.build();
+    }
+
     // RULE: STREAMS_IN_MEMORY_KV_STORE — Stores.inMemoryKeyValueStore/inMemoryWindowStore/inMemorySessionStore.
     public Topology inMemoryKeyValueStore() {
         StreamsBuilder b = new StreamsBuilder();
