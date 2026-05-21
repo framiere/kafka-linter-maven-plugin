@@ -2217,6 +2217,27 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.commit.interval.ms={value} — below 100 ms. Pathological commit rate: every cycle is a RocksDB flush + changelog produce + offset commit. The runtime spends most of its time committing instead of processing. Kafka default is 100 ms under EOS-v2; lower than that is almost always a misunderstanding.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STANDBY_REPLICAS_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_NUM_STANDBY_REPLICAS_ZERO, sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STANDBY_REPLICAS_ZERO),
+                    "spring.kafka.streams.properties.num.standby.replicas", "0",
+                    "spring.kafka.streams.properties.num.standby.replicas=0 — zero warm state-store copies. Any instance failure forces a full changelog restore on the takeover peer (minutes-to-hours for a non-trivial state store). Set to 1 in production.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STREAM_THREADS_ONE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_NUM_STREAM_THREADS_ONE, sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STREAM_THREADS_ONE),
+                    "spring.kafka.streams.properties.num.stream.threads", "1",
+                    "spring.kafka.streams.properties.num.stream.threads=1 — entire topology on a single thread. Multi-vCPU pods leave most cores idle; any blocking processor call stalls all assigned tasks. Right value is roughly min(input-partitions/instances, cpu-cores).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_TOPOLOGY_OPTIMIZATION_NONE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_TOPOLOGY_OPTIMIZATION_NONE, sev.get(RuleId.SPRING_BOOT_STREAMS_TOPOLOGY_OPTIMIZATION_NONE),
+                    "spring.kafka.streams.properties.topology.optimization", "none",
+                    "spring.kafka.streams.properties.topology.optimization=none — optimizer disabled. Redundant repartition and duplicate source-KTable changelog topics are created on the broker. For new applications, set to 'all'.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
