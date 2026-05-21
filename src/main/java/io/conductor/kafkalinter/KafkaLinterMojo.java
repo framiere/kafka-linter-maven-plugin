@@ -2143,6 +2143,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.client.id={value} — silently overrides spring.kafka.producer.client-id. The property file documents one identity, broker JMX and quota tooling sees another. Remove this key and use spring.kafka.producer.client-id instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_CLIENT_ID_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_CLIENT_ID_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_CLIENT_ID_SET),
+                    "spring.kafka.consumer.properties.client.id",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.client.id={value} — silently overrides spring.kafka.consumer.client-id. Per-listener client-id derivation is bypassed and broker observability collapses across listeners. Remove this key and use spring.kafka.consumer.client-id instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_CLIENT_ID_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROPERTIES_CLIENT_ID_SET, sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_CLIENT_ID_SET),
+                    "spring.kafka.streams.properties.client.id",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.streams.properties.client.id={value} — silently overrides spring.kafka.streams.client-id. Every internal Streams client.id is derived from this base; the passthrough corrupts every embedded consumer, producer, restore-consumer, and admin identity in one stroke. Remove this key and use spring.kafka.streams.client-id instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_ISOLATION_LEVEL_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_ISOLATION_LEVEL_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_ISOLATION_LEVEL_SET),
+                    "spring.kafka.consumer.properties.isolation.level",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.isolation.level={value} — silently overrides spring.kafka.consumer.isolation-level. End-to-end exactly-once consumption semantics can be silently broken (read_committed -> read_uncommitted demotion); the property file documents one isolation level while the runtime uses another. Remove this key and use spring.kafka.consumer.isolation-level instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
