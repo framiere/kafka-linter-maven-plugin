@@ -1951,4 +1951,20 @@ public final class BadKafkaUsage {
                 };
         return future.thenApply(legacyFn);
     }
+
+    // RULE: HEADERS_SENSITIVE_KEYS — credential-looking header keys leak via topic.
+    public void headersSensitiveKeys(String bearerToken, String passwordValue) {
+        // Bug: adding `authorization` and `password` headers — these values flow through
+        // the broker as cleartext, are visible to every read-ACL grantee, and persist in
+        // archival sinks (Connect, MirrorMaker2). Credentials belong in the transport
+        // layer (mTLS / SASL / OAuth), not in record headers.
+        ProducerRecord<String, String> record = new ProducerRecord<>("t", "k", "v");
+        record.headers().add("authorization", bearerToken.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        record.headers().add("password", passwordValue.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        record.headers().add(new org.apache.kafka.common.header.internals.RecordHeader(
+                "api-key", "ak_live_REDACTED".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        // Allow-listed: should NOT flag.
+        record.headers().add("idempotency-token", "id-1".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        record.headers().add("trace-id", "abc-123".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
 }

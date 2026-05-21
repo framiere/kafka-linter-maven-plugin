@@ -14,6 +14,8 @@ public final class KafkaTypes {
     public static final String CONSUMER_INTERFACE = "org/apache/kafka/clients/consumer/Consumer";
     public static final String CALLBACK = "org/apache/kafka/clients/producer/Callback";
     public static final String CONSUMER_REBALANCE_LISTENER = "org/apache/kafka/clients/consumer/ConsumerRebalanceListener";
+    public static final String HEADERS_INTERFACE = "org/apache/kafka/common/header/Headers";
+    public static final String RECORD_HEADER = "org/apache/kafka/common/header/internals/RecordHeader";
     public static final String KAFKA_STREAMS = "org/apache/kafka/streams/KafkaStreams";
     public static final String STREAMS_BUILDER = "org/apache/kafka/streams/StreamsBuilder";
     public static final String TOPOLOGY = "org/apache/kafka/streams/Topology";
