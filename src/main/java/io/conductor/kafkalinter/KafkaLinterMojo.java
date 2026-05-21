@@ -421,6 +421,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("setUncaughtExceptionHandler"),
                 desc -> desc != null && desc.equals("(Ljava/lang/Thread$UncaughtExceptionHandler;)V"),
                 "KafkaStreams.setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler) is deprecated since 2.8 (KIP-671) — use the StreamsUncaughtExceptionHandler overload to return REPLACE_THREAD / SHUTDOWN_CLIENT / SHUTDOWN_APPLICATION instead of letting threads die silently."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.PRODUCER_CLOSE_NO_TIMEOUT, s, KafkaTypes.PRODUCER_OWNERS, Set.of("close"),
+                desc -> desc != null && desc.equals("()V"),
+                "Producer.close() with no Duration — blocks for Long.MAX_VALUE waiting for every in-flight send to complete. On a broker outage, every pending record burns its full delivery.timeout.ms before close() returns; pods get SIGKILLed mid-flush. Use close(Duration)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_CLOSE_NO_TIMEOUT, s -> new MethodCallRule(
+                RuleId.ADMIN_CLOSE_NO_TIMEOUT, s, KafkaTypes.ADMIN_OWNERS, Set.of("close"),
+                desc -> desc != null && desc.equals("()V"),
+                "Admin.close() / AdminClient.close() with no Duration — blocks for Long.MAX_VALUE waiting for every in-flight admin request to complete. A slow controller pins shutdown indefinitely. Use close(Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s -> new MethodCallRule(
+                RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s, KafkaTypes.CONSUMER_OWNERS, Set.of("subscribe"),
+                desc -> desc != null && (desc.equals("(Ljava/util/Collection;)V") || desc.equals("(Ljava/util/regex/Pattern;)V")),
+                "Consumer.subscribe(Collection)/subscribe(Pattern) without a ConsumerRebalanceListener — the consumer cannot flush in-memory state, commit final offsets, or release per-partition resources before partition revoke. Pass a ConsumerRebalanceListener."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

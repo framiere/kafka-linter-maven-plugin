@@ -18,9 +18,12 @@ public final class KafkaTypes {
     public static final String SESSION_WINDOWS = "org/apache/kafka/streams/kstream/SessionWindows";
     public static final String MATERIALIZED = "org/apache/kafka/streams/kstream/Materialized";
     public static final String STORE_BUILDER = "org/apache/kafka/streams/state/StoreBuilder";
+    public static final String ADMIN_INTERFACE = "org/apache/kafka/clients/admin/Admin";
+    public static final String ADMIN_CLIENT = "org/apache/kafka/clients/admin/AdminClient";
 
     public static final Set<String> PRODUCER_OWNERS = Set.of(KAFKA_PRODUCER, PRODUCER_INTERFACE);
     public static final Set<String> CONSUMER_OWNERS = Set.of(KAFKA_CONSUMER, CONSUMER_INTERFACE);
+    public static final Set<String> ADMIN_OWNERS = Set.of(ADMIN_INTERFACE, ADMIN_CLIENT);
 
     public static final String FUTURE = "java/util/concurrent/Future";
     public static final String DURATION = "java/time/Duration";

@@ -1379,6 +1379,43 @@ public final class BadKafkaUsage {
         consumer.close();
     }
 
+    // RULE: PRODUCER_CLOSE_NO_TIMEOUT.
+    public void producerCloseNoTimeout() {
+        Properties p = props();
+        KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+        producer.send(new ProducerRecord<>("topic", "k", "v"));
+        // No-Duration close — blocks for Long.MAX_VALUE during a broker outage.
+        producer.close();
+    }
+
+    // RULE: ADMIN_CLOSE_NO_TIMEOUT.
+    public void adminCloseNoTimeout() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "localhost:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        admin.listTopics();
+        // No-Duration close — blocks for Long.MAX_VALUE waiting on every outstanding future.
+        admin.close();
+    }
+
+    // RULE: CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER.
+    public void subscribeWithoutListener() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        // No ConsumerRebalanceListener — partition revoke has no flush/commit hook.
+        consumer.subscribe(java.util.List.of("topic"));
+        consumer.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER (Pattern overload).
+    public void subscribePatternWithoutListener() {
+        Properties p = consumerProps();
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(p);
+        // Pattern-based subscribe with no listener — same hazard as the Collection overload.
+        consumer.subscribe(java.util.regex.Pattern.compile("topic-.*"));
+        consumer.close(Duration.ofSeconds(5));
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");

@@ -528,4 +528,5 @@ public final class BadStreams {
         streams.setUncaughtExceptionHandler((Thread t, Throwable e) ->
                 System.err.println("Stream thread " + t.getName() + " died: " + e));
     }
+
 }

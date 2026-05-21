@@ -1,10 +1,12 @@
 package sample;
 
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 
 import java.time.Duration;
 import java.util.List;
@@ -53,7 +55,12 @@ public final class GoodKafkaUsage {
     }
 
     public void consume() {
-        consumer.subscribe(List.of("my-topic"));
+        consumer.subscribe(List.of("my-topic"), new ConsumerRebalanceListener() {
+            @Override public void onPartitionsRevoked(java.util.Collection<TopicPartition> partitions) {
+                consumer.commitSync(Duration.ofSeconds(10));
+            }
+            @Override public void onPartitionsAssigned(java.util.Collection<TopicPartition> partitions) {}
+        });
         while (running()) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
             for (ConsumerRecord<String, String> r : records) {
@@ -65,8 +72,8 @@ public final class GoodKafkaUsage {
 
     public void shutdown() {
         producer.flush();
-        producer.close();
-        consumer.close();
+        producer.close(Duration.ofSeconds(20));
+        consumer.close(Duration.ofSeconds(20));
     }
 
     private boolean running() { return true; }
