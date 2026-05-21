@@ -2171,6 +2171,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.partitioner.class={value} — deprecated by KIP-794 (Kafka 3.3). Both DefaultPartitioner and UniformStickyPartitioner are superseded by the built-in queue-and-RTT-aware strategy. Delete the line; the new partitioner is strictly better under uneven broker load.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_ONE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_ONE, sev.get(RuleId.SPRING_BOOT_STREAMS_REPLICATION_FACTOR_ONE),
+                    "spring.kafka.streams.replication-factor", "1",
+                    "spring.kafka.streams.replication-factor=1 — Streams internal changelog and repartition topics will be created with replication-factor=1; a single broker restart loses state-store data. Set to 3 (or remove the line to inherit the broker's default.replication.factor).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_ID_GENERIC) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_APPLICATION_ID_GENERIC, sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_ID_GENERIC),
+                    "spring.kafka.streams.application-id",
+                    v -> v != null && KafkaTypes.STREAMS_GENERIC_APPLICATION_IDS.contains(v.trim().toLowerCase()),
+                    "spring.kafka.streams.application-id={value} — generic placeholder. application.id is the cluster-wide unique identity of the Streams app (consumer-group name, changelog topic prefix, state-dir prefix). Two apps with the same id collide on all three. Use a service-specific id including a topology version (e.g. payments-fraud-screening-v3).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_STATE_DIR_TMP) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_STATE_DIR_TMP, sev.get(RuleId.SPRING_BOOT_STREAMS_STATE_DIR_TMP),
+                    "spring.kafka.streams.state-dir",
+                    v -> v != null && (v.startsWith("/tmp") || v.startsWith("/var/tmp")),
+                    "spring.kafka.streams.state-dir={value} — Streams RocksDB state stores on ephemeral /tmp or /var/tmp. systemd-tmpfiles wipes it on reboot; containers wipe it on restart. Every restart triggers a full restore-from-changelog (minutes-to-hours). Mount a persistent volume (e.g. /var/lib/<service>/streams).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
