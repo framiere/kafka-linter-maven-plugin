@@ -2289,6 +2289,32 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.commit.interval.ms above 60 s — long commit windows widen the worst-case re-processing window on crash and lengthen end-to-end latency for downstream consumers waiting on commits. Keep commit.interval.ms ≤ 30 s (default 30 s for at-least-once, 100 ms for EOS).",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_PRODUCTION_EXCEPTION_HANDLER_ALWAYS_CONTINUE),
+                    "spring.kafka.streams.properties.default.production.exception.handler",
+                    v -> v != null && v.contains("AlwaysContinueProductionExceptionHandler"),
+                    "spring.kafka.streams.properties.default.production.exception.handler=AlwaysContinueProductionExceptionHandler — every failed produce (downstream, changelog, repartition) is silently dropped. Changelog drops silently corrupt state stores. Use DefaultProductionExceptionHandler (fail fast) or a selective custom handler.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_LOG_AND_SKIP) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_LOG_AND_SKIP,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_LOG_AND_SKIP),
+                    "spring.kafka.streams.properties.default.timestamp.extractor",
+                    v -> v != null && v.contains("LogAndSkipOnInvalidTimestamp"),
+                    "spring.kafka.streams.properties.default.timestamp.extractor=LogAndSkipOnInvalidTimestamp — bad-timestamp records are dropped silently from every aggregation with only a WARN log line. Use FailOnInvalidTimestamp (default) or a custom extractor that routes to a DLT.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT),
+                    "spring.kafka.streams.properties.processing.guarantee", "at_least_once",
+                    "spring.kafka.streams.properties.processing.guarantee=at_least_once — explicitly setting the Streams default is a smell that often hides a downgrade from EOS. On stateful topologies use exactly_once_v2; on stateless, remove the line.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
