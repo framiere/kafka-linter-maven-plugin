@@ -554,6 +554,20 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("mapValues"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KTable.mapValues with no Named — the mapValues node name is graph-index-derived (KTABLE-MAPVALUES-<N>); editing the topology renumbers the index and silently rebrands every metric tag and (for materialized variants) the changelog/state-store name. Use mapValues(mapper, Named.as(\"...\")) or mapValues(mapper, Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_JOIN_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_KTABLE_JOIN_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin", "outerJoin"),
+                desc -> desc != null
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;")
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
+                "KTable.join/leftJoin/outerJoin with neither Named nor Materialized — both the processor node AND the backing state store + changelog topic are graph-index-derived (KTABLE-MERGE-STATE-STORE-<N>); topology edits orphan the old changelog topic on broker disk and force a full restore from upstream KTable sources (potentially gigabytes) on the next deploy. Use join(other, joiner, Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listTopics"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListTopicsOptions;"),
+                "Admin.listTopics() with no ListTopicsOptions — uses the default request.timeout.ms (~30s) with no caller-visible bound AND defaults listInternal=false, silently excluding __consumer_offsets, *-changelog, *-repartition. Backup/discovery scripts get a falsely-complete topic list. Pass new ListTopicsOptions().timeoutMs(60_000).listInternal(true) as appropriate."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PEEK_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_PEEK_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("peek"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.peek() with no Named — the peek processor node name is graph-index-derived (KSTREAM-PEEK-<N>); per-node metric tags rebrand on every topology edit. Also: audit whether the peek belongs in production at all (debug-style peeks ship every record through a synchronous callback). Use peek(action, Named.as(\"...\"))."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

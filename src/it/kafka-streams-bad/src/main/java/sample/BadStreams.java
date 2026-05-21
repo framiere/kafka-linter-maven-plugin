@@ -775,4 +775,31 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_KTABLE_JOIN_NO_NAMED — KTable.join with neither Named nor Materialized, store + changelog graph-index-derived.
+    public Topology ktableJoinNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        org.apache.kafka.streams.kstream.KTable<String, String> left = b.table("users",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("users-source"),
+                org.apache.kafka.streams.kstream.Materialized.<String, String, org.apache.kafka.streams.state.KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("users-store"));
+        org.apache.kafka.streams.kstream.KTable<String, String> right = b.table("orders",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("orders-source"),
+                org.apache.kafka.streams.kstream.Materialized.<String, String, org.apache.kafka.streams.state.KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("orders-store"));
+        left.join(right, (u, o) -> u + "|" + o)
+                .toStream(org.apache.kafka.streams.kstream.Named.as("joined-to-stream"))
+                .to("users-orders",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("joined-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_PEEK_NO_NAMED — KStream.peek without Named.
+    public Topology peekNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.peek((k, v) -> System.out.println("debug: " + k + " -> " + v))
+                .to("raw-events-mirror",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("mirror-sink"));
+        return b.build();
+    }
+
 }

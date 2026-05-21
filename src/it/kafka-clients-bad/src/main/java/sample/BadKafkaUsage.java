@@ -1454,6 +1454,18 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_LIST_TOPICS_NO_OPTIONS — listTopics with default timeout & listInternal=false silently excludes __consumer_offsets etc.
+    public void adminListTopicsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Set<String> names = admin.listTopics().names().get();
+        for (String name : names) {
+            System.out.println(name);
+        }
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_ALTER_CONFIGS_DEPRECATED — KIP-339: full-replacement alterConfigs resets every key not in payload.
     @SuppressWarnings("deprecation")
     public void adminAlterConfigsDeprecated() {
