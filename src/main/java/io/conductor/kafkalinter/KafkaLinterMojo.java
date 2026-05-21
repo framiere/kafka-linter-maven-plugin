@@ -902,6 +902,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.TOPOLOGY_ADD_PROCESSOR_LEGACY_SUPPLIER, s, Set.of(KafkaTypes.TOPOLOGY), Set.of("addProcessor"),
                 desc -> desc != null && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;"),
                 "Topology.addProcessor(name, ProcessorSupplier, ...) called with the LEGACY org.apache.kafka.streams.processor.ProcessorSupplier — KIP-820 (Kafka 3.0+) replaced it with the typed org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, KOut, VOut>. The legacy interface is on a deprecation timer (removal scheduled for a future Kafka major) and uses untyped K/V Processor#process(K, V) instead of the new Record-based typed API. Migrate to api.ProcessorSupplier and Processor#process(Record)."));
+        addIfEnabled(rules, sev, RuleId.TOPOLOGY_ADD_GLOBAL_STORE_LEGACY_SUPPLIER, s -> new MethodCallRule(
+                RuleId.TOPOLOGY_ADD_GLOBAL_STORE_LEGACY_SUPPLIER, s, Set.of(KafkaTypes.TOPOLOGY), Set.of("addGlobalStore"),
+                desc -> desc != null && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;"),
+                "Topology.addGlobalStore(storeBuilder, ..., ProcessorSupplier) called with the LEGACY org.apache.kafka.streams.processor.ProcessorSupplier — KIP-820 (Kafka 3.0+) added new overloads taking the typed org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, Void, Void>. Global stores are populated by replaying the source topic through this processor on every instance, so a legacy untyped Processor running here means every Streams app instance is using the deprecated API on the replay path. Migrate to api.ProcessorSupplier and Processor#process(Record)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
