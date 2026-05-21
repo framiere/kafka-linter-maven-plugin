@@ -507,6 +507,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 desc -> desc != null
                         && desc.equals("(Lorg/apache/kafka/streams/kstream/KStream;)Lorg/apache/kafka/streams/kstream/KStream;"),
                 "KStream.merge(KStream) with no Named — merge processor node name is graph-index-derived. Per-node metrics tagged by node ID break dashboards on every topology edit. Use merge(other, Named.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
+                RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.KSTREAM), Set.of("toTable"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
+                "KStream.toTable() / toTable(Named) without Materialized — the resulting KTable's internal store and changelog topic are auto-named from the topology graph index. Any topology edit renames them; the new instance sees an empty store, the table is silently empty until upstream re-emits every key. Use toTable(Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PROCESS_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_PROCESS_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("process", "processValues"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.process(supplier, stateStores...) / processValues(supplier, stateStores...) with no Named — the processor node name is graph-index-derived, breaking per-node metric labels (process-rate, dropped-records-rate) on every topology edit. Use process(supplier, Named.as(\"...\"), stateStores...)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s -> new MethodCallRule(
+                RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupByKey"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Grouped;"),
+                "KStream.groupByKey() without Grouped — if the upstream stream is repartition-required (any prior selectKey/map/flatMap), the auto-named repartition topic is graph-index-derived. Topology edits rename it; downstream aggregations restart from offset 0. Use groupByKey(Grouped.as(\"...\"))."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

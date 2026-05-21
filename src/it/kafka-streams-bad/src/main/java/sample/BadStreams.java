@@ -675,4 +675,38 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_TO_TABLE_NO_MATERIALIZED — KStream.toTable() with no Materialized;
+    // resulting KTable's state store and changelog topic are auto-named by graph index.
+    public Topology toTableNoMaterialized() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> events = b.stream("events");
+        org.apache.kafka.streams.kstream.KTable<String, String> table = events.toTable();
+        table.toStream().to("events-table-out");
+        return b.build();
+    }
+
+    // RULE: STREAMS_PROCESS_NO_NAMED — KStream.process(ProcessorSupplier) without Named (KIP-820 replacement).
+    public Topology processNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> events = b.stream("events");
+        events.process(() -> new org.apache.kafka.streams.processor.api.Processor<String, String, String, String>() {
+            private org.apache.kafka.streams.processor.api.ProcessorContext<String, String> ctx;
+            @Override public void init(org.apache.kafka.streams.processor.api.ProcessorContext<String, String> context) { this.ctx = context; }
+            @Override public void process(org.apache.kafka.streams.processor.api.Record<String, String> rec) { ctx.forward(rec); }
+        });
+        return b.build();
+    }
+
+    // RULE: STREAMS_GROUP_BY_KEY_NO_GROUPED — groupByKey() with no Grouped after an upstream re-keying.
+    public Topology groupByKeyNoGrouped() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> events = b.stream("events");
+        events.map((k, v) -> KeyValue.pair(v, v))
+              .groupByKey()
+              .count(Materialized.as("events-per-key"))
+              .toStream()
+              .to("counts");
+        return b.build();
+    }
+
 }
