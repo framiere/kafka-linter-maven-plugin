@@ -250,6 +250,35 @@ public final class KafkaTypes {
     public static final String SPRING_KAFKA_LISTENER_ANNOTATION = "Lorg/springframework/kafka/annotation/KafkaListener;";
     public static final String SPRING_ASYNC_ANNOTATION = "Lorg/springframework/scheduling/annotation/Async;";
 
+    /** HTTP/REST handler annotations: any method annotated with one of these is called per HTTP request. */
+    public static final Set<String> HTTP_HANDLER_ANNOTATIONS = Set.of(
+            // Spring MVC / WebFlux
+            "Lorg/springframework/web/bind/annotation/RequestMapping;",
+            "Lorg/springframework/web/bind/annotation/GetMapping;",
+            "Lorg/springframework/web/bind/annotation/PostMapping;",
+            "Lorg/springframework/web/bind/annotation/PutMapping;",
+            "Lorg/springframework/web/bind/annotation/DeleteMapping;",
+            "Lorg/springframework/web/bind/annotation/PatchMapping;",
+            // JAX-RS (Jakarta)
+            "Ljakarta/ws/rs/Path;",
+            "Ljakarta/ws/rs/GET;",
+            "Ljakarta/ws/rs/POST;",
+            "Ljakarta/ws/rs/PUT;",
+            "Ljakarta/ws/rs/DELETE;",
+            "Ljakarta/ws/rs/PATCH;",
+            "Ljakarta/ws/rs/HEAD;",
+            "Ljakarta/ws/rs/OPTIONS;",
+            // JAX-RS (legacy javax)
+            "Ljavax/ws/rs/Path;",
+            "Ljavax/ws/rs/GET;",
+            "Ljavax/ws/rs/POST;",
+            "Ljavax/ws/rs/PUT;",
+            "Ljavax/ws/rs/DELETE;",
+            "Ljavax/ws/rs/PATCH;",
+            "Ljavax/ws/rs/HEAD;",
+            "Ljavax/ws/rs/OPTIONS;"
+    );
+
     // Jackson polymorphic-typing annotations
     public static final String JACKSON_TYPE_INFO_ANNOTATION = "Lcom/fasterxml/jackson/annotation/JsonTypeInfo;";
     public static final String JACKSON_ACTIVATE_DEFAULT_TYPING_METHOD = "activateDefaultTyping";

@@ -28,6 +28,7 @@ import io.conductor.kafkalinter.rules.clients.PollInRebalanceCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
 import io.conductor.kafkalinter.rules.clients.PropertiesMutatedAfterCtorRule;
 import io.conductor.kafkalinter.rules.clients.ProducerNotClosedRule;
+import io.conductor.kafkalinter.rules.clients.ProducerPerRecordAllocationRule;
 import io.conductor.kafkalinter.rules.clients.ProducerUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordPartitionAndKeyRule;
 import io.conductor.kafkalinter.rules.clients.ProducerTxnIdWithoutIdempotenceRule;
@@ -166,6 +167,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PROPERTIES_MUTATED_AFTER_CTOR, PropertiesMutatedAfterCtorRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_USED_AFTER_CLOSE, ProducerUsedAfterCloseRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_NOT_CLOSED, ProducerNotClosedRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_PER_RECORD_ALLOCATION, ProducerPerRecordAllocationRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_CLOSED, ConsumerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.HEADERS_SENSITIVE_KEYS, HeadersSensitiveKeysRule::new);
