@@ -802,6 +802,24 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_FLAT_MAP_VALUES_NO_NAMED — KStream.flatMapValues without Named, fan-out but not key-changing.
+    public Topology flatMapValuesNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("pageviews",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("pageviews-source"));
+        s.flatMapValues(v -> {
+            java.util.List<String> out = new java.util.ArrayList<>();
+            if (v != null) {
+                for (String event : v.split(",")) {
+                    out.add(event.trim());
+                }
+            }
+            return out;
+        }).to("events-expanded",
+                org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("events-sink"));
+        return b.build();
+    }
+
     // RULE: STREAMS_FLAT_MAP_NO_NAMED — KStream.flatMap without Named, key-changing + fan-out → amplified auto-repartition.
     public Topology flatMapNoNamed() {
         StreamsBuilder b = new StreamsBuilder();
