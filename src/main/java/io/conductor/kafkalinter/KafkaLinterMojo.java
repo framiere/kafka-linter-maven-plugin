@@ -574,6 +574,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_FLAT_MAP_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("flatMap"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.flatMap(KeyValueMapper) with no Named — flatMap is KEY-CHANGING AND fan-out; auto-repartition topic carries N× input throughput. Topology edits orphan N× the broker-disk volume vs map. Use flatMap(mapper, Named.as(\"...\")) — or use flatMapValues then selectKey to isolate fan-out from key-change."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_FILTER_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_KSTREAM_FILTER_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("filter", "filterNot"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.filter/filterNot with no Named — KSTREAM-FILTER-<N> graph-index-derived; per-node dropped-records metric tags rebrand on every topology edit, silently breaking filter-drop-rate alerts. Use filter(predicate, Named.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_MAP_VALUES_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_KSTREAM_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("mapValues"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.mapValues with no Named — KSTREAM-MAPVALUES-<N> graph-index-derived; NOT key-changing so no auto-repartition (safe alternative to map() when only the value changes), but still rebrand metric tags on topology edits. Use mapValues(mapper, Named.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_IN_MEMORY_KV_STORE, s -> new MethodCallRule(
+                RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
+                Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
+                "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeTopicsOptions;"),

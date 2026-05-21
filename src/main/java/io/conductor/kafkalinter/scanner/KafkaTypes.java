@@ -20,6 +20,7 @@ public final class KafkaTypes {
     public static final String TIME_WINDOWED_KSTREAM = "org/apache/kafka/streams/kstream/TimeWindowedKStream";
     public static final String SESSION_WINDOWED_KSTREAM = "org/apache/kafka/streams/kstream/SessionWindowedKStream";
     public static final String BRANCHED_KSTREAM = "org/apache/kafka/streams/kstream/BranchedKStream";
+    public static final String STREAMS_STORES = "org/apache/kafka/streams/state/Stores";
     public static final Set<String> GROUPED_KSTREAM_OWNERS = Set.of(
             KGROUPED_STREAM, KGROUPED_TABLE, TIME_WINDOWED_KSTREAM, SESSION_WINDOWED_KSTREAM
     );

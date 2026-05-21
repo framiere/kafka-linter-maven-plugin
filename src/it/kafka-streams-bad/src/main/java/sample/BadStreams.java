@@ -849,4 +849,40 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_KSTREAM_FILTER_NO_NAMED — KStream.filter/filterNot without Named, name graph-index-derived.
+    public Topology kstreamFilterNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.filter((k, v) -> v != null && !v.isEmpty())
+                .filterNot((k, v) -> v.startsWith("ignore-"))
+                .to("filtered-events",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("filtered-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_KSTREAM_MAP_VALUES_NO_NAMED — KStream.mapValues without Named, name graph-index-derived.
+    public Topology kstreamMapValuesNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.mapValues(v -> v == null ? "" : v.toUpperCase())
+                .to("upper-events",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("upper-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_IN_MEMORY_KV_STORE — Stores.inMemoryKeyValueStore/inMemoryWindowStore/inMemorySessionStore.
+    public Topology inMemoryKeyValueStore() {
+        StreamsBuilder b = new StreamsBuilder();
+        StoreBuilder<KeyValueStore<String, String>> kvBuilder = Stores.keyValueStoreBuilder(
+                Stores.inMemoryKeyValueStore("ephemeral-kv-store"),
+                Serdes.String(), Serdes.String());
+        b.addStateStore(kvBuilder);
+        // also exercise the windowed and session in-memory variants
+        Stores.inMemoryWindowStore("ephemeral-window-store", Duration.ofHours(1), Duration.ofMinutes(5), false);
+        Stores.inMemorySessionStore("ephemeral-session-store", Duration.ofHours(1));
+        return b.build();
+    }
+
 }
