@@ -27,6 +27,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule
 import io.conductor.kafkalinter.rules.connect.ConnectDlqReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqTopicEqualsInputTopicRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJsonConverterSchemasEnableUnsetRule;
+import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBothSetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
@@ -1727,6 +1728,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JSON_CONVERTER_SCHEMAS_ENABLE_UNSET) != Severity.OFF) {
             rules.add(new ConnectJsonConverterSchemasEnableUnsetRule(sev.get(RuleId.CONNECT_JSON_CONVERTER_SCHEMAS_ENABLE_UNSET)));
+        }
+        if (sev.get(RuleId.CONNECT_SINK_TOPICS_AND_TOPICS_REGEX_BOTH_SET) != Severity.OFF) {
+            rules.add(new ConnectSinkTopicsAndTopicsRegexBothSetRule(sev.get(RuleId.CONNECT_SINK_TOPICS_AND_TOPICS_REGEX_BOTH_SET)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
