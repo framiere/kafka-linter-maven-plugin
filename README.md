@@ -1,13 +1,105 @@
 # kafka-linter-maven-plugin
-Minimal Kafka linter for the jvm ecosystem. Catch obvious issues before their bite you.
 
-A Maven plugin that scans your compiled bytecode with [ASM](https://asm.ow2.io/) and flags common Kafka producer / consumer anti-patterns at build time. No runtime overhead, no Kafka cluster needed — just static analysis of `target/classes`.
+A Maven plugin that scans your compiled bytecode with [ASM](https://asm.ow2.io/) and your `application.properties` / `application.yml` and flags common Kafka anti-patterns at build time. No runtime overhead, no Kafka cluster needed — just static analysis of `target/classes` and config files.
+
+![rules](https://img.shields.io/badge/rules-232-c14a1f?style=for-the-badge&labelColor=16140f)
+![categories](https://img.shields.io/badge/categories-9-1f3d36?style=for-the-badge&labelColor=16140f)
+![java](https://img.shields.io/badge/java-17%2B-b58a3a?style=for-the-badge&labelColor=16140f)
+![maven](https://img.shields.io/badge/maven-3.6.3%2B-b58a3a?style=for-the-badge&labelColor=16140f)
 
 - **Group / Artifact**: `io.conductor:kafka-linter-maven-plugin`
 - **Goal**: `kafka-linter:check` (bound to the `verify` phase by default)
-- **Requires**: Java 17+, Maven 3.6.3+
-- **Detects**: 9 rules across producer & consumer code paths
-- **Reports**: `ERROR` (fails the build) or `WARNING` (logged only); every rule is individually tunable
+- **Detects**: **232 rules** across **9 categories** — kafka-clients, kafka-streams, spring-kafka, quarkus-kafka, observability, schema-registry, warpstream, versions, good-practices.
+- **Reports**: `ERROR` (fails the build), `WARNING` (logged), `INFO` (nudge); every rule is individually tunable.
+
+---
+
+## Rule catalog at a glance
+
+Every rule traces to a real production failure mode — data loss, silent footgun, EOL/CVE exposure, observability gap, or the absence of a well-known production default. The full table is in [`docs/rules/_CATALOG.md`](docs/rules/_CATALOG.md). The 9 directories under `docs/rules/`:
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🧱 [kafka-clients](docs/rules/kafka-clients/_INDEX.md)
+**40 rules**
+
+Plain Apache Kafka producers and consumers — the lowest-level surface. `acks`, `enable.idempotence`, `max.in.flight`, offsets, rebalances, headers.
+
+</td>
+<td width="33%" valign="top">
+
+### 🌊 [kafka-streams](docs/rules/kafka-streams/_INDEX.md)
+**47 rules**
+
+Streams DSL, processor API, state stores, EOS v2, timestamp extractors, rocksdb tuning, repartitioning, standby replicas.
+
+</td>
+<td width="33%" valign="top">
+
+### 🌱 [spring-kafka](docs/rules/spring-kafka/_INDEX.md)
+**32 rules**
+
+`@KafkaListener`, `KafkaTemplate`, error handlers, `ErrorHandlingDeserializer`, Spring DSL property paths, passthrough overrides.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🐰 [quarkus-kafka](docs/rules/quarkus-kafka/_INDEX.md)
+**36 rules**
+
+SmallRye Reactive Messaging — `@Incoming`/`@Outgoing`, `Emitter`, channel config, per-channel passthrough, dead-letter-queue.
+
+</td>
+<td width="33%" valign="top">
+
+### 📊 [observability](docs/rules/observability/_INDEX.md)
+**14 rules**
+
+Cross-cutting concerns: interceptors, metric reporters, OTel, deserialization safety (CVE-2023-34040), lambda hygiene, async/reactive bridge.
+
+</td>
+<td width="33%" valign="top">
+
+### 📋 [schema-registry](docs/rules/schema-registry/_INDEX.md)
+**7 rules**
+
+Schema Registry serde configuration, auto-register, subject-naming-strategy, Avro 1.12+ logical-type Java mappings.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### ⚡ [warpstream](docs/rules/warpstream/_INDEX.md)
+**4 rules**
+
+WarpStream-specific tuning — agent-aware client config overrides, S3-class storage semantics.
+
+</td>
+<td width="33%" valign="top">
+
+### 📌 [versions](docs/rules/versions/_INDEX.md)
+**28 rules**
+
+Library-version, EOL, BOM-drift, and CVE rules — `pom.xml` dependency presence/absence/version range.
+
+</td>
+<td width="33%" valign="top">
+
+### ✨ [good-practices](docs/rules/good-practices/_INDEX.md)
+**24 rules**
+
+Positive checks — patterns the linter rewards rather than flags. Builds confidence the configuration is intentional.
+
+</td>
+</tr>
+</table>
+
+Every rule doc carries a four-paragraph editorial block (tagline, mechanism, impact, why-it-matters) so reading the catalog is also reading a curated guide to production Kafka. Rules whose obvious fix has a non-obvious correctness cost are marked 🤝 — read those carefully before changing prod config.
 
 ---
 
