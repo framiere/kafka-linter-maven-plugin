@@ -66,6 +66,12 @@ public final class BadKafkaUsage {
         p.send(new ProducerRecord<>("t", "v"));
     }
 
+    // RULE: PRODUCER_RECORD_PARTITION_AND_KEY — explicit partition bypasses the partitioner.
+    public void producerRecordPartitionAndKey(KafkaProducer<String, String> p) {
+        int chosenPartition = Math.abs("k".hashCode()) % 4;
+        p.send(new ProducerRecord<>("t", chosenPartition, "k", "v"), (md, ex) -> {});
+    }
+
     // RULE: PRODUCER_FLUSH_IN_LOOP.
     public void producerFlushInLoop(KafkaProducer<String, String> p) {
         for (int i = 0; i < 10; i++) {
