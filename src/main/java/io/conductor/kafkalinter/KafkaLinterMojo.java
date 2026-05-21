@@ -629,6 +629,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;")
                         && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
                 "Topology.addProcessor / Topology.addGlobalStore / StreamsBuilder.addGlobalStore overloads taking the legacy org.apache.kafka.streams.processor.ProcessorSupplier are deprecated since Kafka 3.3 (KIP-820). The new org.apache.kafka.streams.processor.api.ProcessorSupplier returns Processor<KIn, VIn, KOut, VOut> with typed Record<KIn, VIn>, named-child fan-out via context.forward(record, childName), and a compile-time fixed-key variant (FixedKeyProcessor) that the legacy API lacks. Change the import from `org.apache.kafka.streams.processor.ProcessorSupplier` to `org.apache.kafka.streams.processor.api.ProcessorSupplier` and refactor the Processor's process(K, V) into process(Record<K, V> record)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_DESCRIBE_TOPICS_RESULT),
+                Set.of("values", "all"),
+                "DescribeTopicsResult.values() / DescribeTopicsResult.all() deprecated since Kafka 3.1 (KIP-516) — both predate topic IDs and silently return an EMPTY map when the underlying describeTopics call was made with TopicCollection.ofTopicIds(...). Migrate to topicNameValues() / allTopicNames() (if you queried by topic NAME) or topicIdValues() / allTopicIds() (if you queried by topic ID). The new accessors are identical in shape — same Map type, same KafkaFuture wrapping — they just communicate which key-space the result lives in and refuse to silently return empty results from the wrong-keyed query."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_FEATURE_UPDATE),
+                Set.of("<init>", "allowDowngrade"),
+                desc -> desc != null && (desc.equals("(SZ)V") || desc.equals("()Z")),
+                "FeatureUpdate(short, boolean) constructor and FeatureUpdate.allowDowngrade() getter deprecated since Kafka 3.3 (KIP-778). The boolean flag conflates SAFE_DOWNGRADE (data files still readable) with UNSAFE_DOWNGRADE (broker may refuse to start) — there is no boolean expression for the unsafe path, so old-API callers cannot force a data-format-breaking downgrade. Replace with new FeatureUpdate(version, FeatureUpdate.UpgradeType.UPGRADE | SAFE_DOWNGRADE | UNSAFE_DOWNGRADE) and update.upgradeType() != UpgradeType.UPGRADE for read-side checks."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_OPTIONS),
+                Set.of("topicPartitions"),
+                "ListConsumerGroupOffsetsOptions.topicPartitions(List<TopicPartition>) / topicPartitions() deprecated since Kafka 3.3 (KIP-709) — the per-Options TP filter is silently IGNORED by the new batched Admin.listConsumerGroupOffsets(Map<String, ListConsumerGroupOffsetsSpec>) overload, where each Spec carries its own per-group TP filter. Use new ListConsumerGroupOffsetsSpec().topicPartitions(tps) per-group inside the Map; the batched form fans out OFFSET_FETCH RPCs to all coordinators in parallel instead of N × broker-RTT sequential per-group queries."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

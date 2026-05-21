@@ -32,6 +32,9 @@ public final class KafkaTypes {
     public static final String STORE_BUILDER = "org/apache/kafka/streams/state/StoreBuilder";
     public static final String ADMIN_INTERFACE = "org/apache/kafka/clients/admin/Admin";
     public static final String ADMIN_CLIENT = "org/apache/kafka/clients/admin/AdminClient";
+    public static final String ADMIN_DESCRIBE_TOPICS_RESULT = "org/apache/kafka/clients/admin/DescribeTopicsResult";
+    public static final String ADMIN_FEATURE_UPDATE = "org/apache/kafka/clients/admin/FeatureUpdate";
+    public static final String ADMIN_LIST_CONSUMER_GROUP_OFFSETS_OPTIONS = "org/apache/kafka/clients/admin/ListConsumerGroupOffsetsOptions";
     public static final String SUPPRESSED_BUFFER_CONFIG = "org/apache/kafka/streams/kstream/Suppressed$BufferConfig";
 
     public static final Set<String> PRODUCER_OWNERS = Set.of(KAFKA_PRODUCER, PRODUCER_INTERFACE);

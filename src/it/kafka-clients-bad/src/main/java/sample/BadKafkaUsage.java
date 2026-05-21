@@ -1792,6 +1792,45 @@ public final class BadKafkaUsage {
         }
     }
 
+    // RULE: ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED — DescribeTopicsResult.values()/.all() deprecated since 3.1 (KIP-516).
+    public void describeTopicsLegacyAccessors() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        org.apache.kafka.clients.admin.DescribeTopicsResult r = admin.describeTopics(java.util.List.of("orders"));
+        // Bug 1: legacy values() — silently empty if the underlying call was made via TopicCollection.ofTopicIds(...).
+        java.util.Map<String, org.apache.kafka.common.KafkaFuture<org.apache.kafka.clients.admin.TopicDescription>> v = r.values();
+        v.size();
+        // Bug 2: legacy all() — same problem; use allTopicNames() or allTopicIds() per the underlying query key-space.
+        java.util.Map<String, org.apache.kafka.clients.admin.TopicDescription> a = r.all().get();
+        a.size();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED — boolean-flag constructor + allowDowngrade() getter deprecated since 3.3 (KIP-778).
+    public void featureUpdateAllowDowngradeDeprecated() {
+        // Bug 1: deprecated (short, boolean) constructor — cannot express UNSAFE_DOWNGRADE; binary flag conflates safety regimes.
+        org.apache.kafka.clients.admin.FeatureUpdate u = new org.apache.kafka.clients.admin.FeatureUpdate((short) 5, true);
+        // Bug 2: deprecated allowDowngrade() getter — replace reads with upgradeType() != UpgradeType.UPGRADE.
+        boolean allow = u.allowDowngrade();
+        System.out.println(allow);
+    }
+
+    // RULE: ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED — per-Options topicPartitions filter deprecated since 3.3 (KIP-709).
+    public void listConsumerGroupOffsetsOptionsTopicPartitionsDeprecated() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        org.apache.kafka.clients.admin.ListConsumerGroupOffsetsOptions opts =
+                new org.apache.kafka.clients.admin.ListConsumerGroupOffsetsOptions();
+        // Bug 1: deprecated topicPartitions(List) setter — silently ignored by the batched Map-based overload.
+        opts.topicPartitions(java.util.List.of(new org.apache.kafka.common.TopicPartition("orders", 0)));
+        // Bug 2: deprecated topicPartitions() getter — read-side wiring on the legacy field.
+        java.util.List<org.apache.kafka.common.TopicPartition> filter = opts.topicPartitions();
+        if (filter != null) filter.size();
+        admin.close(Duration.ofSeconds(5));
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
