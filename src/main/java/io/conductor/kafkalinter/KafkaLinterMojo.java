@@ -52,6 +52,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListene
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsStoreQueryParametersNoStaleStoresRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
 import io.conductor.kafkalinter.rules.version.KafkaClientsCveJndiLdapRule;
@@ -182,6 +183,8 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_CLOSED, ConsumerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_NOT_CLOSED, AdminNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_NOT_CLOSED, StreamsNotClosedRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_STORE_QUERY_PARAMETERS_NO_STALE_STORES,
+                StreamsStoreQueryParametersNoStaleStoresRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_THREAD_SAFE, ConsumerNotThreadSafeRule::new);
         addIfEnabled(rules, sev, RuleId.STRING_SERIALIZER_NON_STRING, StringSerializerNonStringRule::new);

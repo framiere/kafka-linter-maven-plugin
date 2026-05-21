@@ -17,6 +17,7 @@ public final class KafkaTypes {
     public static final String HEADERS_INTERFACE = "org/apache/kafka/common/header/Headers";
     public static final String RECORD_HEADER = "org/apache/kafka/common/header/internals/RecordHeader";
     public static final String KAFKA_STREAMS = "org/apache/kafka/streams/KafkaStreams";
+    public static final String STORE_QUERY_PARAMETERS = "org/apache/kafka/streams/StoreQueryParameters";
     public static final String STREAMS_BUILDER = "org/apache/kafka/streams/StreamsBuilder";
     public static final String TOPOLOGY = "org/apache/kafka/streams/Topology";
     public static final String KSTREAM = "org/apache/kafka/streams/kstream/KStream";
