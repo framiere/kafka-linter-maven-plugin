@@ -3,6 +3,7 @@ package io.conductor.kafkalinter;
 import io.conductor.kafkalinter.report.Reporter;
 import io.conductor.kafkalinter.rules.ConsumerAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.ConsumerCommitPerRecordRule;
+import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
 import io.conductor.kafkalinter.rules.ConsumerSubscribeInLoopRule;
@@ -217,6 +218,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_IN_LOOP, ConsumerSubscribeInLoopRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_INFINITE_DURATION, ConsumerPollInfiniteDurationRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_ZERO_DURATION, ProducerCloseZeroDurationRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_ZERO_DURATION, ConsumerCloseZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_CALLBACK, ProducerFlushInCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
