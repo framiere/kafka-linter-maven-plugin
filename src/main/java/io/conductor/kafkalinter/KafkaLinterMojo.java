@@ -729,6 +729,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of("timeWindowedSerdeFrom"),
                 desc -> "(Ljava/lang/Class;)Lorg/apache/kafka/common/serialization/Serde;".equals(desc),
                 "WindowedSerdes.timeWindowedSerdeFrom(Class) — the 1-arg static factory that omits windowSize — is deprecated since Kafka Streams 2.8 (KIP-659). Internally it wires a TimeWindowedDeserializer without windowSize, so the resulting Serde<Windowed<T>> produces Windowed<T> instances with bogus windowEnd. Use the 2-arg form: WindowedSerdes.timeWindowedSerdeFrom(InnerKey.class, Duration.ofMinutes(5).toMillis())."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 0 && n < 30_000L; },
+                "transaction.timeout.ms={value} — below 30 s. The coordinator's per-transaction timer fires on routine flush() + commit-marker round-trips; in-flight transactions are aborted before commitTransaction() returns, throwing InvalidProducerEpochException. Default 60000; values below 30 s break EOS guarantees under any modest broker pressure or GC pause."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_DELIVERY_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.PRODUCER_DELIVERY_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.DELIVERY_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 0 && n < 30_000L; },
+                "delivery.timeout.ms={value} — below 30 s. With default request.timeout.ms=30000, the producer enforces delivery.timeout.ms >= linger.ms + request.timeout.ms at construction; values much below 30 s either fail at startup or, if request.timeout.ms is also low, surface false TimeoutException callbacks under broker hiccups and ship duplicate records on application retry."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_SESSION_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
+                RuleId.CONSUMER_SESSION_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.SESSION_TIMEOUT_MS_KEY,
+                v -> { long n = parseLongOrZero(v); return n > 0 && n < 10_000L; },
+                "session.timeout.ms={value} — below 10 s. Broker enforces group.min.session.timeout.ms (default 6 s) as a hard floor; values above 6 s but below 10 s rebalance-storm under normal JVM GC pauses (2-9 s on G1/ZGC under K8s memory pressure). Default 45000 since KIP-389 (Kafka 2.5) for this reason."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),
