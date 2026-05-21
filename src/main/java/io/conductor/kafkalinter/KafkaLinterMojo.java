@@ -1953,6 +1953,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.template.default-topic={value} — unresolved ${...} placeholder; the literal string becomes the default topic and every KafkaTemplate.send(payload) shorthand call throws InvalidTopicException at the broker.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_SERVER_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_APPLICATION_SERVER_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_SERVER_PLACEHOLDER),
+                    "spring.kafka.streams.properties.application.server",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.streams.properties.application.server={value} — unresolved ${...} placeholder; the local Streams instance advertises a literal host:port to peers, and every interactive-query request routed to this instance fails with UnknownHostException or NumberFormatException.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_ADMIN_FAIL_FAST_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_ADMIN_FAIL_FAST_FALSE, sev.get(RuleId.SPRING_BOOT_ADMIN_FAIL_FAST_FALSE),
+                    "spring.kafka.admin.fail-fast", "false",
+                    "spring.kafka.admin.fail-fast=false — KafkaAdmin silently retries broker connection on startup; misconfigured bootstrap-servers, expired credentials, or a down cluster don't crash the application but leave NewTopic beans unapplied and the cluster admin client in a permanent reconnection loop.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_CLIENT_ID_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_CLIENT_ID_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_CONSUMER_CLIENT_ID_PLACEHOLDER),
+                    "spring.kafka.consumer.client-id",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.consumer.client-id={value} — unresolved ${...} placeholder; the literal string becomes client.id, broker-side quotas and metrics group every misconfigured pod into one quota bucket, and operational tooling can't attribute behavior to a specific instance.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
