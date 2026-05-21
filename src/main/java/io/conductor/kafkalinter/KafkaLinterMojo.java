@@ -2000,6 +2000,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.client-id={value} — generic value; broker-side quotas and metrics can't distinguish this application from every other app that copy-pasted the same identifier. Set a value that includes the application name and environment.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_CLIENT_ID_GENERIC) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_CLIENT_ID_GENERIC, sev.get(RuleId.SPRING_BOOT_CONSUMER_CLIENT_ID_GENERIC),
+                    "spring.kafka.consumer.client-id",
+                    v -> v != null && io.conductor.kafkalinter.scanner.KafkaTypes.KAFKA_GENERIC_CLIENT_IDS.contains(v.trim().toLowerCase(java.util.Locale.ROOT)),
+                    "spring.kafka.consumer.client-id={value} — generic value; broker-side quotas and metrics can't distinguish this application from every other app that copy-pasted the same identifier. Set a value that includes the application name and environment.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_CLIENT_ID_GENERIC) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_CLIENT_ID_GENERIC, sev.get(RuleId.SPRING_BOOT_STREAMS_CLIENT_ID_GENERIC),
+                    "spring.kafka.streams.client-id",
+                    v -> v != null && io.conductor.kafkalinter.scanner.KafkaTypes.KAFKA_GENERIC_CLIENT_IDS.contains(v.trim().toLowerCase(java.util.Locale.ROOT)),
+                    "spring.kafka.streams.client-id={value} — generic value; every internal Streams client.id carries the generic prefix and broker observability/quotas collapse across unrelated Streams apps. Set a value that includes the application name.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_LOG_CONTAINER_CONFIG_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_LISTENER_LOG_CONTAINER_CONFIG_TRUE, sev.get(RuleId.SPRING_BOOT_LISTENER_LOG_CONTAINER_CONFIG_TRUE),
+                    "spring.kafka.listener.log-container-config", "true",
+                    "spring.kafka.listener.log-container-config=true — Spring dumps the full effective consumer config at INFO on every container start, including credentials (sasl.jaas.config, ssl.*-password) and other sensitive properties; production logs leak secrets and bury real signal in restart noise.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
