@@ -2215,6 +2215,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.bootstrap.servers={value} — overrides spring.kafka.bootstrap-servers for the consumer only. The consumer reads from a different cluster than the producer of the same application; messages the producer writes never reach this consumer. Remove this key.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_SET),
+                    "spring.kafka.consumer.properties.session.timeout.ms",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.session.timeout.ms={value} — silently overrides spring.kafka.consumer.session-timeout. The two settings target the same broker-side key at different scales; the passthrough wins, leaving the DSL line dead. Remove this key and use spring.kafka.consumer.session-timeout instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_HEARTBEAT_INTERVAL_MS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_HEARTBEAT_INTERVAL_MS_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_HEARTBEAT_INTERVAL_MS_SET),
+                    "spring.kafka.consumer.properties.heartbeat.interval.ms",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.heartbeat.interval.ms={value} — silently overrides spring.kafka.consumer.heartbeat-interval. The session-timeout / heartbeat-interval invariant (heartbeat ≤ session-timeout/3) can be silently violated; consumer fails to join the group. Remove this key and use spring.kafka.consumer.heartbeat-interval instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MIN_BYTES_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MIN_BYTES_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_FETCH_MIN_BYTES_SET),
+                    "spring.kafka.consumer.properties.fetch.min.bytes",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.fetch.min.bytes={value} — silently overrides spring.kafka.consumer.fetch-min-size. Bypasses the typed DataSize parser; the operator's tuning knob in the DSL has no effect. Remove this key and use spring.kafka.consumer.fetch-min-size instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
