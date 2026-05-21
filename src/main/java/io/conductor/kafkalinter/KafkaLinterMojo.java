@@ -15,6 +15,7 @@ import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.HeadersSensitiveKeysRule;
+import io.conductor.kafkalinter.rules.clients.SecurityProtocolPlaintextRemoteRule;
 import io.conductor.kafkalinter.rules.clients.KafkaClientTypoGroupIdRule;
 import io.conductor.kafkalinter.rules.clients.PollInRebalanceCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
@@ -1520,6 +1521,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.JAVA_VERSION_TOO_LOW) != Severity.OFF) {
             rules.add(new JavaVersionTooLowRule(sev.get(RuleId.JAVA_VERSION_TOO_LOW)));
+        }
+        if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT_REMOTE) != Severity.OFF) {
+            rules.add(new SecurityProtocolPlaintextRemoteRule(sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT_REMOTE)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
