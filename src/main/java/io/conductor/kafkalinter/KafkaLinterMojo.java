@@ -2340,6 +2340,33 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.restore.consumer.auto.offset.reset=latest — the restore consumer skips the changelog replay, so a new task starts with empty state and silently produces wrong aggregation/join results until every key is re-populated. Remove the override.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_MAX_TASK_IDLE_MS_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_MAX_TASK_IDLE_MS_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_MAX_TASK_IDLE_MS_HIGH),
+                    "spring.kafka.streams.properties.max.task.idle.ms",
+                    v -> parseLongOrZero(v) > 30_000L,
+                    "spring.kafka.streams.properties.max.task.idle.ms above 30 s — topology stalls waiting on quiet partitions, inflating end-to-end latency. Default 0 is the right starting point.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_TASK_TIMEOUT_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_TASK_TIMEOUT_MS_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_TASK_TIMEOUT_MS_TOO_HIGH),
+                    "spring.kafka.streams.properties.task.timeout.ms",
+                    v -> parseLongOrZero(v) > 1_800_000L,
+                    "spring.kafka.streams.properties.task.timeout.ms above 30 minutes — stuck tasks swallow broker errors silently instead of failing fast and triggering recovery.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STREAM_THREADS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_NUM_STREAM_THREADS_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_NUM_STREAM_THREADS_TOO_HIGH),
+                    "spring.kafka.streams.properties.num.stream.threads",
+                    v -> parseLongOrZero(v) > 64L,
+                    "spring.kafka.streams.properties.num.stream.threads above 64 — threads beyond the assignable task count sit idle, claiming heap and metric overhead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
