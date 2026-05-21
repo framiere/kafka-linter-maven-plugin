@@ -1435,6 +1435,25 @@ public final class BadKafkaUsage {
         producer.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_CREATE_TOPICS_NO_OPTIONS — createTopics with no CreateTopicsOptions.
+    public void adminCreateTopicsNoOptions() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        admin.createTopics(java.util.List.of(
+                new org.apache.kafka.clients.admin.NewTopic("events-v1", 6, (short) 3)));
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_DELETE_TOPICS_NO_OPTIONS — deleteTopics with no DeleteTopicsOptions.
+    public void adminDeleteTopicsNoOptions() {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        admin.deleteTopics(java.util.List.of("events-v0"));
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED — String-groupId overload bypasses KIP-447 fencing.
     public void sendOffsetsToTxnDeprecatedGroupId() {
         Properties pp = props();

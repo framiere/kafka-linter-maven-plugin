@@ -709,6 +709,18 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_SPLIT_NO_NAMED — split() with no Named, prefix of branch map keys.
+    public Topology splitNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> events = b.stream("events");
+        java.util.Map<String, KStream<String, String>> branches = events
+                .split()
+                .branch((k, v) -> v != null, org.apache.kafka.streams.kstream.Branched.as("non-null"))
+                .defaultBranch();
+        if (branches.isEmpty()) { throw new IllegalStateException(); }
+        return b.build();
+    }
+
     // RULE: STREAMS_BRANCHED_NO_NAMED — split().branch(predicate) with no Branched.as(...).
     public Topology branchedNoNamed() {
         StreamsBuilder b = new StreamsBuilder();

@@ -531,6 +531,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_TO_NO_PRODUCED, s, Set.of(KafkaTypes.KSTREAM), Set.of("to"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Produced;"),
                 "KStream.to(topic) with no Produced — sink node name is graph-index-derived (KSTREAM-SINK-<N>) AND serdes default to global default.key.serde / default.value.serde, so config-level changes silently corrupt this sink's serialization. Use to(topic, Produced.with(keySerde, valueSerde).withName(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SPLIT_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_SPLIT_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("split"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.split() with no Named — the split parent node is graph-index-derived (KSTREAM-BRANCH-<N>) and prefixes every branch map key. Even branches passed Branched.as(\"x\") end up as keys \"<auto-name>-x\". Use split(Named.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("createTopics"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/CreateTopicsOptions;"),
+                "Admin.createTopics(Collection<NewTopic>) with no CreateTopicsOptions — uses the default request.timeout.ms (~30s) with no caller-visible bound. Pass new CreateTopicsOptions().timeoutMs(60_000) so retry logic can distinguish 'in flight' from 'failed'."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteTopics"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteTopicsOptions;"),
+                "Admin.deleteTopics() with no DeleteTopicsOptions — destructive operation using the default request.timeout.ms (~30s) with no caller-visible bound; TimeoutException does NOT mean the delete failed. Pass new DeleteTopicsOptions().timeoutMs(60_000)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
