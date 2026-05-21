@@ -16,6 +16,7 @@ import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerHeartbeatSessionRatioRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerSeekBeforePollRule;
 import io.conductor.kafkalinter.rules.clients.HeadersSensitiveKeysRule;
 import io.conductor.kafkalinter.rules.clients.SecurityProtocolPlaintextRemoteRule;
 import io.conductor.kafkalinter.rules.clients.KafkaClientTypoGroupIdRule;
@@ -154,6 +155,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_PARTITION_AND_KEY, ProducerRecordPartitionAndKeyRule::new);
         addIfEnabled(rules, sev, RuleId.COMMIT_ASYNC_NO_FINAL_SYNC, CommitAsyncNoFinalSyncRule::new);
         addIfEnabled(rules, sev, RuleId.POLL_IN_REBALANCE_CALLBACK, PollInRebalanceCallbackRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_SEEK_BEFORE_POLL, ConsumerSeekBeforePollRule::new);
         addIfEnabled(rules, sev, RuleId.HEADERS_SENSITIVE_KEYS, HeadersSensitiveKeysRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BLOCKING_GET, ProducerSendBlockingGetRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NO_CALLBACK, ProducerSendNoCallbackRule::new);
