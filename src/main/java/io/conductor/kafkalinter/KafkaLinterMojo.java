@@ -36,6 +36,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
+import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
@@ -1755,6 +1756,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_AVRO_AUTO_REGISTER_SCHEMAS_TRUE) != Severity.OFF) {
             rules.add(new ConnectAvroAutoRegisterSchemasTrueRule(sev.get(RuleId.CONNECT_AVRO_AUTO_REGISTER_SCHEMAS_TRUE)));
+        }
+        if (sev.get(RuleId.CONNECT_S3_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE) != Severity.OFF) {
+            rules.add(new ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule(sev.get(RuleId.CONNECT_S3_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
