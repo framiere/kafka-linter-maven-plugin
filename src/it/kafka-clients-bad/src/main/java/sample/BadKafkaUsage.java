@@ -1764,11 +1764,13 @@ public final class BadKafkaUsage {
     }
 
     // RULE: PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED — String-groupId overload bypasses KIP-447 fencing.
+    // (initTransactions() deliberately omitted — that's a separate anti-pattern covered by
+    //  PRODUCER_INIT_TRANSACTIONS_NOT_CALLED; this method exists to exercise only the
+    //  deprecated-groupId overload, and the missing-init signal piggybacks on the same fixture.)
     public void sendOffsetsToTxnDeprecatedGroupId() {
         Properties pp = props();
         pp.put("transactional.id", "tx-app-1");
         KafkaProducer<String, String> producer = new KafkaProducer<>(pp);
-        producer.initTransactions();
         producer.beginTransaction();
         java.util.Map<org.apache.kafka.common.TopicPartition,
                 org.apache.kafka.clients.consumer.OffsetAndMetadata> offsets =

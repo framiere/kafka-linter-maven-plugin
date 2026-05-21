@@ -14,6 +14,7 @@ import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
+import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
 import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
@@ -1571,6 +1572,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SPRING_RETRYABLE_TOPIC_NO_KAFKA_TEMPLATE) != Severity.OFF) {
             rules.add(new SpringRetryableTopicNoKafkaTemplateRule(sev.get(RuleId.SPRING_RETRYABLE_TOPIC_NO_KAFKA_TEMPLATE)));
+        }
+        if (sev.get(RuleId.PRODUCER_INIT_TRANSACTIONS_NOT_CALLED) != Severity.OFF) {
+            rules.add(new ProducerInitTransactionsNotCalledRule(sev.get(RuleId.PRODUCER_INIT_TRANSACTIONS_NOT_CALLED)));
         }
         if (sev.get(RuleId.QK_DEVSERVICES_IN_PROD) != Severity.OFF) {
             rules.add(new QkDevservicesInProdRule(sev.get(RuleId.QK_DEVSERVICES_IN_PROD)));
