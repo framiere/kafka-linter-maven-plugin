@@ -3,6 +3,7 @@ package io.conductor.kafkalinter;
 import io.conductor.kafkalinter.report.Reporter;
 import io.conductor.kafkalinter.rules.ConsumerAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.ConsumerCommitPerRecordRule;
+import io.conductor.kafkalinter.rules.AdminCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
@@ -221,6 +222,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_INFINITE_DURATION, ConsumerPollInfiniteDurationRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_ZERO_DURATION, ProducerCloseZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_ZERO_DURATION, ConsumerCloseZeroDurationRule::new);
+        addIfEnabled(rules, sev, RuleId.ADMIN_CLOSE_ZERO_DURATION, AdminCloseZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_CLOSE_ZERO_DURATION, StreamsCloseZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REMOVE_THREAD_ZERO_DURATION,
                 StreamsRemoveThreadZeroDurationRule::new);
