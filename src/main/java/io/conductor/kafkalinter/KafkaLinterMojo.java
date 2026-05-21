@@ -2701,6 +2701,31 @@ public class KafkaLinterMojo extends AbstractMojo {
                         "org.springframework.kafka", "spring-kafka"));
             }
         }
+        if (sev.get(RuleId.SPRING_BOOT_JSON_USE_TYPE_HEADERS_FALSE) != Severity.OFF) {
+            Severity s = sev.get(RuleId.SPRING_BOOT_JSON_USE_TYPE_HEADERS_FALSE);
+            String detail = "spring.json.use.type.headers=false — Spring's JsonDeserializer ignores the producer's __TypeId__ header and falls back to spring.json.value.default.type (default java.lang.Object → LinkedHashMap). Polymorphic topics deserialize to the wrong runtime type and downstream casts throw ClassCastException.";
+            for (String key : new String[]{
+                    "spring.kafka.consumer.properties.spring.json.use.type.headers",
+                    "spring.kafka.producer.properties.spring.json.use.type.headers",
+                    "spring.kafka.properties.spring.json.use.type.headers"}) {
+                rules.add(PropertyFileRule.literal(
+                        RuleId.SPRING_BOOT_JSON_USE_TYPE_HEADERS_FALSE, s,
+                        key, "false", detail,
+                        "org.springframework.kafka", "spring-kafka"));
+            }
+        }
+        if (sev.get(RuleId.SPRING_BOOT_JSON_VALUE_DEFAULT_TYPE_OBJECT) != Severity.OFF) {
+            Severity s = sev.get(RuleId.SPRING_BOOT_JSON_VALUE_DEFAULT_TYPE_OBJECT);
+            String detail = "spring.json.value.default.type=java.lang.Object — explicit declaration of the framework's fallback type. Every record without a resolvable __TypeId__ header materializes as LinkedHashMap and downstream typed code (listener overloads, casts, convertValue) silently misroutes or throws. Set to a concrete class, or delete and rely on the type header.";
+            for (String key : new String[]{
+                    "spring.kafka.consumer.properties.spring.json.value.default.type",
+                    "spring.kafka.properties.spring.json.value.default.type"}) {
+                rules.add(PropertyFileRule.literal(
+                        RuleId.SPRING_BOOT_JSON_VALUE_DEFAULT_TYPE_OBJECT, s,
+                        key, "java.lang.Object", detail,
+                        "org.springframework.kafka", "spring-kafka"));
+            }
+        }
         if (sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO, sev.get(RuleId.SPRING_BOOT_PRODUCER_LINGER_MS_ZERO),
