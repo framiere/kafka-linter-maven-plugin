@@ -791,6 +791,35 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_MAP_NO_NAMED — KStream.map without Named, key-changing → auto-repartition graph-index-derived.
+    public Topology mapNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("raw-events",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("raw-events-source"));
+        s.map((k, v) -> org.apache.kafka.streams.KeyValue.pair(v == null ? "null-key" : v.substring(0, 1), v))
+                .to("rekeyed-events",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("rekeyed-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_FLAT_MAP_NO_NAMED — KStream.flatMap without Named, key-changing + fan-out → amplified auto-repartition.
+    public Topology flatMapNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> s = b.stream("documents",
+                org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("documents-source"));
+        s.flatMap((k, v) -> {
+            java.util.List<org.apache.kafka.streams.KeyValue<String, String>> out = new java.util.ArrayList<>();
+            if (v != null) {
+                for (String term : v.split("\\s+")) {
+                    out.add(org.apache.kafka.streams.KeyValue.pair(term, k));
+                }
+            }
+            return out;
+        }).to("terms-index",
+                org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("terms-sink"));
+        return b.build();
+    }
+
     // RULE: STREAMS_PEEK_NO_NAMED — KStream.peek without Named.
     public Topology peekNoNamed() {
         StreamsBuilder b = new StreamsBuilder();

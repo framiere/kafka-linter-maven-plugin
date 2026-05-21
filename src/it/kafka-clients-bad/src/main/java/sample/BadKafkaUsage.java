@@ -1454,6 +1454,17 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DESCRIBE_TOPICS_NO_OPTIONS — describeTopics with no options leaves authorizedOperations() == null.
+    public void adminDescribeTopicsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<String, org.apache.kafka.clients.admin.TopicDescription> td =
+                admin.describeTopics(java.util.List.of("events-v1", "events-v0")).allTopicNames().get();
+        td.forEach((name, desc) -> System.out.println(name + " -> partitions=" + desc.partitions().size()));
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_DESCRIBE_CONFIGS_NO_OPTIONS — describeConfigs with no options gets surface values with no synonym chain.
     public void adminDescribeConfigsNoOptions() throws Exception {
         Properties p = new Properties();

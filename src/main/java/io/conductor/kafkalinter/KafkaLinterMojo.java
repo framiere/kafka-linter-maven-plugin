@@ -554,6 +554,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("mapValues"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KTable.mapValues with no Named — the mapValues node name is graph-index-derived (KTABLE-MAPVALUES-<N>); editing the topology renumbers the index and silently rebrands every metric tag and (for materialized variants) the changelog/state-store name. Use mapValues(mapper, Named.as(\"...\")) or mapValues(mapper, Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MAP_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_MAP_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("map"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.map(KeyValueMapper) with no Named — map is KEY-CHANGING; any downstream stateful op silently inserts an auto-repartition whose topic name is graph-index-derived (KSTREAM-KEY-SELECT-<N>). Topology edits orphan the old repartition topic on broker disk and force a full replay on next deploy. Use map(mapper, Named.as(\"...\")) — or use mapValues if no key change is needed."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_MAP_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_FLAT_MAP_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("flatMap"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
+                "KStream.flatMap(KeyValueMapper) with no Named — flatMap is KEY-CHANGING AND fan-out; auto-repartition topic carries N× input throughput. Topology edits orphan N× the broker-disk volume vs map. Use flatMap(mapper, Named.as(\"...\")) — or use flatMapValues then selectKey to isolate fan-out from key-change."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeTopics"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeTopicsOptions;"),
+                "Admin.describeTopics() with no DescribeTopicsOptions — inherits default timeout AND defaults includeAuthorizedOperations=false; the TopicDescription's authorizedOperations() returns null, silently breaking ACL-audit / migration tooling. Pass new DescribeTopicsOptions().timeoutMs(60_000).includeAuthorizedOperations(true)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
