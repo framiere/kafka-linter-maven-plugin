@@ -2315,6 +2315,31 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.processing.guarantee=at_least_once — explicitly setting the Streams default is a smell that often hides a downgrade from EOS. On stateful topologies use exactly_once_v2; on stateless, remove the line.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_TIMESTAMP_EXTRACTOR_WALL_CLOCK),
+                    "spring.kafka.streams.properties.default.timestamp.extractor",
+                    v -> v != null && v.contains("WallclockTimestampExtractor"),
+                    "spring.kafka.streams.properties.default.timestamp.extractor=WallclockTimestampExtractor — every windowed aggregation, every join window, every time-based operator silently uses ingestion wall clock instead of event time. Use FailOnInvalidTimestamp (default).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_GLOBAL_CONSUMER_AUTO_OFFSET_RESET_LATEST),
+                    "spring.kafka.streams.properties.global.consumer.auto.offset.reset", "latest",
+                    "spring.kafka.streams.properties.global.consumer.auto.offset.reset=latest — the GlobalKTable bootstrap consumer skips the entire topic, leaving the global store permanently incomplete. Joins return null for any pre-startup key. Remove the override.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_LATEST) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_LATEST,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_RESTORE_CONSUMER_AUTO_OFFSET_RESET_LATEST),
+                    "spring.kafka.streams.properties.restore.consumer.auto.offset.reset", "latest",
+                    "spring.kafka.streams.properties.restore.consumer.auto.offset.reset=latest — the restore consumer skips the changelog replay, so a new task starts with empty state and silently produces wrong aggregation/join results until every key is re-populated. Remove the override.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
