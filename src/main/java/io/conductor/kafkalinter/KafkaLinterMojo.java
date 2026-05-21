@@ -2095,6 +2095,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.compression.type={value} — silently overrides spring.kafka.producer.compression-type. The passthrough wins at runtime, so the Spring DSL value becomes dead config and compression-bug fixes that touch the DSL line have no effect. Remove this key and use spring.kafka.producer.compression-type instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_RETRIES_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_RETRIES_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_RETRIES_SET),
+                    "spring.kafka.producer.properties.retries",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.retries={value} — silently overrides spring.kafka.producer.retries. The passthrough wins at runtime, so the Spring DSL value becomes dead config and retry-policy fixes that touch the DSL line have no effect. Remove this key and use spring.kafka.producer.retries instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BATCH_SIZE_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BATCH_SIZE_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BATCH_SIZE_SET),
+                    "spring.kafka.producer.properties.batch.size",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.batch.size={value} — silently overrides spring.kafka.producer.batch-size. Tuning that edits the DSL value has no runtime effect because the passthrough wins; throughput debugging is misled. Remove this key and use spring.kafka.producer.batch-size instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_APPLICATION_ID_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROPERTIES_APPLICATION_ID_SET, sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_APPLICATION_ID_SET),
+                    "spring.kafka.streams.properties.application.id",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.streams.properties.application.id={value} — overrides spring.kafka.streams.application-id silently. Every changelog and repartition topic name is derived from the application-id, so the override moves the entire topology to a different set of internal topics and orphans the previous state. Remove this key and use spring.kafka.streams.application-id instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
