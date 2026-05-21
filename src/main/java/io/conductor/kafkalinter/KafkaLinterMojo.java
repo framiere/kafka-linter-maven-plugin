@@ -1976,6 +1976,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.client-id={value} — unresolved ${...} placeholder; the literal string becomes client.id, broker-side quotas and metrics group every misconfigured pod into one quota bucket, and operational tooling can't attribute behavior to a specific instance.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_CLIENT_ID_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_CLIENT_ID_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_PRODUCER_CLIENT_ID_PLACEHOLDER),
+                    "spring.kafka.producer.client-id",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.producer.client-id={value} — unresolved ${...} placeholder; the literal string becomes client.id, broker-side quotas and metrics group every misconfigured pod into one quota bucket, and operational tooling can't attribute traffic to a specific instance.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_CLIENT_ID_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_CLIENT_ID_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_STREAMS_CLIENT_ID_PLACEHOLDER),
+                    "spring.kafka.streams.client-id",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.streams.client-id={value} — unresolved ${...} placeholder; the Streams runtime derives every internal consumer/producer/restore/admin client.id from the literal placeholder, collapsing broker observability and quotas across the entire Streams app.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_CLIENT_ID_GENERIC) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_CLIENT_ID_GENERIC, sev.get(RuleId.SPRING_BOOT_PRODUCER_CLIENT_ID_GENERIC),
+                    "spring.kafka.producer.client-id",
+                    v -> v != null && io.conductor.kafkalinter.scanner.KafkaTypes.KAFKA_GENERIC_CLIENT_IDS.contains(v.trim().toLowerCase(java.util.Locale.ROOT)),
+                    "spring.kafka.producer.client-id={value} — generic value; broker-side quotas and metrics can't distinguish this application from every other app that copy-pasted the same identifier. Set a value that includes the application name and environment.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
