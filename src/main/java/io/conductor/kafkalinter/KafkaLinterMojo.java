@@ -2264,6 +2264,31 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.replication-factor=2 — one follower only. Any rolling restart leaves changelogs single-replicated; min.insync.replicas=2 then blocks produces. Use 3 (with min.insync.replicas=2) for real fault-tolerance.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_DSL_STORE_INMEMORY) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_DEFAULT_DSL_STORE_INMEMORY, sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_DSL_STORE_INMEMORY),
+                    "spring.kafka.streams.properties.default.dsl.store", "in_memory",
+                    "spring.kafka.streams.properties.default.dsl.store=in_memory — every DSL operator (joins, aggregations, windowed stores) materialises on-heap. Restore-from-changelog after a restart replays the whole changelog into RAM; OOM under non-trivial state. Use RocksDB (default) unless state is provably tiny and bounded.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_LOG_AND_CONTINUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_LOG_AND_CONTINUE,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_LOG_AND_CONTINUE),
+                    "spring.kafka.streams.properties.default.deserialization.exception.handler",
+                    v -> v != null && v.contains("LogAndContinueExceptionHandler"),
+                    "spring.kafka.streams.properties.default.deserialization.exception.handler=LogAndContinueExceptionHandler — poison records are dropped with a log line and the topology keeps going. Downstream aggregations are silently incomplete; you only notice when business numbers drift. Route bad records to a DLQ instead (custom handler or LogAndFailExceptionHandler + retry topic).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_COMMIT_INTERVAL_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_COMMIT_INTERVAL_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_COMMIT_INTERVAL_TOO_HIGH),
+                    "spring.kafka.streams.properties.commit.interval.ms",
+                    v -> parseLongOrZero(v) > 60_000L,
+                    "spring.kafka.streams.properties.commit.interval.ms above 60 s — long commit windows widen the worst-case re-processing window on crash and lengthen end-to-end latency for downstream consumers waiting on commits. Keep commit.interval.ms ≤ 30 s (default 30 s for at-least-once, 100 ms for EOS).",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
