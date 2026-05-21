@@ -1906,6 +1906,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.group-id={value} — unresolved ${...} placeholder; the literal string becomes group.id, consumers across pods land in the wrong (or empty) group, partitions get reassigned the moment the real value lands.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_BOOTSTRAP_SERVERS_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_BOOTSTRAP_SERVERS_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_BOOTSTRAP_SERVERS_PLACEHOLDER),
+                    "spring.kafka.bootstrap-servers",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.bootstrap-servers={value} — unresolved ${...} placeholder; the literal string is parsed as a hostname, DNS resolution fails, every Kafka client in the application throws ConfigException at startup and the pod crash-loops.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_TEMPLATE_TRANSACTION_ID_PREFIX_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_TEMPLATE_TRANSACTION_ID_PREFIX_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_TEMPLATE_TRANSACTION_ID_PREFIX_PLACEHOLDER),
+                    "spring.kafka.template.transaction-id-prefix",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.template.transaction-id-prefix={value} — unresolved ${...} placeholder reaches KafkaTemplate as the literal transactional.id prefix; producer instances collide on the broker and InvalidProducerEpochException fences live producers on every transaction.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_ID_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_APPLICATION_ID_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_STREAMS_APPLICATION_ID_PLACEHOLDER),
+                    "spring.kafka.streams.application-id",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.streams.application-id={value} — unresolved ${...} placeholder; the literal string becomes application.id, creating broker-side groups and internal topics with the placeholder text and forking every replica into the same broken streams identity.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
