@@ -1507,6 +1507,49 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS — no AlterConfigsOptions: validateOnly defaults false, no dry-run.
+    public void adminIncrementalAlterConfigsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        org.apache.kafka.common.config.ConfigResource topic =
+                new org.apache.kafka.common.config.ConfigResource(
+                        org.apache.kafka.common.config.ConfigResource.Type.TOPIC, "events-v1");
+        java.util.Collection<org.apache.kafka.clients.admin.AlterConfigOp> ops = java.util.List.of(
+                new org.apache.kafka.clients.admin.AlterConfigOp(
+                        new org.apache.kafka.clients.admin.ConfigEntry("retention.ms", "2592000000"),
+                        org.apache.kafka.clients.admin.AlterConfigOp.OpType.SET));
+        // No AlterConfigsOptions — applied immediately with no validateOnly preview.
+        admin.incrementalAlterConfigs(java.util.Map.of(topic, ops)).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_ELECT_LEADERS_NO_OPTIONS — no ElectLeadersOptions: default timeout too short for election propagation.
+    public void adminElectLeadersNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Set<org.apache.kafka.common.TopicPartition> partitions = java.util.Set.of(
+                new org.apache.kafka.common.TopicPartition("events-v1", 0),
+                new org.apache.kafka.common.TopicPartition("events-v1", 1));
+        // No ElectLeadersOptions — controller-driven election under default ~30s timeout.
+        admin.electLeaders(org.apache.kafka.common.ElectionType.PREFERRED, partitions).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
+    // RULE: ADMIN_ALTER_REPLICA_LOG_DIRS_NO_OPTIONS — no AlterReplicaLogDirsOptions: ack timeout under default ~30s on busy broker.
+    public void adminAlterReplicaLogDirsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        java.util.Map<org.apache.kafka.common.TopicPartitionReplica, String> moves = java.util.Map.of(
+                new org.apache.kafka.common.TopicPartitionReplica("events-v1", 0, 1), "/var/lib/kafka/disk1",
+                new org.apache.kafka.common.TopicPartitionReplica("events-v1", 1, 1), "/var/lib/kafka/disk1");
+        // No AlterReplicaLogDirsOptions — async migration on broker but synchronous ack times out at default ~30s.
+        admin.alterReplicaLogDirs(moves).all().get();
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_DELETE_CONSUMER_GROUPS_NO_OPTIONS — no DeleteConsumerGroupsOptions: irreversible group deletion under default ~30s timeout.
     public void adminDeleteConsumerGroupsNoOptions() throws Exception {
         Properties p = new Properties();

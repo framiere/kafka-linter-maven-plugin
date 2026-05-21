@@ -586,6 +586,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("incrementalAlterConfigs"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterConfigsOptions;"),
+                "Admin.incrementalAlterConfigs() with no AlterConfigsOptions — defaults validateOnly=false: the change is APPLIED to the broker/topic with no dry-run preview. Pass new AlterConfigsOptions().validateOnly(true) for a preview, then re-run with validateOnly(false) once the result is reviewed."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("electLeaders"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ElectLeadersOptions;"),
+                "Admin.electLeaders() with no ElectLeadersOptions — leader election is controller-driven and can take minutes for UNCLEAN or busy-cluster PREFERRED elections; default ~30 s timeout fires mid-election. Pass new ElectLeadersOptions().timeoutMs(300_000) for UNCLEAN, 120_000 for PREFERRED."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_REPLICA_LOG_DIRS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_ALTER_REPLICA_LOG_DIRS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterReplicaLogDirs"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterReplicaLogDirsOptions;"),
+                "Admin.alterReplicaLogDirs() with no AlterReplicaLogDirsOptions — disk-to-disk replica migration is asynchronous on the broker but the AdminClient still waits for an initial ack; default ~30 s timeout fires on busy brokers, leaving the migration in-flight while the caller sees TimeoutException. Pass new AlterReplicaLogDirsOptions().timeoutMs(120_000) and poll describeLogDirs() for true completion."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_CONSUMER_GROUPS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DELETE_CONSUMER_GROUPS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteConsumerGroups"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteConsumerGroupsOptions;"),
