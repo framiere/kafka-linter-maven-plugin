@@ -618,4 +618,25 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_TABLE_NO_MATERIALIZED — table(topic) with no Materialized → auto-named store and changelog.
+    public Topology tableNoMaterialized() {
+        StreamsBuilder b = new StreamsBuilder();
+        // No Materialized — store and changelog topic names are graph-index-derived.
+        org.apache.kafka.streams.kstream.KTable<String, String> users = b.table("users");
+        users.toStream().to("users-out");
+        return b.build();
+    }
+
+    // RULE: STREAMS_GLOBAL_TABLE_NO_MATERIALIZED — globalTable(topic) with no Materialized → auto-named global store.
+    public Topology globalTableNoMaterialized() {
+        StreamsBuilder b = new StreamsBuilder();
+        // No Materialized — global store name is graph-index-derived; restoration is empty after a topology edit.
+        org.apache.kafka.streams.kstream.GlobalKTable<String, String> users = b.globalTable("users");
+        // Reference 'users' to silence unused warnings while still exercising globalTable() bytecode.
+        if (users == null) {
+            throw new IllegalStateException();
+        }
+        return b.build();
+    }
+
 }

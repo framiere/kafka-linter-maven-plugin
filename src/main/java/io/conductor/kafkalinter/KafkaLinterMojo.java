@@ -479,6 +479,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KTABLE), Set.of("groupBy"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedTable;"),
                 "KTable.groupBy(KeyValueMapper) with no Grouped argument — the implicit repartition topic name is derived from the topology graph index; any upstream edit renames it and the downstream aggregation restarts from offset 0 of an empty repartition. Use groupBy(mapper, Grouped.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
+                RuleId.STREAMS_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
+                "StreamsBuilder.table(topic) / table(topic, Consumed) with no Materialized — the local KeyValueStore name and its changelog topic name are derived from the topology graph index. Any topology edit renames them; the new application restores from an empty changelog; every KTable lookup returns null. Use table(topic, Materialized.as(\"name\")) or the three-arg overload."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
+                RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("globalTable"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
+                "StreamsBuilder.globalTable(topic) / globalTable(topic, Consumed) with no Materialized — the global state store is auto-named from the topology graph index. After a topology edit, every Streams instance restores an empty new-named global store; stream-globalTable joins return null for every key during the (potentially multi-hour) restore. Use globalTable(topic, Materialized.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, s -> new MethodCallRule(
+                RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, s, KafkaTypes.PRODUCER_OWNERS, Set.of("sendOffsetsToTransaction"),
+                desc -> desc != null && desc.equals("(Ljava/util/Map;Ljava/lang/String;)V"),
+                "Producer.sendOffsetsToTransaction(Map, String groupId) is deprecated since Kafka 3.0 (KIP-447) — the String-groupId form bypasses the broker's generation/member fencing and lets a zombie producer overwrite a rebalanced consumer's committed offsets. Use sendOffsetsToTransaction(Map, consumer.groupMetadata())."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

@@ -1435,6 +1435,23 @@ public final class BadKafkaUsage {
         producer.close(Duration.ofSeconds(5));
     }
 
+    // RULE: PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED — String-groupId overload bypasses KIP-447 fencing.
+    public void sendOffsetsToTxnDeprecatedGroupId() {
+        Properties pp = props();
+        pp.put("transactional.id", "tx-app-1");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(pp);
+        producer.initTransactions();
+        producer.beginTransaction();
+        java.util.Map<org.apache.kafka.common.TopicPartition,
+                org.apache.kafka.clients.consumer.OffsetAndMetadata> offsets =
+                        java.util.Map.of(new org.apache.kafka.common.TopicPartition("in", 0),
+                                new org.apache.kafka.clients.consumer.OffsetAndMetadata(42L));
+        // Deprecated since Kafka 3.0 — use sendOffsetsToTransaction(offsets, consumer.groupMetadata()).
+        producer.sendOffsetsToTransaction(offsets, "consumer-group-id");
+        producer.commitTransaction();
+        producer.close(Duration.ofSeconds(5));
+    }
+
     private Properties props() {
         Properties p = new Properties();
         p.put("bootstrap.servers", "localhost:9092");
