@@ -31,6 +31,7 @@ import io.conductor.kafkalinter.rules.clients.KafkaClientTypoGroupIdRule;
 import io.conductor.kafkalinter.rules.clients.PollInRebalanceCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
 import io.conductor.kafkalinter.rules.clients.PropertiesMutatedAfterCtorRule;
+import io.conductor.kafkalinter.rules.clients.ProducerCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ProducerNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPerRecordAllocationRule;
 import io.conductor.kafkalinter.rules.clients.ProducerUsedAfterCloseRule;
@@ -182,6 +183,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PROPERTIES_MUTATED_AFTER_CTOR, PropertiesMutatedAfterCtorRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_USED_AFTER_CLOSE, ProducerUsedAfterCloseRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_NOT_CLOSED, ProducerNotClosedRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, ProducerCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_PER_RECORD_ALLOCATION, ProducerPerRecordAllocationRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_CLOSED, ConsumerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_NOT_CLOSED, AdminNotClosedRule::new);
