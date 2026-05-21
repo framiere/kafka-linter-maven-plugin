@@ -29,6 +29,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdRandom
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotNameSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSchemaHistoryTopicSharedRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTopicPrefixSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqContextHeadersDisabledRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqTopicEqualsInputTopicRule;
@@ -1775,6 +1776,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_RANDOM_RELIANCE) != Severity.OFF) {
             rules.add(new ConnectDebeziumMysqlServerIdRandomRelianceRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_RANDOM_RELIANCE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_TOPIC_PREFIX_SHARED) != Severity.OFF) {
+            rules.add(new ConnectDebeziumTopicPrefixSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_TOPIC_PREFIX_SHARED)));
         }
         if (sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG) != Severity.OFF) {
             rules.add(new ProducerBufferMemoryMisconfigRule(sev.get(RuleId.PRODUCER_BUFFER_MEMORY_MISCONFIG)));
