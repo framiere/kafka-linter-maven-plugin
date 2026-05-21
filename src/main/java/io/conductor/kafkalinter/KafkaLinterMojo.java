@@ -1930,6 +1930,29 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.application-id={value} — unresolved ${...} placeholder; the literal string becomes application.id, creating broker-side groups and internal topics with the placeholder text and forking every replica into the same broken streams identity.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_SHUTDOWN_TIMEOUT_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_SHUTDOWN_TIMEOUT_TOO_LOW, sev.get(RuleId.SPRING_BOOT_LISTENER_SHUTDOWN_TIMEOUT_TOO_LOW),
+                    "spring.kafka.listener.shutdown-timeout",
+                    v -> { long n = parseSpringDurationMs(v); return n > 0 && n < 10000L; },
+                    "spring.kafka.listener.shutdown-timeout={value} — below 10s; on graceful shutdown the listener container is force-killed mid-batch, in-flight records aren't committed, duplicates are reprocessed on the next start, and the consumer's missing LeaveGroup stalls the rebalance.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_CLEANUP_ON_SHUTDOWN_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_CLEANUP_ON_SHUTDOWN_TRUE, sev.get(RuleId.SPRING_BOOT_STREAMS_CLEANUP_ON_SHUTDOWN_TRUE),
+                    "spring.kafka.streams.cleanup.on-shutdown", "true",
+                    "spring.kafka.streams.cleanup.on-shutdown=true — the local state directory is wiped on every shutdown; the next startup must rebuild every state store by replaying the changelog topic from offset 0, taking minutes-to-hours.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_TEMPLATE_DEFAULT_TOPIC_PLACEHOLDER) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_TEMPLATE_DEFAULT_TOPIC_PLACEHOLDER, sev.get(RuleId.SPRING_BOOT_TEMPLATE_DEFAULT_TOPIC_PLACEHOLDER),
+                    "spring.kafka.template.default-topic",
+                    v -> looksLikeUnresolvedPlaceholder(v),
+                    "spring.kafka.template.default-topic={value} — unresolved ${...} placeholder; the literal string becomes the default topic and every KafkaTemplate.send(payload) shorthand call throws InvalidTopicException at the broker.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
