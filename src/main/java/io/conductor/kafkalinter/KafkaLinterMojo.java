@@ -2477,6 +2477,32 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.windowstore.changelog.additional.retention.ms above 7 days — changelog-side safety buffer for windowed-store changelogs; bloats internal-topic disk and multiplies restore time after rebalances. Default 86400000 (24 h) is right.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_HIGH,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_HIGH),
+                    "spring.kafka.streams.properties.buffered.records.per.partition",
+                    v -> parseLongOrZero(v) > 100_000L,
+                    "spring.kafka.streams.properties.buffered.records.per.partition above 100k — removes the back-pressure ceiling; one skewed partition can OOM the JVM. Default 1000 is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_LOW,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_BUFFERED_RECORDS_PER_PARTITION_TOO_LOW),
+                    "spring.kafka.streams.properties.buffered.records.per.partition",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 100L; },
+                    "spring.kafka.streams.properties.buffered.records.per.partition below 100 — task pauses partitions almost immediately; pause/resume churn dominates the processing loop. Default 1000 is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_STATESTORE_CACHE_MAX_BYTES_ZERO) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_STREAMS_STATESTORE_CACHE_MAX_BYTES_ZERO,
+                    sev.get(RuleId.SPRING_BOOT_STREAMS_STATESTORE_CACHE_MAX_BYTES_ZERO),
+                    "spring.kafka.streams.properties.statestore.cache.max.bytes", "0",
+                    "spring.kafka.streams.properties.statestore.cache.max.bytes=0 — Streams state-store cache (KIP-770) disabled. Every put() flushes to RocksDB, the changelog and downstream; 10-100× write amplification on aggregations/KTables. Default 10485760 (10 MiB) is right.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SECURITY_PROTOCOL_PLAINTEXT, sev.get(RuleId.SECURITY_PROTOCOL_PLAINTEXT),
