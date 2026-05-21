@@ -53,6 +53,7 @@ import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackag
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCleanupInProdRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseNoTimeoutRule;
+import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerRule;
@@ -198,6 +199,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_CLOSE_NO_TIMEOUT, StreamsCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REMOVE_THREAD_NO_TIMEOUT,
                 StreamsRemoveThreadNoTimeoutRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PRINT, StreamsKStreamPrintRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_THREAD_SAFE, ConsumerNotThreadSafeRule::new);
         addIfEnabled(rules, sev, RuleId.STRING_SERIALIZER_NON_STRING, StringSerializerNonStringRule::new);
@@ -921,9 +923,6 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_TASK_TIMEOUT_MS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_TASK_TIMEOUT_MS_ZERO, s, KafkaTypes.STREAMS_TASK_TIMEOUT_MS_KEY, "0",
                 "task.timeout.ms=0 — first transient broker error kills the task. Default 300000 ms is the right starting point."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PRINT, s -> new MethodCallRule(
-                RuleId.STREAMS_KSTREAM_PRINT, s, Set.of(KafkaTypes.KSTREAM), Set.of("print"),
-                "KStream.print() — debugging operator left in production topology. Pipes every record through System.out; use peek() with a counter or a dedicated debug topic."));
         addIfEnabled(rules, sev, RuleId.STREAMS_MAX_TASK_IDLE_MS_HIGH, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_MAX_TASK_IDLE_MS_HIGH, s, KafkaTypes.STREAMS_MAX_TASK_IDLE_MS_KEY,
                 v -> {
