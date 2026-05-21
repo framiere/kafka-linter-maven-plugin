@@ -53,6 +53,7 @@ import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackag
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCleanupInProdRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseNoTimeoutRule;
+import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
@@ -200,6 +201,8 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_REMOVE_THREAD_NO_TIMEOUT,
                 StreamsRemoveThreadNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PRINT, StreamsKStreamPrintRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_FOREACH_PEEK_PRINTS_STDOUT,
+                StreamsForeachPeekPrintsStdoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_THREAD_SAFE, ConsumerNotThreadSafeRule::new);
         addIfEnabled(rules, sev, RuleId.STRING_SERIALIZER_NON_STRING, StringSerializerNonStringRule::new);

@@ -962,6 +962,16 @@ public final class RuleId {
             .whyMatters("This is a 'forgot to remove' bug — easy to write in a notebook or local test, easy to leave in code if not checked. If you genuinely need to inspect records, use `peek()` with a metrics counter, or write to a dedicated debug topic. Never wire `System.out` into a stream.")
             .build());
 
+    public static final RuleId STREAMS_FOREACH_PEEK_PRINTS_STDOUT = register(builder("STREAMS_FOREACH_PEEK_PRINTS_STDOUT")
+            .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_FOREACH_PEEK_PRINTS_STDOUT.md")
+            .message("KStream.foreach/peek(...) with a lambda that writes to System.out / System.err — debug operator left in production topology.")
+            .tagline("`foreach` and `peek` are the lambda-equivalent of `print()`. The lambda body writing to `System.out` puts a synchronous stdout call on every record in the topology.")
+            .mechanism("`KStream.foreach(ForeachAction)` and `KStream.peek(ForeachAction)` invoke their lambda once per record on the StreamThread that owns the partition. A lambda body that calls `System.out.println(...)`, `System.err.println(...)`, `System.out.printf(...)`, or any other `PrintStream` write turns that call site into an inline `PrintStream.println` on the hot path — exactly the same shape as `KStream.print(Printed.toSysOut())`, just expressed via a lambda the rule has to walk into to detect.")
+            .impact("`System.out` is a globally synchronised `PrintStream` (every write takes a lock on the stream). On a topology with multiple `StreamThread`s, every record routed through the offending operator serialises on that one lock — throughput collapses to the rate one core can println. The records themselves go to container stdout, which nobody reads and which logging infrastructure typically truncates at a few MB, so the 'debug output' is invisible in production too.")
+            .whyMatters("This is the same 'forgot to remove' bug as `KStream.print()`, except it slips past reviewers more often because it looks like ordinary lambda code rather than a named debug operator. The fix is identical: replace with a `peek()` that increments a metrics counter, log via SLF4J at DEBUG level (gated on a logger that is OFF in production), or route to a dedicated debug topic. Never inline `System.out` into a topology operator.")
+            .build());
+
     public static final RuleId STREAMS_TASK_TIMEOUT_MS_ZERO = register(builder("STREAMS_TASK_TIMEOUT_MS_ZERO")
             .defaultSeverity(Severity.WARNING).confidence(Confidence.HIGH).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_TASK_TIMEOUT_MS_ZERO.md")
