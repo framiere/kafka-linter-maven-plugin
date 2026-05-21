@@ -1742,6 +1742,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.default.api.timeout.ms={value} — below 30 s. Routine partition-leader moves and broker rolling restarts exhaust the retry budget; commitSync, position, endOffsets, partitionsFor all start throwing TimeoutException during events the consumer should absorb. Default 60 s.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_DEFAULT_API_TIMEOUT_MS_TOO_HIGH),
+                    "spring.kafka.consumer.properties.default.api.timeout.ms",
+                    v -> parseLongOrZero(v) > 300_000L,
+                    "spring.kafka.consumer.properties.default.api.timeout.ms={value} — above 5 min. Blocking consumer calls (commitSync, position, listTopics, partitionsFor) hang the calling thread for the full window; graceful shutdown stalls past the pod's terminationGracePeriod. Default 60 s.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_AUTO_OFFSET_RESET_INVALID) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_AUTO_OFFSET_RESET_INVALID, sev.get(RuleId.SPRING_BOOT_CONSUMER_AUTO_OFFSET_RESET_INVALID),
+                    "spring.kafka.consumer.auto-offset-reset",
+                    v -> { if (v == null) return false; String t = v.trim().toLowerCase(); return !t.isEmpty() && !KafkaTypes.CONSUMER_AUTO_OFFSET_RESET_VALID_VALUES.contains(t); },
+                    "spring.kafka.consumer.auto-offset-reset={value} — not one of earliest/latest/none. The consumer throws ConfigException at construction; the pod crash-loops on first deploy.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_BYTES_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_BYTES_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_BYTES_TOO_HIGH),
+                    "spring.kafka.consumer.fetch-max-size",
+                    v -> parseSpringDataSizeBytes(v) > 100L * 1024L * 1024L,
+                    "spring.kafka.consumer.fetch-max-size={value} — above 100 MiB. A single FetchResponse can stall the consumer for seconds and pin that many bytes in heap per request; defaults around 50 MiB are safer.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
