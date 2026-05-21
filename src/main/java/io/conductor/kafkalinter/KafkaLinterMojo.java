@@ -18,6 +18,7 @@ import io.conductor.kafkalinter.rules.ProducerSendNullCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.AdminNewTopicReplicationFactorOneRule;
 import io.conductor.kafkalinter.rules.clients.AdminNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
@@ -202,6 +203,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_NO_TIMEOUT, ConsumerCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_NOT_CLOSED, AdminNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_CLOSE_NO_TIMEOUT, AdminCloseNoTimeoutRule::new);
+        addIfEnabled(rules, sev, RuleId.ADMIN_NEW_TOPIC_REPLICATION_FACTOR_ONE, AdminNewTopicReplicationFactorOneRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_NOT_CLOSED, StreamsNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STORE_QUERY_PARAMETERS_NO_STALE_STORES,
                 StreamsStoreQueryParametersNoStaleStoresRule::new);
