@@ -32,6 +32,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPerRecordAllocationRule;
 import io.conductor.kafkalinter.rules.clients.ProducerUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordPartitionAndKeyRule;
+import io.conductor.kafkalinter.rules.clients.StringSerializerNonStringRule;
 import io.conductor.kafkalinter.rules.clients.ProducerTxnIdWithoutIdempotenceRule;
 import io.conductor.kafkalinter.rules.config.ConfigKeyValueRule;
 import io.conductor.kafkalinter.rules.config.MethodCallRule;
@@ -172,6 +173,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_CLOSED, ConsumerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NO_WAKEUP_SHUTDOWN, ConsumerNoWakeupShutdownRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_NOT_THREAD_SAFE, ConsumerNotThreadSafeRule::new);
+        addIfEnabled(rules, sev, RuleId.STRING_SERIALIZER_NON_STRING, StringSerializerNonStringRule::new);
         addIfEnabled(rules, sev, RuleId.HEADERS_SENSITIVE_KEYS, HeadersSensitiveKeysRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BLOCKING_GET, ProducerSendBlockingGetRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NO_CALLBACK, ProducerSendNoCallbackRule::new);
