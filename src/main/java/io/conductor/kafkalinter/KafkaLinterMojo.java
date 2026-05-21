@@ -34,6 +34,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDlqContextHeadersDisabledRu
 import io.conductor.kafkalinter.rules.connect.ConnectDlqReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqTopicEqualsInputTopicRule;
 import io.conductor.kafkalinter.rules.connect.ConnectFileStreamDemoConnectorRule;
+import io.conductor.kafkalinter.rules.connect.ConnectHdfsSinkFlushSizeHugeWithoutTimeRotateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJsonConverterSchemasEnableUnsetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectNameMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBothSetRule;
@@ -1764,6 +1765,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_S3_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE) != Severity.OFF) {
             rules.add(new ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule(sev.get(RuleId.CONNECT_S3_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE)));
+        }
+        if (sev.get(RuleId.CONNECT_HDFS_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE) != Severity.OFF) {
+            rules.add(new ConnectHdfsSinkFlushSizeHugeWithoutTimeRotateRule(sev.get(RuleId.CONNECT_HDFS_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
