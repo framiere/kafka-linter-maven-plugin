@@ -108,6 +108,17 @@ public final class ProjectContext {
         return Optional.ofNullable(t);
     }
 
+    /**
+     * Absolute path of the Maven {@code build.outputDirectory} ({@code target/classes} by default).
+     * Used by project-scoped rules that need to inspect the project's own compiled bytecode
+     * (in addition to the per-class scan already performed by {@link ProjectScanner}).
+     */
+    public Path classesDir() {
+        if (project.getBuild() == null) return null;
+        String od = project.getBuild().getOutputDirectory();
+        return od == null ? null : Path.of(od);
+    }
+
     public Map<Path, Properties> propertiesFiles() { return propertiesFiles; }
 
     public Map<Path, String> yamlFiles() { return yamlFiles; }
