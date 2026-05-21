@@ -12,6 +12,7 @@ import io.conductor.kafkalinter.rules.ProducerSendNoCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AvroSpecificReaderMissingRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerIsolationReadUncommittedWithTxnRule;
 import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
@@ -1536,6 +1537,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.AVRO_SPECIFIC_READER_MISSING) != Severity.OFF) {
             rules.add(new AvroSpecificReaderMissingRule(sev.get(RuleId.AVRO_SPECIFIC_READER_MISSING)));
+        }
+        if (sev.get(RuleId.CONSUMER_ISOLATION_READ_UNCOMMITTED_WITH_TXN) != Severity.OFF) {
+            rules.add(new ConsumerIsolationReadUncommittedWithTxnRule(sev.get(RuleId.CONSUMER_ISOLATION_READ_UNCOMMITTED_WITH_TXN)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
