@@ -491,6 +491,22 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, s, KafkaTypes.PRODUCER_OWNERS, Set.of("sendOffsetsToTransaction"),
                 desc -> desc != null && desc.equals("(Ljava/util/Map;Ljava/lang/String;)V"),
                 "Producer.sendOffsetsToTransaction(Map, String groupId) is deprecated since Kafka 3.0 (KIP-447) — the String-groupId form bypasses the broker's generation/member fencing and lets a zombie producer overwrite a rebalanced consumer's committed offsets. Use sendOffsetsToTransaction(Map, consumer.groupMetadata())."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s -> new MethodCallRule(
+                RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin"),
+                desc -> desc != null
+                        && desc.contains("Ljava/util/function/Function;")
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
+                "KTable.join(KTable, Function, ValueJoiner...) — foreign-key table join with no Materialized argument. The subscription store, response store, subscription topic, and response topic are all auto-named from the topology graph index; any topology edit renames every one. Use the overload with Materialized.as(\"name\")."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SELECT_KEY_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_SELECT_KEY_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("selectKey"),
+                desc -> desc != null
+                        && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KStream;"),
+                "KStream.selectKey(KeyValueMapper) with no Named — the SelectKey processor node name (and any downstream repartition topic name) is graph-index-derived. Any topology edit renames the downstream repartition topic; aggregations restart from offset 0. Use selectKey(mapper, Named.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MERGE_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_MERGE_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("merge"),
+                desc -> desc != null
+                        && desc.equals("(Lorg/apache/kafka/streams/kstream/KStream;)Lorg/apache/kafka/streams/kstream/KStream;"),
+                "KStream.merge(KStream) with no Named — merge processor node name is graph-index-derived. Per-node metrics tagged by node ID break dashboards on every topology edit. Use merge(other, Named.as(\"name\"))."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

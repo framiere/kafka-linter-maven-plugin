@@ -639,4 +639,40 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED — KTable FK join with no Materialized → 4 auto-named artifacts.
+    public Topology foreignKeyJoinNoMaterialized() {
+        StreamsBuilder b = new StreamsBuilder();
+        org.apache.kafka.streams.kstream.KTable<String, String> accounts =
+                b.table("accounts", Materialized.<String, String, KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("accounts-store"));
+        org.apache.kafka.streams.kstream.KTable<String, String> transactions =
+                b.table("transactions", Materialized.<String, String, KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("transactions-store"));
+        // No Materialized argument — subscription store, response store, subscription topic, response topic
+        // are ALL graph-index-derived.
+        accounts.join(transactions, (java.util.function.Function<String, String>) v -> v, (a, t) -> a + "|" + t)
+                .toStream()
+                .to("enriched");
+        return b.build();
+    }
+
+    // RULE: STREAMS_SELECT_KEY_NO_NAMED — selectKey with no Named → auto-named processor; downstream repartition propagates.
+    public Topology selectKeyNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        b.<String, String>stream("events")
+                .selectKey((k, v) -> v)
+                .groupByKey(org.apache.kafka.streams.kstream.Grouped.as("by-account"))
+                .count(Materialized.as("events-per-account-store"))
+                .toStream()
+                .to("counts");
+        return b.build();
+    }
+
+    // RULE: STREAMS_MERGE_NO_NAMED — merge with no Named → auto-named merge node breaks per-node metric labels.
+    public Topology mergeNoNamed() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> orders = b.stream("orders");
+        KStream<String, String> refunds = b.stream("refunds");
+        orders.merge(refunds).to("ledger");
+        return b.build();
+    }
+
 }
