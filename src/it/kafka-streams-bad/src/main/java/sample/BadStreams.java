@@ -529,4 +529,37 @@ public final class BadStreams {
                 System.err.println("Stream thread " + t.getName() + " died: " + e));
     }
 
+    // RULE: STREAMS_REPARTITION_NO_NAMED.
+    public Topology unnamedRepartition() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> in = b.stream("in");
+        // No Repartitioned argument — topic name auto-generated from graph index.
+        in.repartition().to("out");
+        return b.build();
+    }
+
+    // RULE: STREAMS_GROUP_BY_NO_GROUPED.
+    public Topology unnamedGroupBy() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> in = b.stream("in");
+        // groupBy(KeyValueMapper) — no Grouped, auto-named repartition topic.
+        in.groupBy((k, v) -> v).count().toStream().to("out");
+        return b.build();
+    }
+
+    // RULE: STREAMS_SUPPRESS_BUFFER_UNBOUNDED.
+    public Topology unboundedSuppressBuffer() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> in = b.stream("in");
+        // BufferConfig.unbounded() — buffer grows until JVM heap exhaustion.
+        in.groupByKey()
+          .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5)))
+          .count(Materialized.with(Serdes.String(), Serdes.Long()))
+          .suppress(org.apache.kafka.streams.kstream.Suppressed.untilWindowCloses(
+                  org.apache.kafka.streams.kstream.Suppressed.BufferConfig.unbounded()))
+          .toStream()
+          .to("out");
+        return b.build();
+    }
+
 }

@@ -433,6 +433,17 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s, KafkaTypes.CONSUMER_OWNERS, Set.of("subscribe"),
                 desc -> desc != null && (desc.equals("(Ljava/util/Collection;)V") || desc.equals("(Ljava/util/regex/Pattern;)V")),
                 "Consumer.subscribe(Collection)/subscribe(Pattern) without a ConsumerRebalanceListener — the consumer cannot flush in-memory state, commit final offsets, or release per-partition resources before partition revoke. Pass a ConsumerRebalanceListener."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, s -> new MethodCallRule(
+                RuleId.STREAMS_REPARTITION_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("repartition"),
+                desc -> desc != null && desc.equals("()Lorg/apache/kafka/streams/kstream/KStream;"),
+                "KStream.repartition() with no Repartitioned argument — the auto-generated repartition topic name is derived from the topology graph index; any upstream edit renames it and downstream aggregations start from offset 0 of an empty topic. Use repartition(Repartitioned.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
+                RuleId.STREAMS_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupBy"),
+                desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedStream;"),
+                "KStream.groupBy(KeyValueMapper) with no Grouped argument — the implicit repartition topic name is derived from the topology graph index; any upstream edit renames it and the aggregation restarts from zero. Use groupBy(mapper, Grouped.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s -> new MethodCallRule(
+                RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s, Set.of(KafkaTypes.SUPPRESSED_BUFFER_CONFIG), Set.of("unbounded"),
+                "Suppressed.BufferConfig.unbounded() — suppress() buffer grows until JVM heap exhaustion on a slow downstream commit. Use BufferConfig.maxBytes(n) or maxRecords(n) with shutDownWhenFull() so the bound is explicit."));
         addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
                 "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));

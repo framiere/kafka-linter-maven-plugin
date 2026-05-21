@@ -20,6 +20,7 @@ public final class KafkaTypes {
     public static final String STORE_BUILDER = "org/apache/kafka/streams/state/StoreBuilder";
     public static final String ADMIN_INTERFACE = "org/apache/kafka/clients/admin/Admin";
     public static final String ADMIN_CLIENT = "org/apache/kafka/clients/admin/AdminClient";
+    public static final String SUPPRESSED_BUFFER_CONFIG = "org/apache/kafka/streams/kstream/Suppressed$BufferConfig";
 
     public static final Set<String> PRODUCER_OWNERS = Set.of(KAFKA_PRODUCER, PRODUCER_INTERFACE);
     public static final Set<String> CONSUMER_OWNERS = Set.of(KAFKA_CONSUMER, CONSUMER_INTERFACE);

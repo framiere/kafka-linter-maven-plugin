@@ -3,6 +3,7 @@ package sample;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Repartitioned;
 
 import java.util.Properties;
 
@@ -20,6 +21,6 @@ public final class GoodStreams {
 
     public void topology(StreamsBuilder b) {
         KStream<String, String> s = b.stream("in");
-        s.repartition().to("out");
+        s.repartition(Repartitioned.<String, String>as("in-repartition")).to("out");
     }
 }
