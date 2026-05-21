@@ -57,6 +57,7 @@ import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackag
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCleanupInProdRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseNoTimeoutRule;
+import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
@@ -219,6 +220,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_INFINITE_DURATION, ConsumerPollInfiniteDurationRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_ZERO_DURATION, ProducerCloseZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_ZERO_DURATION, ConsumerCloseZeroDurationRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_CLOSE_ZERO_DURATION, StreamsCloseZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_CALLBACK, ProducerFlushInCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
