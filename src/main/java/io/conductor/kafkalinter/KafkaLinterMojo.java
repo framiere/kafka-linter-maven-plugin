@@ -1790,6 +1790,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.max.request.size={value} — below 64 KiB. Defeats batching, and any single record above the cap throws RecordTooLargeException at send time with no retry. Default 1 MiB.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_LOW) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_LOW, sev.get(RuleId.SPRING_BOOT_CONSUMER_MAX_PARTITION_FETCH_BYTES_TOO_LOW),
+                    "spring.kafka.consumer.properties.max.partition.fetch.bytes",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n < 1_048_576L; },
+                    "spring.kafka.consumer.properties.max.partition.fetch.bytes={value} — below 1 MiB. Any single record above the cap stalls the partition with RecordTooLargeException and the consumer hard-stops without progress. Default 1 MiB.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_RECONNECT_BACKOFF_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_RECONNECT_BACKOFF_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_RECONNECT_BACKOFF_MS_TOO_HIGH),
+                    "spring.kafka.producer.properties.reconnect.backoff.ms",
+                    v -> parseLongOrZero(v) > 10_000L,
+                    "spring.kafka.producer.properties.reconnect.backoff.ms={value} — above 10 s. After a broker disconnect, the producer waits the full backoff before any reconnect attempt; partition leader changes take an order of magnitude longer to recover than the underlying TCP reset. Default 50 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRY_BACKOFF_MS_TOO_HIGH) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_RETRY_BACKOFF_MS_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_PRODUCER_RETRY_BACKOFF_MS_TOO_HIGH),
+                    "spring.kafka.producer.properties.retry.backoff.ms",
+                    v -> parseLongOrZero(v) > 30_000L,
+                    "spring.kafka.producer.properties.retry.backoff.ms={value} — above 30 s. After a retriable error the producer waits the full backoff between retry attempts; delivery.timeout.ms math breaks and routine partition-leader moves cause delivery failures. Default 100 ms.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
