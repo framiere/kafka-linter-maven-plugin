@@ -2047,6 +2047,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.group.id={value} — bypasses Spring's group-id resolution and silently overrides @KafkaListener(groupId=...) annotations. Remove this key and use spring.kafka.consumer.group-id (or the per-listener annotation) instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_ACKS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_ACKS_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_ACKS_SET),
+                    "spring.kafka.producer.properties.acks",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.acks={value} — silently overrides spring.kafka.producer.acks. The passthrough wins at runtime, so the Spring DSL value becomes dead config. Remove this key and use spring.kafka.producer.acks instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BOOTSTRAP_SERVERS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BOOTSTRAP_SERVERS_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BOOTSTRAP_SERVERS_SET),
+                    "spring.kafka.producer.properties.bootstrap.servers",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.bootstrap.servers={value} — overrides spring.kafka.bootstrap-servers for the producer only, while consumer and admin still use the top-level value. Split-brain bootstrap; producer writes go to a different cluster than the consumer reads from. Remove this key.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_SET, sev.get(RuleId.SPRING_BOOT_CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_SET),
+                    "spring.kafka.consumer.properties.auto.offset.reset",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.consumer.properties.auto.offset.reset={value} — silently overrides spring.kafka.consumer.auto-offset-reset. The passthrough wins at runtime, so the Spring DSL value becomes dead config. Remove this key and use spring.kafka.consumer.auto-offset-reset instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
