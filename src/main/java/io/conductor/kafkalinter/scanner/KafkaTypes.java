@@ -13,6 +13,13 @@ public final class KafkaTypes {
     public static final String CALLBACK = "org/apache/kafka/clients/producer/Callback";
     public static final String KAFKA_STREAMS = "org/apache/kafka/streams/KafkaStreams";
     public static final String KSTREAM = "org/apache/kafka/streams/kstream/KStream";
+    public static final String KGROUPED_STREAM = "org/apache/kafka/streams/kstream/KGroupedStream";
+    public static final String KGROUPED_TABLE = "org/apache/kafka/streams/kstream/KGroupedTable";
+    public static final String TIME_WINDOWED_KSTREAM = "org/apache/kafka/streams/kstream/TimeWindowedKStream";
+    public static final String SESSION_WINDOWED_KSTREAM = "org/apache/kafka/streams/kstream/SessionWindowedKStream";
+    public static final Set<String> GROUPED_KSTREAM_OWNERS = Set.of(
+            KGROUPED_STREAM, KGROUPED_TABLE, TIME_WINDOWED_KSTREAM, SESSION_WINDOWED_KSTREAM
+    );
     public static final String TIME_WINDOWS = "org/apache/kafka/streams/kstream/TimeWindows";
     public static final String JOIN_WINDOWS = "org/apache/kafka/streams/kstream/JoinWindows";
     public static final String SESSION_WINDOWS = "org/apache/kafka/streams/kstream/SessionWindows";

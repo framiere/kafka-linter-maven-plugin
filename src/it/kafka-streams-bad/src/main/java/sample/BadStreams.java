@@ -562,4 +562,37 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_COUNT_NO_MATERIALIZED — count() with no Materialized → auto-named state store.
+    public Topology unmaterializedCount() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> in = b.stream("in");
+        in.groupByKey(org.apache.kafka.streams.kstream.Grouped.with("count-rep", Serdes.String(), Serdes.String()))
+          .count()
+          .toStream()
+          .to("out");
+        return b.build();
+    }
+
+    // RULE: STREAMS_AGGREGATE_NO_MATERIALIZED — aggregate() with no Materialized → auto-named state store.
+    public Topology unmaterializedAggregate() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> in = b.stream("in");
+        in.groupByKey(org.apache.kafka.streams.kstream.Grouped.with("agg-rep", Serdes.String(), Serdes.String()))
+          .aggregate(() -> "", (k, v, agg) -> agg + v)
+          .toStream()
+          .to("out");
+        return b.build();
+    }
+
+    // RULE: STREAMS_REDUCE_NO_MATERIALIZED — reduce() with no Materialized → auto-named state store.
+    public Topology unmaterializedReduce() {
+        StreamsBuilder b = new StreamsBuilder();
+        KStream<String, String> in = b.stream("in");
+        in.groupByKey(org.apache.kafka.streams.kstream.Grouped.with("red-rep", Serdes.String(), Serdes.String()))
+          .reduce((a, b2) -> a + b2)
+          .toStream()
+          .to("out");
+        return b.build();
+    }
+
 }
