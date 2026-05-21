@@ -1454,6 +1454,20 @@ public final class BadKafkaUsage {
         admin.close(Duration.ofSeconds(5));
     }
 
+    // RULE: ADMIN_DESCRIBE_CONFIGS_NO_OPTIONS — describeConfigs with no options gets surface values with no synonym chain.
+    public void adminDescribeConfigsNoOptions() throws Exception {
+        Properties p = new Properties();
+        p.put("bootstrap.servers", "kafka-1.prod.example.com:9092");
+        org.apache.kafka.clients.admin.Admin admin = org.apache.kafka.clients.admin.Admin.create(p);
+        org.apache.kafka.common.config.ConfigResource topic =
+                new org.apache.kafka.common.config.ConfigResource(
+                        org.apache.kafka.common.config.ConfigResource.Type.TOPIC, "events-v1");
+        java.util.Map<org.apache.kafka.common.config.ConfigResource, org.apache.kafka.clients.admin.Config> cfg =
+                admin.describeConfigs(java.util.List.of(topic)).all().get();
+        cfg.forEach((r, c) -> c.entries().forEach(e -> System.out.println(e.name() + "=" + e.value())));
+        admin.close(Duration.ofSeconds(5));
+    }
+
     // RULE: ADMIN_LIST_TOPICS_NO_OPTIONS — listTopics with default timeout & listInternal=false silently excludes __consumer_offsets etc.
     public void adminListTopicsNoOptions() throws Exception {
         Properties p = new Properties();

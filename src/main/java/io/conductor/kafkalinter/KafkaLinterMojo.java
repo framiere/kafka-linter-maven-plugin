@@ -554,6 +554,18 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("mapValues"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KTable.mapValues with no Named — the mapValues node name is graph-index-derived (KTABLE-MAPVALUES-<N>); editing the topology renumbers the index and silently rebrands every metric tag and (for materialized variants) the changelog/state-store name. Use mapValues(mapper, Named.as(\"...\")) or mapValues(mapper, Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
+                RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
+                "StreamsBuilder.table(topic) with no Consumed — KTable key/value serdes silently default to default.key.serde / default.value.serde from Streams config; a change to those defaults rebinds every Consumed-less table at once, breaking decode on first poll. Use table(topic, Consumed.with(keySerde, valueSerde).withName(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_CONSUMED, s -> new MethodCallRule(
+                RuleId.STREAMS_GLOBAL_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("globalTable"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
+                "StreamsBuilder.globalTable(topic) with no Consumed — GlobalKTable serdes silently default to default.key.serde / default.value.serde; bootstrap is eager and kills app startup on decode failure with no exception-handler escape. Use globalTable(topic, Consumed.with(keySerde, valueSerde).withName(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_CONFIGS_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_DESCRIBE_CONFIGS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeConfigs"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeConfigsOptions;"),
+                "Admin.describeConfigs() with no DescribeConfigsOptions — uses the default request.timeout.ms AND defaults includeSynonyms=false / includeDocumentation=false, hiding the override chain (broker-default vs topic-override vs static-broker) needed by every migration / audit tool. Pass new DescribeConfigsOptions().timeoutMs(60_000).includeSynonyms(true).includeDocumentation(true)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_JOIN_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_KTABLE_JOIN_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin", "outerJoin"),
                 desc -> desc != null
