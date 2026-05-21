@@ -874,6 +874,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.ADMIN_LIST_TRANSACTIONS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listTransactions"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListTransactionsOptions;"),
                 "Admin.listTransactions() with no ListTransactionsOptions — returns ALL transactional-IDs (Ongoing, CompleteCommit, CompleteAbort, Empty, Dead) regardless of state; on Streams/EOS-v2 clusters with accumulated transactional-IDs this is 10MB+ payload. Pass new ListTransactionsOptions().filterStates(Set.of(TransactionState.ONGOING)).timeoutMs(60_000)."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CLIENT_METRICS_RESOURCES_NO_OPTIONS, s -> new MethodCallRule(
+                RuleId.ADMIN_LIST_CLIENT_METRICS_RESOURCES_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("listClientMetricsResources"),
+                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ListClientMetricsResourcesOptions;"),
+                "Admin.listClientMetricsResources() with no ListClientMetricsResourcesOptions — KIP-714 (Kafka 3.7+) client-telemetry subscription-list diagnostic; inherits ~30 s default request.timeout.ms. On a broker mid-config-reload or under quota-event pressure (the state SREs typically check 'did my new client-metrics subscription stick?'), TimeoutException leaves the verify-step ambiguous — and rollback-on-failure logic then accidentally deletes the subscription that did get created. Pass new ListClientMetricsResourcesOptions().timeoutMs(120_000)."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("describeCluster"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DescribeClusterOptions;"),
