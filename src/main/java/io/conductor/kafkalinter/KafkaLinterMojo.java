@@ -46,6 +46,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefined
 import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
+import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetResetLatestRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
@@ -1772,6 +1773,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_GCS_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE) != Severity.OFF) {
             rules.add(new ConnectGcsSinkFlushSizeHugeWithoutTimeRotateRule(sev.get(RuleId.CONNECT_GCS_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE)));
+        }
+        if (sev.get(RuleId.CONNECT_SINK_CONSUMER_AUTO_OFFSET_RESET_LATEST) != Severity.OFF) {
+            rules.add(new ConnectSinkConsumerAutoOffsetResetLatestRule(sev.get(RuleId.CONNECT_SINK_CONSUMER_AUTO_OFFSET_RESET_LATEST)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
