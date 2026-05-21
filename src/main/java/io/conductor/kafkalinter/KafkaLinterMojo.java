@@ -500,6 +500,10 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s, KafkaTypes.CONSUMER_OWNERS, Set.of("subscribe"),
                 desc -> desc != null && (desc.equals("(Ljava/util/Collection;)V") || desc.equals("(Ljava/util/regex/Pattern;)V")),
                 "Consumer.subscribe(Collection)/subscribe(Pattern) without a ConsumerRebalanceListener — the consumer cannot flush in-memory state, commit final offsets, or release per-partition resources before partition revoke. Pass a ConsumerRebalanceListener."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, s -> new MethodCallRule(
+                RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, s, KafkaTypes.CONSUMER_OWNERS, Set.of("enforceRebalance"),
+                desc -> desc != null && !desc.contains("Ljava/lang/String;"),
+                "Consumer.enforceRebalance() with no reason String — KIP-735 (Kafka 3.0+) added the enforceRebalance(String) overload so broker-side group-coordinator logs capture WHO triggered each manually-initiated rebalance. Without a reason, an SRE investigating 'why did this group rebalance N times in M minutes?' has no cross-actor attribution. Pass enforceRebalance(\"<actor> <event-context>\") — e.g. enforceRebalance(\"autoscaler scale-out svc-payments-prod 21→30\")."));
         addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_REPARTITION_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("repartition"),
                 desc -> desc != null && desc.equals("()Lorg/apache/kafka/streams/kstream/KStream;"),
