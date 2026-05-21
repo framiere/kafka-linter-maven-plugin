@@ -692,6 +692,23 @@ public class KafkaLinterMojo extends AbstractMojo {
                 KafkaTypes.DEFAULT_DSL_STORE_KEY,
                 v -> v != null && !v.isEmpty(),
                 "`default.dsl.store` config key deprecated since Kafka 3.5 (KIP-954) — the string-valued key accepted only `rocksDB` / `in_memory` and locks users out of new built-in stores (KIP-986 versioned stores) and any third-party DslStoreSuppliers. Replace with `StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG` and pass `BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class.getName()` (default) or `InMemoryDslStoreSuppliers.class.getName()`. Remove entirely if you want the RocksDB default — that's the right move for almost all production apps."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, s -> new MethodCallRule(
+                RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, s,
+                Set.of(KafkaTypes.ADMIN_DELETE_TOPICS_RESULT),
+                Set.of("values"),
+                "DeleteTopicsResult.values() deprecated since Kafka 3.0 (KIP-516) — returns Map<String, KafkaFuture<Void>> with no awareness of topic IDs. Throws UnsupportedOperationException at runtime if deleteTopics() was called with TopicCollection.ofTopicIds(...). Replace with topicNameValues() for delete-by-name or topicIdValues() (returns Map<Uuid, KafkaFuture<Void>>) for delete-by-id. The renamed accessors make the key-space explicit at the callsite."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, s -> new MethodCallRule(
+                RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, s,
+                Set.of(KafkaTypes.RECORD_METADATA),
+                Set.of("<init>"),
+                desc -> desc != null && desc.contains("Ljava/lang/Long;II)V"),
+                "RecordMetadata 7-arg constructor with `Long checksum` parameter deprecated since Kafka 2.0 (KIP-101 / KIP-82) — the v2 message format (KIP-98 in 0.11) moved CRCs to the batch level; per-record checksum carries no useful information. Replace with the 6-arg constructor `new RecordMetadata(tp, baseOffset, (int) batchIndex, timestamp, keySize, valueSize)`. Affects test/mock scaffolding and mock-producer libraries that hand-roll RecordMetadata."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, s -> new MethodCallRule(
+                RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, s,
+                Set.of(KafkaTypes.KAFKA_FUTURE),
+                Set.of("thenApply"),
+                desc -> desc != null && desc.contains("Lorg/apache/kafka/common/KafkaFuture$Function;"),
+                "KafkaFuture.thenApply(KafkaFuture.Function) deprecated since Kafka 3.0 (KIP-707) — the legacy `Function` interface declared a checked-exception apply() that forces awkward try/catch wrapping at every callsite. Replace with `KafkaFuture.BaseFunction` (same `apply(T)` shape, no checked exception) or, for new code, switch to `kafkaFuture.toCompletionStage().thenApply(...)` with standard java.util.function.Function. The plugin distinguishes the deprecated overload from the modern thenApply(BaseFunction) via descriptor."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

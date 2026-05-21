@@ -1907,4 +1907,42 @@ public final class BadKafkaUsage {
                 "k", "v",
                 new org.apache.kafka.common.header.internals.RecordHeaders());
     }
+
+    // RULE: ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED — KIP-516, deprecated since Kafka 3.0.
+    public void deleteTopicsResultLegacyValues(org.apache.kafka.clients.admin.Admin admin) throws Exception {
+        // Bug: DeleteTopicsResult.values() — name-keyed Map<String, KafkaFuture<Void>>. The unqualified
+        // .values() throws UnsupportedOperationException at runtime if delete-by-id was used.
+        org.apache.kafka.clients.admin.DeleteTopicsResult result =
+                admin.deleteTopics(java.util.List.of("topic-a", "topic-b"));
+        java.util.Map<String, org.apache.kafka.common.KafkaFuture<Void>> values = result.values();
+        for (org.apache.kafka.common.KafkaFuture<Void> f : values.values()) {
+            f.get();
+        }
+    }
+
+    // RULE: PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED — KIP-101 / KIP-82, deprecated since Kafka 2.0.
+    public org.apache.kafka.clients.producer.RecordMetadata recordMetadataLegacyChecksumCtor() {
+        // Bug: 7-arg RecordMetadata constructor with `Long checksum` field. Descriptor
+        // `(Lorg/apache/kafka/common/TopicPartition;JJJLjava/lang/Long;II)V`.
+        // Replace with the 6-arg constructor that omits checksum.
+        return new org.apache.kafka.clients.producer.RecordMetadata(
+                new org.apache.kafka.common.TopicPartition("topic", 0),
+                0L,    // baseOffset
+                0L,    // batchIndex (long, deprecated form)
+                0L,    // timestamp
+                Long.valueOf(0L),    // deprecated checksum field
+                0, 0);
+    }
+
+    // RULE: KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED — KIP-707, deprecated since Kafka 3.0.
+    public org.apache.kafka.common.KafkaFuture<Integer> kafkaFutureThenApplyLegacyFunction(
+            org.apache.kafka.common.KafkaFuture<String> future) {
+        // Bug: KafkaFuture.thenApply(KafkaFuture.Function) — legacy interface with checked-exception apply().
+        // The compiler picks this overload because we declare a KafkaFuture.Function variable.
+        org.apache.kafka.common.KafkaFuture.Function<String, Integer> legacyFn =
+                new org.apache.kafka.common.KafkaFuture.Function<String, Integer>() {
+                    @Override public Integer apply(String s) { return s == null ? 0 : s.length(); }
+                };
+        return future.thenApply(legacyFn);
+    }
 }

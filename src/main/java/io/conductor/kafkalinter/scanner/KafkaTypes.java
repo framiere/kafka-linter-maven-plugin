@@ -40,6 +40,9 @@ public final class KafkaTypes {
     public static final String ADMIN_DESCRIBE_LOG_DIRS_RESULT = "org/apache/kafka/clients/admin/DescribeLogDirsResult";
     public static final String ADMIN_UPDATE_FEATURES_OPTIONS = "org/apache/kafka/clients/admin/UpdateFeaturesOptions";
     public static final String ADMIN_TOPIC_LISTING = "org/apache/kafka/clients/admin/TopicListing";
+    public static final String ADMIN_DELETE_TOPICS_RESULT = "org/apache/kafka/clients/admin/DeleteTopicsResult";
+    public static final String RECORD_METADATA = "org/apache/kafka/clients/producer/RecordMetadata";
+    public static final String KAFKA_FUTURE = "org/apache/kafka/common/KafkaFuture";
     public static final String SUPPRESSED_BUFFER_CONFIG = "org/apache/kafka/streams/kstream/Suppressed$BufferConfig";
 
     public static final Set<String> PRODUCER_OWNERS = Set.of(KAFKA_PRODUCER, PRODUCER_INTERFACE);
