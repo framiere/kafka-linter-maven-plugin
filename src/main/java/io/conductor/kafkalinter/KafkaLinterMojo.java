@@ -598,6 +598,20 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_AGGREGATE_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("aggregate"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "Aggregator.aggregate(Initializer, Aggregator) with no Named — KSTREAM-AGGREGATE-<N> processor, state store, changelog topic all graph-index-derived. Of count/reduce/aggregate, aggregate typically carries the LARGEST per-key state (custom VA type); losing it across a topology edit is the most expensive to rebuild. Use aggregate(initializer, aggregator, Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s -> new MethodCallRule(
+                RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("build"),
+                desc -> "()Lorg/apache/kafka/streams/Topology;".equals(desc),
+                "StreamsBuilder.build() (no Properties argument) — topology.optimization is SILENTLY IGNORED, including REUSE_KTABLE_SOURCE_TOPICS and MERGE_REPARTITION_TOPICS. Production code that sets `topology.optimization=all` in props expects the rewrites; without props, the topology is emitted un-optimized and every internal topic is created with the un-optimized names. Use builder.build(streamsProperties)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED, s -> new MethodCallRule(
+                RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin"),
+                desc -> desc != null
+                        && desc.contains("Ljava/util/function/Function;")
+                        && !desc.contains("Lorg/apache/kafka/streams/kstream/TableJoined;"),
+                "KTable.join(KTable, Function, ValueJoiner...) foreign-key join with no TableJoined — the subscription registration topic AND the subscription response topic are both graph-index-derived (KTABLE-FK-JOIN-SUBSCRIPTION-REGISTRATION-<N>-topic and -RESPONSE-<N>-topic). Any topology edit renames both; the new deploy starts with empty subscription topics and the FK join produces NO output until every left-side key is re-emitted. Pass TableJoined.with(Named.as(\"my-fk-join\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED, s -> new MethodCallRule(
+                RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED, s, Set.of(KafkaTypes.KAFKA_STREAMS),
+                Set.of("allMetadataForStore", "allMetadata"),
+                "KafkaStreams.allMetadataForStore() / allMetadata() is deprecated since Kafka 3.0 (KIP-744) — returns the old org.apache.kafka.streams.state.StreamsMetadata, which silently elides standby-replica information. Interactive-query routers built on these methods cannot fall over to a standby host while the active is restoring; the IQ endpoint returns 503 for the full restore window. Use streamsMetadataForStore() / metadataForAllStreamsClients() which return the new org.apache.kafka.streams.StreamsMetadata with standbyStateStoreNames() populated."));
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),

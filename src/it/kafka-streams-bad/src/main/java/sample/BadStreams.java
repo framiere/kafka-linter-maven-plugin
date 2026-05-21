@@ -926,4 +926,50 @@ public final class BadStreams {
         return b.build();
     }
 
+    // RULE: STREAMS_BUILDER_BUILD_NO_PROPERTIES — StreamsBuilder.build() with no Properties → topology.optimization ignored.
+    public Topology builderBuildNoProperties() {
+        StreamsBuilder b = new StreamsBuilder();
+        b.<String, String>stream("input",
+                        org.apache.kafka.streams.kstream.Consumed.with(Serdes.String(), Serdes.String()).withName("input-source"))
+                .to("output", org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("output-sink"));
+        // Bug: no-args build() — REUSE_KTABLE_SOURCE_TOPICS, MERGE_REPARTITION_TOPICS, and every other
+        // topology.optimization rewrite is silently skipped. The accompanying Properties (with
+        // topology.optimization=all) has no effect because it is never passed in.
+        return b.build();
+    }
+
+    // RULE: STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED — KTable.join FK without TableJoined.
+    public Topology foreignKeyJoinNoTableJoined() {
+        StreamsBuilder b = new StreamsBuilder();
+        org.apache.kafka.streams.kstream.KTable<String, String> accounts =
+                b.table("accounts-fk-no-tj",
+                        Materialized.<String, String, KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("accounts-fk-no-tj-store"));
+        org.apache.kafka.streams.kstream.KTable<String, String> transactions =
+                b.table("transactions-fk-no-tj",
+                        Materialized.<String, String, KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("transactions-fk-no-tj-store"));
+        // Materialized is present (would silence the no-Materialized rule) — but TableJoined is missing,
+        // so the subscription registration AND subscription response internal topics are graph-index-derived.
+        accounts.join(transactions, (java.util.function.Function<String, String>) v -> v, (a, t) -> a + "|" + t,
+                        Materialized.<String, String, KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("fk-result-store"))
+                .toStream(org.apache.kafka.streams.kstream.Named.as("fk-no-tj-to-stream"))
+                .to("enriched-fk-no-tj",
+                        org.apache.kafka.streams.kstream.Produced.with(Serdes.String(), Serdes.String()).withName("enriched-fk-no-tj-sink"));
+        return b.build();
+    }
+
+    // RULE: STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED — KafkaStreams.allMetadataForStore()/allMetadata() deprecated (KIP-744, Kafka 3.0).
+    public void allMetadataForStoreDeprecated(KafkaStreams streams) {
+        // Both forms are flagged: post-KIP-744 they return the OLD-package StreamsMetadata,
+        // which silently elides standby-replica info — IQ routers cannot fall over to a standby
+        // while the active is restoring. Use streamsMetadataForStore() / metadataForAllStreamsClients().
+        java.util.Collection<org.apache.kafka.streams.state.StreamsMetadata> perStore =
+                streams.allMetadataForStore("my-store");
+        java.util.Collection<org.apache.kafka.streams.state.StreamsMetadata> all =
+                streams.allMetadata();
+        if (perStore != null && all != null) {
+            perStore.size();
+            all.size();
+        }
+    }
+
 }
