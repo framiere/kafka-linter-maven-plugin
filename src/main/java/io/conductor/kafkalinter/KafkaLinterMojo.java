@@ -1921,6 +1921,14 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.producer.properties.send.buffer.bytes={value} — over 16 MiB. Pins SO_SNDBUF per broker connection in kernel memory (invisible to JVM heap profilers); on a wide cluster this silently chews hundreds of MiB. Throughput gain over the autotuned default is nil — set to -1 (default) and let Linux TCP autotuning size it.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_SEND_BUFFER_BYTES_TOO_SMALL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_SEND_BUFFER_BYTES_TOO_SMALL, sev.get(RuleId.SPRING_BOOT_PRODUCER_SEND_BUFFER_BYTES_TOO_SMALL),
+                    "spring.kafka.producer.properties.send.buffer.bytes",
+                    v -> { long n = parseLongOrZero(v); return n > 0 && n <= 16384L; },
+                    "spring.kafka.producer.properties.send.buffer.bytes={value} — at or below 16 KiB. Strangles SO_SNDBUF to a value smaller than a single TCP send window; producer throughput collapses to buffer/RTT, an order of magnitude below the network's actual capacity. Set to -1 and let Linux autotune.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_RECEIVE_BUFFER_BYTES_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_RECEIVE_BUFFER_BYTES_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_RECEIVE_BUFFER_BYTES_TOO_HIGH),
