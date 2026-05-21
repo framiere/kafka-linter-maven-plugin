@@ -2167,6 +2167,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.properties.isolation.level={value} — silently overrides spring.kafka.consumer.isolation-level. End-to-end exactly-once consumption semantics can be silently broken (read_committed -> read_uncommitted demotion); the property file documents one isolation level while the runtime uses another. Remove this key and use spring.kafka.consumer.isolation-level instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_KEY_SERIALIZER_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_KEY_SERIALIZER_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_KEY_SERIALIZER_SET),
+                    "spring.kafka.producer.properties.key.serializer",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.key.serializer={value} — silently overrides spring.kafka.producer.key-serializer. The typed KafkaTemplate<K,V> no longer matches the runtime serializer; ClassCastException at send time or silent byte corruption. Remove this key and use spring.kafka.producer.key-serializer instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_VALUE_SERIALIZER_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_VALUE_SERIALIZER_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_VALUE_SERIALIZER_SET),
+                    "spring.kafka.producer.properties.value.serializer",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.value.serializer={value} — silently overrides spring.kafka.producer.value-serializer. The typed KafkaTemplate<K,V> no longer matches the runtime serializer; downstream consumers fail to deserialize because the on-wire format diverges from the documented contract. Remove this key and use spring.kafka.producer.value-serializer instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_SET, sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_SET),
+                    "spring.kafka.streams.properties.bootstrap.servers",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.streams.properties.bootstrap.servers={value} — overrides spring.kafka.bootstrap-servers for the Streams runtime only. Streams reads from and writes to a different cluster than the producer and consumer of the same application; records the producer writes never reach the Streams app. Remove this key.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
