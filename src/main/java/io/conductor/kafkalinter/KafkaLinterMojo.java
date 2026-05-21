@@ -2119,6 +2119,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.streams.properties.application.id={value} — overrides spring.kafka.streams.application-id silently. Every changelog and repartition topic name is derived from the application-id, so the override moves the entire topology to a different set of internal topics and orphans the previous state. Remove this key and use spring.kafka.streams.application-id instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BUFFER_MEMORY_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BUFFER_MEMORY_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_BUFFER_MEMORY_SET),
+                    "spring.kafka.producer.properties.buffer.memory",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.buffer.memory={value} — silently overrides spring.kafka.producer.buffer-memory. Capacity-planning decisions made from the DSL value are wrong; produce-latency debugging is misled. Remove this key and use spring.kafka.producer.buffer-memory instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_REPLICATION_FACTOR_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_STREAMS_PROPERTIES_REPLICATION_FACTOR_SET, sev.get(RuleId.SPRING_BOOT_STREAMS_PROPERTIES_REPLICATION_FACTOR_SET),
+                    "spring.kafka.streams.properties.replication.factor",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.streams.properties.replication.factor={value} — silently overrides spring.kafka.streams.replication-factor. Every internal changelog and repartition topic is created with the passthrough value; if it's lower than the DSL value, state-store durability is silently downgraded and the next broker failure loses state. Remove this key and use spring.kafka.streams.replication-factor instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_CLIENT_ID_SET) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_CLIENT_ID_SET, sev.get(RuleId.SPRING_BOOT_PRODUCER_PROPERTIES_CLIENT_ID_SET),
+                    "spring.kafka.producer.properties.client.id",
+                    v -> v != null && !v.trim().isEmpty(),
+                    "spring.kafka.producer.properties.client.id={value} — silently overrides spring.kafka.producer.client-id. The property file documents one identity, broker JMX and quota tooling sees another. Remove this key and use spring.kafka.producer.client-id instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
