@@ -1862,6 +1862,27 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.consumer.fetch-max-wait={value} — below 50 ms. Broker returns immediately even when fetch.min.bytes is not satisfied; consumer spins in tight empty-fetch loop on quiet topics. Default 500 ms.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PARTITIONER_IGNORE_KEYS_TRUE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_PARTITIONER_IGNORE_KEYS_TRUE, sev.get(RuleId.SPRING_BOOT_PRODUCER_PARTITIONER_IGNORE_KEYS_TRUE),
+                    "spring.kafka.producer.properties.partitioner.ignore.keys", "true",
+                    "spring.kafka.producer.properties.partitioner.ignore.keys=true — record key is ignored for partition routing; key-based ordering and compacted-topic semantics break silently.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_PRODUCER_PARTITIONER_ADAPTIVE_PARTITIONING_DISABLED) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_PRODUCER_PARTITIONER_ADAPTIVE_PARTITIONING_DISABLED, sev.get(RuleId.SPRING_BOOT_PRODUCER_PARTITIONER_ADAPTIVE_PARTITIONING_DISABLED),
+                    "spring.kafka.producer.properties.partitioner.adaptive.partitioning.enable", "false",
+                    "spring.kafka.producer.properties.partitioner.adaptive.partitioning.enable=false — opts the producer out of KIP-794 adaptive partitioning; the built-in partitioner reverts to round-robin across all partitions and stops avoiding slow brokers.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE) != Severity.OFF) {
+            rules.add(PropertyFileRule.literal(
+                    RuleId.SPRING_BOOT_CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE, sev.get(RuleId.SPRING_BOOT_CONSUMER_EXCLUDE_INTERNAL_TOPICS_FALSE),
+                    "spring.kafka.consumer.properties.exclude.internal.topics", "false",
+                    "spring.kafka.consumer.properties.exclude.internal.topics=false — consumer can subscribe to __consumer_offsets / __transaction_state via regex; subscribing to internal topics either grants read access to sensitive cluster metadata or causes deserialization crashes.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH) != Severity.OFF) {
             rules.add(PropertyFileRule.predicate(
                     RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH, sev.get(RuleId.SPRING_BOOT_CONSUMER_FETCH_MAX_SIZE_TOO_HIGH),
