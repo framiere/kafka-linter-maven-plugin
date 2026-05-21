@@ -2558,6 +2558,30 @@ public class KafkaLinterMojo extends AbstractMojo {
                     "spring.kafka.listener.ack-mode={value} — Spring commits the offset synchronously after every record. Per-record commit RTT (1-3 ms) becomes the dominant cost; throughput collapses 10-100× vs the default BATCH mode while the duplicate-on-crash window narrows by milliseconds. Use idempotent handlers instead.",
                     "org.springframework.kafka", "spring-kafka"));
         }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_TIME) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_ACK_MODE_TIME, sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_TIME),
+                    "spring.kafka.listener.ack-mode",
+                    v -> v != null && "time".equalsIgnoreCase(v.trim()),
+                    "spring.kafka.listener.ack-mode={value} — Spring commits offsets every spring.kafka.listener.ack-time milliseconds regardless of listener progress. A tick can land mid-poll-batch and commit past records the listener has not finished; a crash then loses those records (silent at-most-once window). Use the default BATCH instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_COUNT) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_ACK_MODE_COUNT, sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_COUNT),
+                    "spring.kafka.listener.ack-mode",
+                    v -> v != null && ("count".equalsIgnoreCase(v.trim()) || "count_time".equalsIgnoreCase(v.trim())),
+                    "spring.kafka.listener.ack-mode={value} — commit cadence is independent of poll boundaries; crash-recovery duplicates aren't bounded by max.poll.records anymore, and rebalance-commit races count-commit. Lower max.poll.records and stay in BATCH instead.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
+        if (sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_MANUAL) != Severity.OFF) {
+            rules.add(PropertyFileRule.predicate(
+                    RuleId.SPRING_BOOT_LISTENER_ACK_MODE_MANUAL, sev.get(RuleId.SPRING_BOOT_LISTENER_ACK_MODE_MANUAL),
+                    "spring.kafka.listener.ack-mode",
+                    v -> v != null && ("manual".equalsIgnoreCase(v.trim()) || "manual_immediate".equalsIgnoreCase(v.trim())),
+                    "spring.kafka.listener.ack-mode={value} — the container will not commit offsets unless the listener calls Acknowledgment.acknowledge(). A single forgotten ack() in any code path turns the listener into an infinite-replay loop on every restart. Verify every reachable branch calls acknowledge() exactly once.",
+                    "org.springframework.kafka", "spring-kafka"));
+        }
         if (sev.get(RuleId.SPRING_BOOT_LISTENER_MISSING_TOPICS_FATAL_FALSE) != Severity.OFF) {
             rules.add(PropertyFileRule.literal(
                     RuleId.SPRING_BOOT_LISTENER_MISSING_TOPICS_FATAL_FALSE, sev.get(RuleId.SPRING_BOOT_LISTENER_MISSING_TOPICS_FATAL_FALSE),
