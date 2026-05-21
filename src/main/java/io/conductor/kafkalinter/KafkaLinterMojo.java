@@ -48,6 +48,7 @@ import io.conductor.kafkalinter.rules.quarkus.SmallRyeChannelConfigRule;
 import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDelegatesRule;
 import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackagesWildcardRule;
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
+import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
@@ -1583,6 +1584,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER) != Severity.OFF) {
             rules.add(new StreamsNoUncaughtExceptionHandlerRule(sev.get(RuleId.STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER)));
+        }
+        if (sev.get(RuleId.STREAMS_NO_STATE_LISTENER) != Severity.OFF) {
+            rules.add(new StreamsNoStateListenerRule(sev.get(RuleId.STREAMS_NO_STATE_LISTENER)));
         }
         if (sev.get(RuleId.QK_DEVSERVICES_IN_PROD) != Severity.OFF) {
             rules.add(new QkDevservicesInProdRule(sev.get(RuleId.QK_DEVSERVICES_IN_PROD)));
