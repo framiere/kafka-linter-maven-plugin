@@ -129,6 +129,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesAutoOffsetResetAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesClientIdAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesPartitionAssignmentStrategyAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesEnableAutoCommitAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesFetchMinBytesAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesGroupIdAbsentRule;
@@ -2142,6 +2143,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_CLIENT_ID_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesClientIdAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_CLIENT_ID_ABSENT)));
+        }
+        if (sev.get(RuleId.CONSUMER_PROPERTIES_PARTITION_ASSIGNMENT_STRATEGY_ABSENT) != Severity.OFF) {
+            rules.add(new ConsumerPropertiesPartitionAssignmentStrategyAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_PARTITION_ASSIGNMENT_STRATEGY_ABSENT)));
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesSessionTimeoutMsAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_ABSENT)));
