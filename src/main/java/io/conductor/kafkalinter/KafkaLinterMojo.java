@@ -123,6 +123,8 @@ import io.conductor.kafkalinter.rules.config.MethodCallRule;
 import io.conductor.kafkalinter.rules.config.PropertyFileRule;
 import io.conductor.kafkalinter.rules.observability.JacksonDefaultTypingRule;
 import io.conductor.kafkalinter.rules.observability.SchemaRegistryUrlMissingRule;
+import io.conductor.kafkalinter.rules.observability.SrJsonValueTypeMissingRule;
+import io.conductor.kafkalinter.rules.observability.SrProtobufValueTypeMissingRule;
 import io.conductor.kafkalinter.rules.observability.SrUseLatestVersionMissingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkBlockingMissingOnIncomingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkDevservicesInProdRule;
@@ -1869,6 +1871,12 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING) != Severity.OFF) {
             rules.add(new SrUseLatestVersionMissingRule(sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING)));
+        }
+        if (sev.get(RuleId.SR_JSON_VALUE_TYPE_MISSING) != Severity.OFF) {
+            rules.add(new SrJsonValueTypeMissingRule(sev.get(RuleId.SR_JSON_VALUE_TYPE_MISSING)));
+        }
+        if (sev.get(RuleId.SR_PROTOBUF_VALUE_TYPE_MISSING) != Severity.OFF) {
+            rules.add(new SrProtobufValueTypeMissingRule(sev.get(RuleId.SR_PROTOBUF_VALUE_TYPE_MISSING)));
         }
         if (sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTopicCreationGroupDefinedButNotListedRule(sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED)));
