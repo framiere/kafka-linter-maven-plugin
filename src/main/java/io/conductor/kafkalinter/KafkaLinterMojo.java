@@ -112,6 +112,7 @@ import io.conductor.kafkalinter.rules.connect.Mm2SyncTopicConfigsDisabledRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesAcksAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBatchSizeAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBufferMemoryAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesCompressionTypeAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesEnableIdempotenceAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesLingerMsAbsentRule;
@@ -2074,6 +2075,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.PRODUCER_PROPERTIES_BATCH_SIZE_ABSENT) != Severity.OFF) {
             rules.add(new ProducerPropertiesBatchSizeAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_BATCH_SIZE_ABSENT)));
+        }
+        if (sev.get(RuleId.PRODUCER_PROPERTIES_BUFFER_MEMORY_ABSENT) != Severity.OFF) {
+            rules.add(new ProducerPropertiesBufferMemoryAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_BUFFER_MEMORY_ABSENT)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
