@@ -47,6 +47,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnS
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
+import io.conductor.kafkalinter.rules.connect.ConnectProducerEnableIdempotenceFalseRule;
 import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
@@ -1804,6 +1805,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_SLOT_DROP_ON_STOP_TRUE) != Severity.OFF) {
             rules.add(new ConnectDebeziumPostgresSlotDropOnStopTrueRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_SLOT_DROP_ON_STOP_TRUE)));
+        }
+        if (sev.get(RuleId.CONNECT_PRODUCER_ENABLE_IDEMPOTENCE_FALSE) != Severity.OFF) {
+            rules.add(new ConnectProducerEnableIdempotenceFalseRule(sev.get(RuleId.CONNECT_PRODUCER_ENABLE_IDEMPOTENCE_FALSE)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
