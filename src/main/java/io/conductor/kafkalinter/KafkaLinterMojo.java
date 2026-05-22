@@ -51,6 +51,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMiss
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetResetLatestRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtractorWallclockRule;
+import io.conductor.kafkalinter.rules.connect.ConnectTopicCreationGroupDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
@@ -1796,6 +1797,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceModeColumnMissingRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING)));
+        }
+        if (sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
+            rules.add(new ConnectTopicCreationGroupDefinedButNotListedRule(sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
