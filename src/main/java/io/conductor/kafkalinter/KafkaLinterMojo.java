@@ -66,6 +66,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTombstonesOnDeleteD
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
+import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkUpsertOrUpdateWithoutPkRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceValidateNonNullFalseRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
@@ -1823,6 +1824,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_PREDICATE_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectPredicateDefinedButNotListedRule(sev.get(RuleId.CONNECT_PREDICATE_DEFINED_BUT_NOT_LISTED)));
+        }
+        if (sev.get(RuleId.CONNECT_JDBC_SINK_UPSERT_OR_UPDATE_WITHOUT_PK) != Severity.OFF) {
+            rules.add(new ConnectJdbcSinkUpsertOrUpdateWithoutPkRule(sev.get(RuleId.CONNECT_JDBC_SINK_UPSERT_OR_UPDATE_WITHOUT_PK)));
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_VALIDATE_NON_NULL_FALSE) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceValidateNonNullFalseRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_VALIDATE_NON_NULL_FALSE)));
