@@ -60,6 +60,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissing
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumDecimalHandlingModeDoubleRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumEventProcessingFailureHandlingModeSkipOrWarnRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSchemaHistoryInternalSkipUnparseableDdlTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSkippedOperationsDropsDataRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumKeyConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMaxQueueSizeLessThanMaxBatchSizeRule;
@@ -1874,6 +1875,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SKIPPED_OPERATIONS_DROPS_DATA) != Severity.OFF) {
             rules.add(new ConnectDebeziumSkippedOperationsDropsDataRule(sev.get(RuleId.CONNECT_DEBEZIUM_SKIPPED_OPERATIONS_DROPS_DATA)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_INTERNAL_SKIP_UNPARSEABLE_DDL_TRUE) != Severity.OFF) {
+            rules.add(new ConnectDebeziumSchemaHistoryInternalSkipUnparseableDdlTrueRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_INTERNAL_SKIP_UNPARSEABLE_DDL_TRUE)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_DECIMAL_HANDLING_MODE_DOUBLE) != Severity.OFF) {
             rules.add(new ConnectDebeziumDecimalHandlingModeDoubleRule(sev.get(RuleId.CONNECT_DEBEZIUM_DECIMAL_HANDLING_MODE_DOUBLE)));
