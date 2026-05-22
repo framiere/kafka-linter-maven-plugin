@@ -178,6 +178,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerR
 import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultDeserializationExceptionHandlerAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultProductionExceptionHandlerAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingGuaranteeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesReplicationFactorAbsentRule;
@@ -2147,6 +2148,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesDefaultDeserializationExceptionHandlerAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_PRODUCTION_EXCEPTION_HANDLER_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesDefaultProductionExceptionHandlerAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_PRODUCTION_EXCEPTION_HANDLER_ABSENT)));
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesBootstrapServersAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT)));
