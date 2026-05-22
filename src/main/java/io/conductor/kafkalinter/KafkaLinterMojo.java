@@ -44,6 +44,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumKeyConverterByteArrayRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMaxQueueSizeLessThanMaxBatchSizeRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
@@ -1824,6 +1825,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_VALUE_CONVERTER_BYTE_ARRAY) != Severity.OFF) {
             rules.add(new ConnectDebeziumValueConverterByteArrayRule(sev.get(RuleId.CONNECT_DEBEZIUM_VALUE_CONVERTER_BYTE_ARRAY)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_MAX_QUEUE_SIZE_LESS_THAN_MAX_BATCH_SIZE) != Severity.OFF) {
+            rules.add(new ConnectDebeziumMaxQueueSizeLessThanMaxBatchSizeRule(sev.get(RuleId.CONNECT_DEBEZIUM_MAX_QUEUE_SIZE_LESS_THAN_MAX_BATCH_SIZE)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
