@@ -123,6 +123,7 @@ import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesAutoOffsetResetAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesEnableAutoCommitAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerHeartbeatSessionRatioRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNotThreadSafeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNoWakeupShutdownRule;
@@ -2086,6 +2087,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesAutoOffsetResetAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_ABSENT)));
+        }
+        if (sev.get(RuleId.CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_ABSENT) != Severity.OFF) {
+            rules.add(new ConsumerPropertiesEnableAutoCommitAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_ABSENT)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
