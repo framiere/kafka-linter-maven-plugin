@@ -201,7 +201,7 @@ A small sampler from the `kafka-connect` category (Connect worker / source / sin
 
 | Rule ID                                            | Default   | What it catches                                                                                                  |
 |----------------------------------------------------|-----------|------------------------------------------------------------------------------------------------------------------|
-| `CONNECT_STORAGE_SINK_FLUSH_SIZE_TOO_SMALL`        | `WARNING` | S3/HDFS/GCS sink with `flush.size` < 100 — small-object storm: thousands of tiny files crippling downstream scan jobs and object-store list APIs. |
+| `CONNECT_S3_SINK_FLUSH_SIZE_TOO_SMALL`             | `WARNING` | S3 sink with `flush.size` < 100 — small-object storm: thousands of tiny files crippling downstream scan jobs and S3 list APIs. |
 | `CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW` | `WARNING` | Time-based partitioner with `partition.duration.ms` < 60000 ms — sub-minute partition windows multiply object count, the storm seen from a different axis. |
 | `CONNECT_STORAGE_SINK_ROTATE_INTERVAL_MS_TOO_LOW`  | `WARNING` | `rotate.interval.ms` < 60000 ms — event-time-based file rotation under a minute; same small-object-storm risk as the other two cadence rules. |
 | `CONNECT_JDBC_SOURCE_POLL_INTERVAL_MS_TOO_LOW`     | `WARNING` | Confluent JDBC source with `poll.interval.ms` < 1000 ms — sub-second DB polling saturates connection pools, pins MVCC snapshots, and amplifies WAL/redo activity. For genuine sub-second freshness use Debezium. |
