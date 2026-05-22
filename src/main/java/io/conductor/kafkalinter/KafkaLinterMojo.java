@@ -180,7 +180,9 @@ import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesCommitIntervalMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultDeserializationExceptionHandlerAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultKeySerdeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultProductionExceptionHandlerAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultValueSerdeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingGuaranteeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesReplicationFactorAbsentRule;
@@ -2162,6 +2164,12 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_COMMIT_INTERVAL_MS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesCommitIntervalMsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_COMMIT_INTERVAL_MS_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_KEY_SERDE_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesDefaultKeySerdeAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_KEY_SERDE_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_VALUE_SERDE_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesDefaultValueSerdeAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_VALUE_SERDE_ABSENT)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
