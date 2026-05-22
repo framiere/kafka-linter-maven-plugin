@@ -43,6 +43,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBot
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumKeyConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
@@ -1808,6 +1809,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_PRODUCER_ENABLE_IDEMPOTENCE_FALSE) != Severity.OFF) {
             rules.add(new ConnectProducerEnableIdempotenceFalseRule(sev.get(RuleId.CONNECT_PRODUCER_ENABLE_IDEMPOTENCE_FALSE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_KEY_CONVERTER_BYTE_ARRAY) != Severity.OFF) {
+            rules.add(new ConnectDebeziumKeyConverterByteArrayRule(sev.get(RuleId.CONNECT_DEBEZIUM_KEY_CONVERTER_BYTE_ARRAY)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
