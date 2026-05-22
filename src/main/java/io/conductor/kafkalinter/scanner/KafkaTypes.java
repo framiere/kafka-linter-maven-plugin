@@ -176,6 +176,8 @@ public final class KafkaTypes {
             "RC4", "MD5", "DES", "3DES", "NULL", "EXPORT", "ANON"
     );
     public static final String SR_BEARER_AUTH_TOKEN_KEY = "bearer.auth.token";
+    public static final String AWS_ACCESS_KEY_ID_KEY = "aws.access.key.id";
+    public static final String AWS_SECRET_ACCESS_KEY_KEY = "aws.secret.access.key";
     public static final String EXCLUDE_INTERNAL_TOPICS_KEY = "exclude.internal.topics";
     public static final String PARTITION_ASSIGNMENT_STRATEGY_KEY = "partition.assignment.strategy";
     public static final Set<String> LEGACY_PARTITION_ASSIGNORS = Set.of(

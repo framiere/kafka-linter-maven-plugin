@@ -156,6 +156,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadNoTimeoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStoreQueryParametersNoStaleStoresRule;
+import io.conductor.kafkalinter.rules.security.CredAwsCredentialLiteralRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerThreadSleepRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
@@ -1850,6 +1851,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW) != Severity.OFF) {
             rules.add(new ConnectStorageSinkPartitionDurationMsTooLowRule(sev.get(RuleId.CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW)));
+        }
+        if (sev.get(RuleId.CRED_AWS_CREDENTIAL_LITERAL) != Severity.OFF) {
+            rules.add(new CredAwsCredentialLiteralRule(sev.get(RuleId.CRED_AWS_CREDENTIAL_LITERAL)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTransformDefinedButNotListedRule(sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED)));
