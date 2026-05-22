@@ -26,6 +26,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectAvroAutoRegisterSchemasTrue
 import io.conductor.kafkalinter.rules.connect.ConnectConfigProviderReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumIncludeAndExcludeListBothSetRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumIncrementalSnapshotWithoutSignalChannelRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdRandomRelianceRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresFilteredPublicationHeartbeatDisabledRule;
@@ -1861,6 +1862,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SINK_TABLE_NAME_FORMAT_WITHOUT_TOPIC_PLACEHOLDER) != Severity.OFF) {
             rules.add(new ConnectJdbcSinkTableNameFormatWithoutTopicPlaceholderRule(sev.get(RuleId.CONNECT_JDBC_SINK_TABLE_NAME_FORMAT_WITHOUT_TOPIC_PLACEHOLDER)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_INCREMENTAL_SNAPSHOT_WITHOUT_SIGNAL_CHANNEL) != Severity.OFF) {
+            rules.add(new ConnectDebeziumIncrementalSnapshotWithoutSignalChannelRule(sev.get(RuleId.CONNECT_DEBEZIUM_INCREMENTAL_SNAPSHOT_WITHOUT_SIGNAL_CHANNEL)));
         }
         if (sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTopicCreationGroupDefinedButNotListedRule(sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED)));
