@@ -76,6 +76,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkDeleteEnabledTrueWi
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkTableNameFormatWithoutTopicPlaceholderRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkUpsertOrUpdateWithoutPkRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
+import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourcePollIntervalMsTooLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceQueryAndTableBothSetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceValidateNonNullFalseRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
@@ -1886,6 +1887,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceModeColumnMissingRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING)));
+        }
+        if (sev.get(RuleId.CONNECT_JDBC_SOURCE_POLL_INTERVAL_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(new ConnectJdbcSourcePollIntervalMsTooLowRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_POLL_INTERVAL_MS_TOO_LOW)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE) != Severity.OFF) {
             rules.add(new ConnectTransformFilterWithoutPredicateRule(sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE)));
