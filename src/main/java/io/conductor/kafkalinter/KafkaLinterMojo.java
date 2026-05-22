@@ -94,6 +94,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTransformFilterWithoutPredi
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.Mm2BlacklistDeprecatedRule;
+import io.conductor.kafkalinter.rules.connect.Mm2ClusterBootstrapServersLocalhostRule;
 import io.conductor.kafkalinter.rules.connect.Mm2EmitCheckpointsDisabledRule;
 import io.conductor.kafkalinter.rules.connect.Mm2EmitHeartbeatsDisabledRule;
 import io.conductor.kafkalinter.rules.connect.Mm2InternalTopicReplicationFactorLowRule;
@@ -1901,6 +1902,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.MM2_SOURCE_CONNECTOR_TASKS_MAX_ONE) != Severity.OFF) {
             rules.add(new Mm2SourceConnectorTasksMaxOneRule(sev.get(RuleId.MM2_SOURCE_CONNECTOR_TASKS_MAX_ONE)));
+        }
+        if (sev.get(RuleId.MM2_CLUSTER_BOOTSTRAP_SERVERS_LOCALHOST) != Severity.OFF) {
+            rules.add(new Mm2ClusterBootstrapServersLocalhostRule(sev.get(RuleId.MM2_CLUSTER_BOOTSTRAP_SERVERS_LOCALHOST)));
         }
         if (sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING) != Severity.OFF) {
             rules.add(new SrUseLatestVersionMissingRule(sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING)));
