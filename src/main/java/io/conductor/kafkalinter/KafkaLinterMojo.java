@@ -69,6 +69,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFiltered
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkDeleteEnabledTrueWithoutPkModeRecordKeyRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkUpsertOrUpdateWithoutPkRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
+import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceQueryAndTableBothSetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceValidateNonNullFalseRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
@@ -1831,6 +1832,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SINK_UPSERT_OR_UPDATE_WITHOUT_PK) != Severity.OFF) {
             rules.add(new ConnectJdbcSinkUpsertOrUpdateWithoutPkRule(sev.get(RuleId.CONNECT_JDBC_SINK_UPSERT_OR_UPDATE_WITHOUT_PK)));
+        }
+        if (sev.get(RuleId.CONNECT_JDBC_SOURCE_QUERY_AND_TABLE_BOTH_SET) != Severity.OFF) {
+            rules.add(new ConnectJdbcSourceQueryAndTableBothSetRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_QUERY_AND_TABLE_BOTH_SET)));
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_VALIDATE_NON_NULL_FALSE) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceValidateNonNullFalseRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_VALIDATE_NON_NULL_FALSE)));
