@@ -113,6 +113,7 @@ import io.conductor.kafkalinter.rules.connect.Mm2SyncTopicAclsDisabledRule;
 import io.conductor.kafkalinter.rules.connect.Mm2SyncTopicConfigsDisabledRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesAcksAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBatchSizeAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBufferMemoryAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesCompressionTypeAbsentRule;
@@ -125,6 +126,7 @@ import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesAutoOffsetResetAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesEnableAutoCommitAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesFetchMinBytesAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesIsolationLevelAbsentRule;
@@ -2089,6 +2091,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         if (sev.get(RuleId.PRODUCER_PROPERTIES_ACKS_ABSENT) != Severity.OFF) {
             rules.add(new ProducerPropertiesAcksAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_ACKS_ABSENT)));
         }
+        if (sev.get(RuleId.PRODUCER_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT) != Severity.OFF) {
+            rules.add(new ProducerPropertiesBootstrapServersAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT)));
+        }
         if (sev.get(RuleId.PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE_ABSENT) != Severity.OFF) {
             rules.add(new ProducerPropertiesEnableIdempotenceAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_ENABLE_IDEMPOTENCE_ABSENT)));
         }
@@ -2106,6 +2111,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesAutoOffsetResetAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_ABSENT)));
+        }
+        if (sev.get(RuleId.CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT) != Severity.OFF) {
+            rules.add(new ConsumerPropertiesBootstrapServersAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT)));
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesEnableAutoCommitAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_ABSENT)));
