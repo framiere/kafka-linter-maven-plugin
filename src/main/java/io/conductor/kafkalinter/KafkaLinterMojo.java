@@ -28,6 +28,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectConsumerOverrideGroupIdRule
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumIncludeAndExcludeListBothSetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdRandomRelianceRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlServerIdSharedRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresPublicationNameSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotNameSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSchemaHistoryTopicSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTopicPrefixSharedRule;
@@ -1846,6 +1847,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_SLOT_NAME_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumPostgresSlotNameSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_SLOT_NAME_SHARED)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_PUBLICATION_NAME_SHARED) != Severity.OFF) {
+            rules.add(new ConnectDebeziumPostgresPublicationNameSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_PUBLICATION_NAME_SHARED)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumMysqlServerIdSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED)));
