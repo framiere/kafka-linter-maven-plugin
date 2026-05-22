@@ -95,6 +95,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRul
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.Mm2BlacklistDeprecatedRule;
 import io.conductor.kafkalinter.rules.connect.Mm2InternalTopicReplicationFactorLowRule;
+import io.conductor.kafkalinter.rules.connect.Mm2SyncTopicAclsDisabledRule;
 import io.conductor.kafkalinter.rules.connect.Mm2SyncTopicConfigsDisabledRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
 import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
@@ -1881,6 +1882,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.MM2_SYNC_TOPIC_CONFIGS_DISABLED) != Severity.OFF) {
             rules.add(new Mm2SyncTopicConfigsDisabledRule(sev.get(RuleId.MM2_SYNC_TOPIC_CONFIGS_DISABLED)));
+        }
+        if (sev.get(RuleId.MM2_SYNC_TOPIC_ACLS_DISABLED) != Severity.OFF) {
+            rules.add(new Mm2SyncTopicAclsDisabledRule(sev.get(RuleId.MM2_SYNC_TOPIC_ACLS_DISABLED)));
         }
         if (sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING) != Severity.OFF) {
             rules.add(new SrUseLatestVersionMissingRule(sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING)));
