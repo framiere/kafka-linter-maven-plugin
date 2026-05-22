@@ -67,6 +67,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterByteA
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
+import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceValidateNonNullFalseRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectProducerEnableIdempotenceFalseRule;
@@ -1822,6 +1823,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_PREDICATE_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectPredicateDefinedButNotListedRule(sev.get(RuleId.CONNECT_PREDICATE_DEFINED_BUT_NOT_LISTED)));
+        }
+        if (sev.get(RuleId.CONNECT_JDBC_SOURCE_VALIDATE_NON_NULL_FALSE) != Severity.OFF) {
+            rules.add(new ConnectJdbcSourceValidateNonNullFalseRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_VALIDATE_NON_NULL_FALSE)));
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceModeColumnMissingRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING)));
