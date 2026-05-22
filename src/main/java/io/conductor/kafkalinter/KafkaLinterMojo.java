@@ -94,6 +94,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTransformFilterWithoutPredi
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.Mm2BlacklistDeprecatedRule;
+import io.conductor.kafkalinter.rules.connect.Mm2InternalTopicReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
 import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
@@ -1873,6 +1874,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.MM2_BLACKLIST_DEPRECATED) != Severity.OFF) {
             rules.add(new Mm2BlacklistDeprecatedRule(sev.get(RuleId.MM2_BLACKLIST_DEPRECATED)));
+        }
+        if (sev.get(RuleId.MM2_INTERNAL_TOPIC_REPLICATION_FACTOR_LOW) != Severity.OFF) {
+            rules.add(new Mm2InternalTopicReplicationFactorLowRule(sev.get(RuleId.MM2_INTERNAL_TOPIC_REPLICATION_FACTOR_LOW)));
         }
         if (sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING) != Severity.OFF) {
             rules.add(new SrUseLatestVersionMissingRule(sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING)));
