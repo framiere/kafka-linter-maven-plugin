@@ -43,6 +43,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBot
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
+import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
@@ -1788,6 +1789,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTransformDefinedButNotListedRule(sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED)));
+        }
+        if (sev.get(RuleId.CONNECT_PREDICATE_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
+            rules.add(new ConnectPredicateDefinedButNotListedRule(sev.get(RuleId.CONNECT_PREDICATE_DEFINED_BUT_NOT_LISTED)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
