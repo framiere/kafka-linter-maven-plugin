@@ -96,6 +96,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtract
 import io.conductor.kafkalinter.rules.connect.ConnectTopicCreationGroupDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformFilterWithoutPredicateRule;
+import io.conductor.kafkalinter.rules.connect.ConnectRestAdvertisedHostNameLocalhostRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectWorkerInternalTopicReplicationFactorLowRule;
@@ -1894,6 +1895,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_WORKER_INTERNAL_TOPIC_REPLICATION_FACTOR_LOW) != Severity.OFF) {
             rules.add(new ConnectWorkerInternalTopicReplicationFactorLowRule(sev.get(RuleId.CONNECT_WORKER_INTERNAL_TOPIC_REPLICATION_FACTOR_LOW)));
+        }
+        if (sev.get(RuleId.CONNECT_REST_ADVERTISED_HOST_NAME_LOCALHOST) != Severity.OFF) {
+            rules.add(new ConnectRestAdvertisedHostNameLocalhostRule(sev.get(RuleId.CONNECT_REST_ADVERTISED_HOST_NAME_LOCALHOST)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE) != Severity.OFF) {
             rules.add(new ConnectTransformFilterWithoutPredicateRule(sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE)));
