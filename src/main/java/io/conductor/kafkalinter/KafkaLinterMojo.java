@@ -93,6 +93,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListe
 import io.conductor.kafkalinter.rules.connect.ConnectTransformFilterWithoutPredicateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
+import io.conductor.kafkalinter.rules.connect.Mm2BlacklistDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
 import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
@@ -1869,6 +1870,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_INCREMENTAL_SNAPSHOT_WITHOUT_SIGNAL_CHANNEL) != Severity.OFF) {
             rules.add(new ConnectDebeziumIncrementalSnapshotWithoutSignalChannelRule(sev.get(RuleId.CONNECT_DEBEZIUM_INCREMENTAL_SNAPSHOT_WITHOUT_SIGNAL_CHANNEL)));
+        }
+        if (sev.get(RuleId.MM2_BLACKLIST_DEPRECATED) != Severity.OFF) {
+            rules.add(new Mm2BlacklistDeprecatedRule(sev.get(RuleId.MM2_BLACKLIST_DEPRECATED)));
         }
         if (sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING) != Severity.OFF) {
             rules.add(new SrUseLatestVersionMissingRule(sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING)));
