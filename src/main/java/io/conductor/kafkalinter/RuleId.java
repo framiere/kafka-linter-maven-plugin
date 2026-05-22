@@ -614,6 +614,16 @@ public final class RuleId {
             .whyMatters("One-line change: `processing.guarantee=exactly_once_v2`. Required broker minimum is 2.5+, which is almost certainly already true. Migrate before the next Kafka upgrade window.")
             .build());
 
+    public static final RuleId STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT = register(builder("STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT")
+            .defaultSeverity(Severity.INFO).confidence(Confidence.HIGH).category("kafka-streams")
+            .docPath("kafka-streams/STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT.md")
+            .message("Streams config does not set `processing.guarantee` — silently defaults to `at_least_once`. Duplicates on rebalance/restart are the default behavior.")
+            .tagline("Absent `processing.guarantee` means `at_least_once`. If the application needs EOS, it does not have it.")
+            .mechanism("Kafka Streams' `processing.guarantee` accepts `at_least_once` (default), `exactly_once_v2`, and the deprecated `exactly_once` / `exactly_once_beta` (see [[streams-eos-v1-deprecated]]). Under `at_least_once`, on every rebalance and on every restart, in-flight records may be reprocessed and re-emitted to output topics — same record, multiple deliveries downstream. Under `exactly_once_v2`, Streams wraps each commit in a Kafka transaction spanning the source-position commit, the changelog update, and the output produces — making the whole cycle atomic.")
+            .impact("The bug shape this rule catches is silent under-protection: operator wrote a Streams app that aggregates financial events, computes balances, emits settlements — and assumed 'obviously Streams gives me EOS'. The default does not. The first rebalance (every deployment, every scale-up, every broker rolling restart) replays in-flight records and produces duplicate settlements downstream. Discovered in production when finance reconciliation flags double-counted transactions. Inverse bug shape: operator copied `processing.guarantee=exactly_once_v2` from a guide for a workload that does not need it; pays the EOS tax (100 ms commit interval, transactional broker state per task, ~30% throughput overhead) for no semantic benefit on an idempotent downstream.")
+            .whyMatters("Pin the guarantee explicitly. `processing.guarantee=at_least_once` if downstream is idempotent (key-keyed upserts, set-valued state, monitoring dashboards) — make the at-least-once posture a deliberate choice that survives code review. `processing.guarantee=exactly_once_v2` if any downstream effect is non-idempotent (financial settlement, inventory decrement, external API call). Either way, write it down. The default is workload-dependent — the plugin cannot infer your domain, but it can demand that you commit to one.")
+            .build());
+
     public static final RuleId STREAMS_CLEANUP_IN_PROD = register(builder("STREAMS_CLEANUP_IN_PROD")
             .defaultSeverity(Severity.ERROR).confidence(Confidence.MEDIUM).category("kafka-streams")
             .docPath("kafka-streams/STREAMS_CLEANUP_IN_PROD.md")
