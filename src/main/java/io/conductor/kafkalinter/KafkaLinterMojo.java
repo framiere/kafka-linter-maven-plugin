@@ -90,6 +90,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetReset
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkFieldPartitionerWithoutPartitionFieldNameRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkPathFormatWithoutTimePartitionerRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkPartitionDurationMsTooLowRule;
+import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkRotateIntervalMsTooLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtractorWallclockRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTopicCreationGroupDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListedRule;
@@ -1855,6 +1856,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW) != Severity.OFF) {
             rules.add(new ConnectStorageSinkPartitionDurationMsTooLowRule(sev.get(RuleId.CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW)));
+        }
+        if (sev.get(RuleId.CONNECT_STORAGE_SINK_ROTATE_INTERVAL_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(new ConnectStorageSinkRotateIntervalMsTooLowRule(sev.get(RuleId.CONNECT_STORAGE_SINK_ROTATE_INTERVAL_MS_TOO_LOW)));
         }
         if (sev.get(RuleId.CRED_AWS_CREDENTIAL_LITERAL) != Severity.OFF) {
             rules.add(new CredAwsCredentialLiteralRule(sev.get(RuleId.CRED_AWS_CREDENTIAL_LITERAL)));
