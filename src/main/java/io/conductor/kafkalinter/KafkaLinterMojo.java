@@ -129,6 +129,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesAutoOffsetResetA
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesEnableAutoCommitAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesFetchMinBytesAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesGroupIdAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesIsolationLevelAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesMaxPollIntervalMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesMaxPollRecordsAbsentRule;
@@ -2115,6 +2116,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesBootstrapServersAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT)));
+        }
+        if (sev.get(RuleId.CONSUMER_PROPERTIES_GROUP_ID_ABSENT) != Severity.OFF) {
+            rules.add(new ConsumerPropertiesGroupIdAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_GROUP_ID_ABSENT)));
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesEnableAutoCommitAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_ENABLE_AUTO_COMMIT_ABSENT)));
