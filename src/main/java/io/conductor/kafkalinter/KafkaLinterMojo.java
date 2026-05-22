@@ -46,6 +46,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumDecimalHandlingModeDoubleRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumKeyConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMaxQueueSizeLessThanMaxBatchSizeRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTimePrecisionModeConnectRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
@@ -1832,6 +1833,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_DECIMAL_HANDLING_MODE_DOUBLE) != Severity.OFF) {
             rules.add(new ConnectDebeziumDecimalHandlingModeDoubleRule(sev.get(RuleId.CONNECT_DEBEZIUM_DECIMAL_HANDLING_MODE_DOUBLE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_TIME_PRECISION_MODE_CONNECT) != Severity.OFF) {
+            rules.add(new ConnectDebeziumTimePrecisionModeConnectRule(sev.get(RuleId.CONNECT_DEBEZIUM_TIME_PRECISION_MODE_CONNECT)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumSchemaHistoryTopicSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_SCHEMA_HISTORY_TOPIC_SHARED)));
