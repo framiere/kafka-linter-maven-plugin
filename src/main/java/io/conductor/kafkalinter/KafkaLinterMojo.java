@@ -64,6 +64,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMaxQueueSizeLessTha
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTimePrecisionModeConnectRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTombstonesOnDeleteDisabledRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterByteArrayRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresPublicationAutocreateModeAllTablesRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkDeleteEnabledTrueWithoutPkModeRecordKeyRule;
@@ -1847,6 +1848,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_SLOT_DROP_ON_STOP_TRUE) != Severity.OFF) {
             rules.add(new ConnectDebeziumPostgresSlotDropOnStopTrueRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_SLOT_DROP_ON_STOP_TRUE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_PUBLICATION_AUTOCREATE_MODE_ALL_TABLES) != Severity.OFF) {
+            rules.add(new ConnectDebeziumPostgresPublicationAutocreateModeAllTablesRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_PUBLICATION_AUTOCREATE_MODE_ALL_TABLES)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_PUBLICATION_FILTERED_MISSING_FILTER_LIST) != Severity.OFF) {
             rules.add(new ConnectDebeziumPublicationFilteredMissingFilterListRule(sev.get(RuleId.CONNECT_DEBEZIUM_PUBLICATION_FILTERED_MISSING_FILTER_LIST)));
