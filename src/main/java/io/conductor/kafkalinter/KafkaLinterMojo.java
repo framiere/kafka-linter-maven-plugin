@@ -56,6 +56,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectHdfsSinkFlushSizeHugeWithou
 import io.conductor.kafkalinter.rules.connect.ConnectJsonConverterSchemasEnableUnsetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectNameMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBothSetRule;
+import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexNeitherSetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxAbsentRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
@@ -1831,6 +1832,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_SINK_TOPICS_AND_TOPICS_REGEX_BOTH_SET) != Severity.OFF) {
             rules.add(new ConnectSinkTopicsAndTopicsRegexBothSetRule(sev.get(RuleId.CONNECT_SINK_TOPICS_AND_TOPICS_REGEX_BOTH_SET)));
+        }
+        if (sev.get(RuleId.CONNECT_SINK_TOPICS_AND_TOPICS_REGEX_NEITHER_SET) != Severity.OFF) {
+            rules.add(new ConnectSinkTopicsAndTopicsRegexNeitherSetRule(sev.get(RuleId.CONNECT_SINK_TOPICS_AND_TOPICS_REGEX_NEITHER_SET)));
         }
         if (sev.get(RuleId.CONNECT_DLQ_CONTEXT_HEADERS_DISABLED) != Severity.OFF) {
             rules.add(new ConnectDlqContextHeadersDisabledRule(sev.get(RuleId.CONNECT_DLQ_CONTEXT_HEADERS_DISABLED)));
