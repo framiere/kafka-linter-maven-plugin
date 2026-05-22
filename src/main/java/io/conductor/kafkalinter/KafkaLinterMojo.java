@@ -43,6 +43,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSqlServerDatabaseDb
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumLegacySchemaHistoryKeysRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumDatabaseServerNameDeprecatedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterStringRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumKeyConverterStringRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSchemaHistoryTopicSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTopicPrefixSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqContextHeadersDisabledRule;
@@ -1902,6 +1903,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_VALUE_CONVERTER_STRING) != Severity.OFF) {
             rules.add(new ConnectDebeziumValueConverterStringRule(sev.get(RuleId.CONNECT_DEBEZIUM_VALUE_CONVERTER_STRING)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_KEY_CONVERTER_STRING) != Severity.OFF) {
+            rules.add(new ConnectDebeziumKeyConverterStringRule(sev.get(RuleId.CONNECT_DEBEZIUM_KEY_CONVERTER_STRING)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumMysqlServerIdSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED)));
