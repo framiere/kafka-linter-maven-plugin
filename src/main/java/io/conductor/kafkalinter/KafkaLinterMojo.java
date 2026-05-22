@@ -82,6 +82,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectPredicateDefinedButNotListe
 import io.conductor.kafkalinter.rules.connect.ConnectPredicateReferenceUndefinedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectProducerEnableIdempotenceFalseRule;
 import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule;
+import io.conductor.kafkalinter.rules.connect.ConnectS3SinkS3PartSizeTooSmallRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetResetLatestRule;
@@ -1824,6 +1825,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_S3_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE) != Severity.OFF) {
             rules.add(new ConnectS3SinkFlushSizeHugeWithoutTimeRotateRule(sev.get(RuleId.CONNECT_S3_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE)));
+        }
+        if (sev.get(RuleId.CONNECT_S3_SINK_S3_PART_SIZE_TOO_SMALL) != Severity.OFF) {
+            rules.add(new ConnectS3SinkS3PartSizeTooSmallRule(sev.get(RuleId.CONNECT_S3_SINK_S3_PART_SIZE_TOO_SMALL)));
         }
         if (sev.get(RuleId.CONNECT_HDFS_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE) != Severity.OFF) {
             rules.add(new ConnectHdfsSinkFlushSizeHugeWithoutTimeRotateRule(sev.get(RuleId.CONNECT_HDFS_SINK_FLUSH_SIZE_HUGE_WITHOUT_TIME_ROTATE)));
