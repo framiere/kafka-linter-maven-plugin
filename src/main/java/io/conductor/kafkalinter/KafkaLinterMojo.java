@@ -59,6 +59,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumDecimalHandlingModeDoubleRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumEventProcessingFailureHandlingModeSkipOrWarnRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumKeyConverterByteArrayRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMaxQueueSizeLessThanMaxBatchSizeRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTimePrecisionModeConnectRule;
@@ -1866,6 +1867,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MAX_QUEUE_SIZE_LESS_THAN_MAX_BATCH_SIZE) != Severity.OFF) {
             rules.add(new ConnectDebeziumMaxQueueSizeLessThanMaxBatchSizeRule(sev.get(RuleId.CONNECT_DEBEZIUM_MAX_QUEUE_SIZE_LESS_THAN_MAX_BATCH_SIZE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_EVENT_PROCESSING_FAILURE_HANDLING_MODE_SKIP_OR_WARN) != Severity.OFF) {
+            rules.add(new ConnectDebeziumEventProcessingFailureHandlingModeSkipOrWarnRule(sev.get(RuleId.CONNECT_DEBEZIUM_EVENT_PROCESSING_FAILURE_HANDLING_MODE_SKIP_OR_WARN)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_DECIMAL_HANDLING_MODE_DOUBLE) != Severity.OFF) {
             rules.add(new ConnectDebeziumDecimalHandlingModeDoubleRule(sev.get(RuleId.CONNECT_DEBEZIUM_DECIMAL_HANDLING_MODE_DOUBLE)));
