@@ -2,98 +2,118 @@
 
 A Maven plugin that scans your compiled bytecode with [ASM](https://asm.ow2.io/) and your `application.properties` / `application.yml` and flags common Kafka anti-patterns at build time. No runtime overhead, no Kafka cluster needed — just static analysis of `target/classes` and config files.
 
-![rules](https://img.shields.io/badge/rules-232-c14a1f?style=for-the-badge&labelColor=16140f)
-![categories](https://img.shields.io/badge/categories-9-1f3d36?style=for-the-badge&labelColor=16140f)
+![rules](https://img.shields.io/badge/rules-660-c14a1f?style=for-the-badge&labelColor=16140f)
+![categories](https://img.shields.io/badge/categories-10-1f3d36?style=for-the-badge&labelColor=16140f)
 ![java](https://img.shields.io/badge/java-17%2B-b58a3a?style=for-the-badge&labelColor=16140f)
 ![maven](https://img.shields.io/badge/maven-3.6.3%2B-b58a3a?style=for-the-badge&labelColor=16140f)
 
 - **Group / Artifact**: `io.conductor:kafka-linter-maven-plugin`
 - **Goal**: `kafka-linter:check` (bound to the `verify` phase by default)
-- **Detects**: **232 rules** across **9 categories** — kafka-clients, kafka-streams, spring-kafka, quarkus-kafka, observability, schema-registry, warpstream, versions, good-practices.
+- **Detects**: **660 rules** across **10 categories** — kafka-clients, spring-kafka, kafka-streams, kafka-connect, quarkus-kafka, security, versions, observability, quarkus, schema-registry.
 - **Reports**: `ERROR` (fails the build), `WARNING` (logged), `INFO` (nudge); every rule is individually tunable.
 
 ---
 
 ## Rule catalog at a glance
 
-Every rule traces to a real production failure mode — data loss, silent footgun, EOL/CVE exposure, observability gap, or the absence of a well-known production default. The full table is in [`docs/rules/_CATALOG.md`](docs/rules/_CATALOG.md). The 9 directories under `docs/rules/`:
+Every rule traces to a real production failure mode — data loss, silent footgun, EOL/CVE exposure, observability gap, or the absence of a well-known production default. The full table is in [`docs/rules/_CATALOG.md`](docs/rules/_CATALOG.md). The 10 categories live under `docs/rules/`:
 
 <table>
 <tr>
 <td width="33%" valign="top">
 
-### 🧱 [kafka-clients](docs/rules/kafka-clients/_INDEX.md)
-**40 rules**
+### 🧱 kafka-clients
+**211 rules**
 
 Plain Apache Kafka producers and consumers — the lowest-level surface. `acks`, `enable.idempotence`, `max.in.flight`, offsets, rebalances, headers.
 
 </td>
 <td width="33%" valign="top">
 
-### 🌊 [kafka-streams](docs/rules/kafka-streams/_INDEX.md)
-**47 rules**
+### 🌱 spring-kafka
+**174 rules**
 
-Streams DSL, processor API, state stores, EOS v2, timestamp extractors, rocksdb tuning, repartitioning, standby replicas.
+`@KafkaListener`, `KafkaTemplate`, error handlers, `ErrorHandlingDeserializer`, Spring DSL property paths, passthrough overrides.
 
 </td>
 <td width="33%" valign="top">
 
-### 🌱 [spring-kafka](docs/rules/spring-kafka/_INDEX.md)
-**32 rules**
+### 🌊 kafka-streams
+**117 rules**
 
-`@KafkaListener`, `KafkaTemplate`, error handlers, `ErrorHandlingDeserializer`, Spring DSL property paths, passthrough overrides.
+Streams DSL, processor API, state stores, EOS v2, timestamp extractors, rocksdb tuning, repartitioning, standby replicas.
 
 </td>
 </tr>
 <tr>
 <td width="33%" valign="top">
 
-### 🐰 [quarkus-kafka](docs/rules/quarkus-kafka/_INDEX.md)
-**36 rules**
+### 🔌 kafka-connect
+**85 rules**
+
+Source/sink connectors and Connect-worker config — Confluent S3/HDFS/GCS sinks, JDBC source polling, Debezium CDC, dead-letter-queue, converter pitfalls, config-provider hygiene.
+
+</td>
+<td width="33%" valign="top">
+
+### 🐰 quarkus-kafka
+**23 rules**
 
 SmallRye Reactive Messaging — `@Incoming`/`@Outgoing`, `Emitter`, channel config, per-channel passthrough, dead-letter-queue.
 
 </td>
 <td width="33%" valign="top">
 
-### 📊 [observability](docs/rules/observability/_INDEX.md)
-**14 rules**
+### 🔐 security
+**23 rules**
 
-Cross-cutting concerns: interceptors, metric reporters, OTel, deserialization safety (CVE-2023-34040), lambda hygiene, async/reactive bridge.
-
-</td>
-<td width="33%" valign="top">
-
-### 📋 [schema-registry](docs/rules/schema-registry/_INDEX.md)
-**7 rules**
-
-Schema Registry serde configuration, auto-register, subject-naming-strategy, Avro 1.12+ logical-type Java mappings.
+Credentials, secrets, and authentication hygiene — plaintext credentials in configs, AWS-credential literals, weak SASL/SSL choices.
 
 </td>
 </tr>
 <tr>
 <td width="33%" valign="top">
 
-### ⚡ [warpstream](docs/rules/warpstream/_INDEX.md)
-**4 rules**
-
-WarpStream-specific tuning — agent-aware client config overrides, S3-class storage semantics.
-
-</td>
-<td width="33%" valign="top">
-
-### 📌 [versions](docs/rules/versions/_INDEX.md)
-**28 rules**
+### 📌 versions
+**9 rules**
 
 Library-version, EOL, BOM-drift, and CVE rules — `pom.xml` dependency presence/absence/version range.
 
 </td>
 <td width="33%" valign="top">
 
-### ✨ [good-practices](docs/rules/good-practices/_INDEX.md)
-**24 rules**
+### 📊 observability
+**7 rules**
 
-Positive checks — patterns the linter rewards rather than flags. Builds confidence the configuration is intentional.
+Cross-cutting concerns: interceptors, metric reporters, OTel, deserialization safety (CVE-2023-34040), lambda hygiene, async/reactive bridge.
+
+</td>
+<td width="33%" valign="top">
+
+### 🐰 quarkus
+**6 rules**
+
+Quarkus-framework concerns outside of `quarkus-kafka` — extension config, native-image incompatibilities, runtime defaults.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 📋 schema-registry
+**5 rules**
+
+Schema Registry serde configuration, auto-register, subject-naming-strategy, Avro 1.12+ logical-type Java mappings.
+
+</td>
+<td width="33%" valign="top">
+
+&nbsp;
+
+</td>
+<td width="33%" valign="top">
+
+&nbsp;
 
 </td>
 </tr>
@@ -160,7 +180,7 @@ mvn kafka-linter:check
 
 Each rule has a stable ID (used in config) and a default severity. All rules act on compiled bytecode (or, for property-file rules, on the YAML/properties files under `src/main/resources/`), so they catch the problem wherever it lives — in your code, in a transitively compiled module, in a generated source, anywhere there is a `.class`.
 
-The full machine-readable catalog (all 232 rule IDs, defaults, categories, doc paths) is in [`docs/rules/_CATALOG.md`](docs/rules/_CATALOG.md). A small sampler from the core `kafka-clients` category:
+The full machine-readable catalog (all 660 rule IDs, defaults, categories, doc paths) is in [`docs/rules/_CATALOG.md`](docs/rules/_CATALOG.md). A small sampler from the core `kafka-clients` category:
 
 | Rule ID                        | Default   | What it catches                                                                                                  |
 |--------------------------------|-----------|------------------------------------------------------------------------------------------------------------------|
@@ -176,6 +196,17 @@ The full machine-readable catalog (all 232 rule IDs, defaults, categories, doc p
 | `CONSUMER_POLL_ZERO`           | `ERROR`   | `consumer.poll(0L)` or `poll(Duration.ZERO)` — busy-loops the consumer thread.                                    |
 | `KAFKA_BOOTSTRAP_SERVERS_LOCALHOST` | `ERROR` | `bootstrap.servers` contains `localhost` or `127.0.0.1` in a packaged artifact — that's a build-config leak, not a default. |
 | `KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER` | `ERROR` | `bootstrap.servers` lists exactly one broker — defeats the bootstrap failover contract clients rely on. |
+
+A small sampler from the `kafka-connect` category (Connect worker / source / sink config; `.properties` files under `src/main/resources/`):
+
+| Rule ID                                            | Default   | What it catches                                                                                                  |
+|----------------------------------------------------|-----------|------------------------------------------------------------------------------------------------------------------|
+| `CONNECT_STORAGE_SINK_FLUSH_SIZE_TOO_SMALL`        | `WARNING` | S3/HDFS/GCS sink with `flush.size` < 100 — small-object storm: thousands of tiny files crippling downstream scan jobs and object-store list APIs. |
+| `CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW` | `WARNING` | Time-based partitioner with `partition.duration.ms` < 60000 ms — sub-minute partition windows multiply object count, the storm seen from a different axis. |
+| `CONNECT_STORAGE_SINK_ROTATE_INTERVAL_MS_TOO_LOW`  | `WARNING` | `rotate.interval.ms` < 60000 ms — event-time-based file rotation under a minute; same small-object-storm risk as the other two cadence rules. |
+| `CONNECT_JDBC_SOURCE_POLL_INTERVAL_MS_TOO_LOW`     | `WARNING` | Confluent JDBC source with `poll.interval.ms` < 1000 ms — sub-second DB polling saturates connection pools, pins MVCC snapshots, and amplifies WAL/redo activity. For genuine sub-second freshness use Debezium. |
+| `CONNECT_S3_SINK_S3_PART_SIZE_TOO_SMALL`           | `WARNING` | `s3.part.size` below the S3 multipart-upload floor (5 MiB) — S3 rejects parts below 5 MiB, upload fails. |
+| `CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING`          | `ERROR`   | `mode=incrementing` or `mode=timestamp` without the corresponding `incrementing.column.name` / `timestamp.column.name` — connector refuses to start at runtime. |
 
 ### How "in a loop" is detected
 
