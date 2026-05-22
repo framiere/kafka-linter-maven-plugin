@@ -88,6 +88,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetResetLatestRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkFieldPartitionerWithoutPartitionFieldNameRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkPathFormatWithoutTimePartitionerRule;
+import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkPartitionDurationMsTooLowRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtractorWallclockRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTopicCreationGroupDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListedRule;
@@ -1846,6 +1847,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_STORAGE_SINK_TIMESTAMP_EXTRACTOR_WALLCLOCK) != Severity.OFF) {
             rules.add(new ConnectStorageSinkTimestampExtractorWallclockRule(sev.get(RuleId.CONNECT_STORAGE_SINK_TIMESTAMP_EXTRACTOR_WALLCLOCK)));
+        }
+        if (sev.get(RuleId.CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW) != Severity.OFF) {
+            rules.add(new ConnectStorageSinkPartitionDurationMsTooLowRule(sev.get(RuleId.CONNECT_STORAGE_SINK_PARTITION_DURATION_MS_TOO_LOW)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTransformDefinedButNotListedRule(sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED)));
