@@ -121,6 +121,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerPropertiesCompressionTypeA
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesDeliveryTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesEnableIdempotenceAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesLingerMsAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ProducerPropertiesRequestTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
 import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
@@ -2118,6 +2119,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS_ABSENT) != Severity.OFF) {
             rules.add(new ProducerPropertiesDeliveryTimeoutMsAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS_ABSENT)));
+        }
+        if (sev.get(RuleId.PRODUCER_PROPERTIES_REQUEST_TIMEOUT_MS_ABSENT) != Severity.OFF) {
+            rules.add(new ProducerPropertiesRequestTimeoutMsAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_REQUEST_TIMEOUT_MS_ABSENT)));
         }
         if (sev.get(RuleId.PRODUCER_PROPERTIES_CLIENT_ID_ABSENT) != Severity.OFF) {
             rules.add(new ProducerPropertiesClientIdAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_CLIENT_ID_ABSENT)));
