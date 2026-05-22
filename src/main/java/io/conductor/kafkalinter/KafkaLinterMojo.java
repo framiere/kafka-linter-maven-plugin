@@ -174,6 +174,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerR
 import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingGuaranteeAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesReplicationFactorAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadNoTimeoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStoreQueryParametersNoStaleStoresRule;
@@ -2118,6 +2119,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesNumStreamThreadsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_REPLICATION_FACTOR_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesReplicationFactorAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_REPLICATION_FACTOR_ABSENT)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
