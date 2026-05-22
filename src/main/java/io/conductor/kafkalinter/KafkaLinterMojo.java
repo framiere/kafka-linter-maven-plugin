@@ -72,6 +72,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnS
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkAutoEvolveTrueWithoutAutoCreateTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkDeleteEnabledTrueWithoutPkModeRecordKeyRule;
+import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkTableNameFormatWithoutTopicPlaceholderRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkUpsertOrUpdateWithoutPkRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceQueryAndTableBothSetRule;
@@ -1857,6 +1858,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_STORAGE_SINK_FIELD_PARTITIONER_WITHOUT_PARTITION_FIELD_NAME) != Severity.OFF) {
             rules.add(new ConnectStorageSinkFieldPartitionerWithoutPartitionFieldNameRule(sev.get(RuleId.CONNECT_STORAGE_SINK_FIELD_PARTITIONER_WITHOUT_PARTITION_FIELD_NAME)));
+        }
+        if (sev.get(RuleId.CONNECT_JDBC_SINK_TABLE_NAME_FORMAT_WITHOUT_TOPIC_PLACEHOLDER) != Severity.OFF) {
+            rules.add(new ConnectJdbcSinkTableNameFormatWithoutTopicPlaceholderRule(sev.get(RuleId.CONNECT_JDBC_SINK_TABLE_NAME_FORMAT_WITHOUT_TOPIC_PLACEHOLDER)));
         }
         if (sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTopicCreationGroupDefinedButNotListedRule(sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED)));
