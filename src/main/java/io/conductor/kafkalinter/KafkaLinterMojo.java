@@ -37,6 +37,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumOracleTasksMaxGreat
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumDb2TasksMaxGreaterThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSnapshotModeNeverRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlSnapshotLockingModeNoneRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresPluginNameDeprecatedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSchemaHistoryTopicSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTopicPrefixSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqContextHeadersDisabledRule;
@@ -1878,6 +1879,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SNAPSHOT_LOCKING_MODE_NONE) != Severity.OFF) {
             rules.add(new ConnectDebeziumMysqlSnapshotLockingModeNoneRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SNAPSHOT_LOCKING_MODE_NONE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_PLUGIN_NAME_DEPRECATED) != Severity.OFF) {
+            rules.add(new ConnectDebeziumPostgresPluginNameDeprecatedRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_PLUGIN_NAME_DEPRECATED)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumMysqlServerIdSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED)));
