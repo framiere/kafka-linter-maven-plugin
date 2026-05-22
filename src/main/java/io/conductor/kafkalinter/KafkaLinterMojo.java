@@ -83,6 +83,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectS3SinkFlushSizeHugeWithoutT
 import io.conductor.kafkalinter.rules.connect.ConnectSchemaRegistryConverterMissingUrlRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkConsumerAutoOffsetResetLatestRule;
+import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkFieldPartitionerWithoutPartitionFieldNameRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkPathFormatWithoutTimePartitionerRule;
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtractorWallclockRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTopicCreationGroupDefinedButNotListedRule;
@@ -1853,6 +1854,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE) != Severity.OFF) {
             rules.add(new ConnectTransformFilterWithoutPredicateRule(sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE)));
+        }
+        if (sev.get(RuleId.CONNECT_STORAGE_SINK_FIELD_PARTITIONER_WITHOUT_PARTITION_FIELD_NAME) != Severity.OFF) {
+            rules.add(new ConnectStorageSinkFieldPartitionerWithoutPartitionFieldNameRule(sev.get(RuleId.CONNECT_STORAGE_SINK_FIELD_PARTITIONER_WITHOUT_PARTITION_FIELD_NAME)));
         }
         if (sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTopicCreationGroupDefinedButNotListedRule(sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED)));
