@@ -178,6 +178,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesBootstrapServersAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesCommitIntervalMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultDeserializationExceptionHandlerAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultProductionExceptionHandlerAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
@@ -2158,6 +2159,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesBootstrapServersAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_COMMIT_INTERVAL_MS_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesCommitIntervalMsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_COMMIT_INTERVAL_MS_ABSENT)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
