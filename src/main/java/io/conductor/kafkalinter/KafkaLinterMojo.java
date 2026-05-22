@@ -127,6 +127,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesEnableAutoCommit
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesIsolationLevelAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesMaxPollIntervalMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesMaxPollRecordsAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesSessionTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerHeartbeatSessionRatioRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNotThreadSafeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerNoWakeupShutdownRule;
@@ -2102,6 +2103,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_ISOLATION_LEVEL_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesIsolationLevelAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_ISOLATION_LEVEL_ABSENT)));
+        }
+        if (sev.get(RuleId.CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_ABSENT) != Severity.OFF) {
+            rules.add(new ConsumerPropertiesSessionTimeoutMsAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_ABSENT)));
         }
         if (sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED) != Severity.OFF) {
             rules.add(new QuarkusKafkaExtensionRenamedRule(sev.get(RuleId.QUARKUS_KAFKA_EXTENSION_RENAMED)));
