@@ -87,6 +87,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkPathFormatWithou
 import io.conductor.kafkalinter.rules.connect.ConnectStorageSinkTimestampExtractorWallclockRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTopicCreationGroupDefinedButNotListedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListedRule;
+import io.conductor.kafkalinter.rules.connect.ConnectTransformFilterWithoutPredicateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerBufferMemoryMisconfigRule;
@@ -1849,6 +1850,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceModeColumnMissingRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_MODE_COLUMN_MISSING)));
+        }
+        if (sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE) != Severity.OFF) {
+            rules.add(new ConnectTransformFilterWithoutPredicateRule(sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE)));
         }
         if (sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTopicCreationGroupDefinedButNotListedRule(sev.get(RuleId.CONNECT_TOPIC_CREATION_GROUP_DEFINED_BUT_NOT_LISTED)));
