@@ -98,6 +98,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectTransformDefinedButNotListe
 import io.conductor.kafkalinter.rules.connect.ConnectTransformFilterWithoutPredicateRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSourceProducerAcksNotAllRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformAliasUndefinedRule;
+import io.conductor.kafkalinter.rules.connect.ConnectWorkerInternalTopicReplicationFactorLowRule;
 import io.conductor.kafkalinter.rules.connect.Mm2BlacklistDeprecatedRule;
 import io.conductor.kafkalinter.rules.connect.Mm2ClusterBootstrapServersLocalhostRule;
 import io.conductor.kafkalinter.rules.connect.Mm2EmitCheckpointsDisabledRule;
@@ -1890,6 +1891,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_POLL_INTERVAL_MS_TOO_LOW) != Severity.OFF) {
             rules.add(new ConnectJdbcSourcePollIntervalMsTooLowRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_POLL_INTERVAL_MS_TOO_LOW)));
+        }
+        if (sev.get(RuleId.CONNECT_WORKER_INTERNAL_TOPIC_REPLICATION_FACTOR_LOW) != Severity.OFF) {
+            rules.add(new ConnectWorkerInternalTopicReplicationFactorLowRule(sev.get(RuleId.CONNECT_WORKER_INTERNAL_TOPIC_REPLICATION_FACTOR_LOW)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE) != Severity.OFF) {
             rules.add(new ConnectTransformFilterWithoutPredicateRule(sev.get(RuleId.CONNECT_TRANSFORM_FILTER_WITHOUT_PREDICATE)));
