@@ -116,6 +116,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerPropertiesAcksAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBootstrapServersAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBatchSizeAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesBufferMemoryAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ProducerPropertiesClientIdAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesCompressionTypeAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesDeliveryTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesEnableIdempotenceAbsentRule;
@@ -127,6 +128,7 @@ import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesAutoOffsetResetAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesBootstrapServersAbsentRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesClientIdAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesEnableAutoCommitAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesFetchMinBytesAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPropertiesGroupIdAbsentRule;
@@ -2114,6 +2116,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         if (sev.get(RuleId.PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS_ABSENT) != Severity.OFF) {
             rules.add(new ProducerPropertiesDeliveryTimeoutMsAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_DELIVERY_TIMEOUT_MS_ABSENT)));
         }
+        if (sev.get(RuleId.PRODUCER_PROPERTIES_CLIENT_ID_ABSENT) != Severity.OFF) {
+            rules.add(new ProducerPropertiesClientIdAbsentRule(sev.get(RuleId.PRODUCER_PROPERTIES_CLIENT_ID_ABSENT)));
+        }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesAutoOffsetResetAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_AUTO_OFFSET_RESET_ABSENT)));
         }
@@ -2134,6 +2139,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_ISOLATION_LEVEL_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesIsolationLevelAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_ISOLATION_LEVEL_ABSENT)));
+        }
+        if (sev.get(RuleId.CONSUMER_PROPERTIES_CLIENT_ID_ABSENT) != Severity.OFF) {
+            rules.add(new ConsumerPropertiesClientIdAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_CLIENT_ID_ABSENT)));
         }
         if (sev.get(RuleId.CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_ABSENT) != Severity.OFF) {
             rules.add(new ConsumerPropertiesSessionTimeoutMsAbsentRule(sev.get(RuleId.CONSUMER_PROPERTIES_SESSION_TIMEOUT_MS_ABSENT)));
