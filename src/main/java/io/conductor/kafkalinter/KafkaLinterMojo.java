@@ -56,6 +56,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectHdfsSinkFlushSizeHugeWithou
 import io.conductor.kafkalinter.rules.connect.ConnectJsonConverterSchemasEnableUnsetRule;
 import io.conductor.kafkalinter.rules.connect.ConnectNameMissingRule;
 import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexBothSetRule;
+import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxAbsentRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
@@ -1842,6 +1843,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_TASKS_MAX_LESS_THAN_ONE) != Severity.OFF) {
             rules.add(new ConnectTasksMaxLessThanOneRule(sev.get(RuleId.CONNECT_TASKS_MAX_LESS_THAN_ONE)));
+        }
+        if (sev.get(RuleId.CONNECT_TASKS_MAX_ABSENT) != Severity.OFF) {
+            rules.add(new ConnectTasksMaxAbsentRule(sev.get(RuleId.CONNECT_TASKS_MAX_ABSENT)));
         }
         if (sev.get(RuleId.CONNECT_FILE_STREAM_DEMO_CONNECTOR) != Severity.OFF) {
             rules.add(new ConnectFileStreamDemoConnectorRule(sev.get(RuleId.CONNECT_FILE_STREAM_DEMO_CONNECTOR)));
