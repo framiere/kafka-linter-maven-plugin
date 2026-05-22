@@ -32,6 +32,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresFilteredPub
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresPublicationNameSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotNameSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresTasksMaxGreaterThanOneRule;
+import io.conductor.kafkalinter.rules.connect.ConnectDebeziumMysqlTasksMaxGreaterThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumSchemaHistoryTopicSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumTopicPrefixSharedRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDlqContextHeadersDisabledRule;
@@ -1858,6 +1859,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_TASKS_MAX_GREATER_THAN_ONE) != Severity.OFF) {
             rules.add(new ConnectDebeziumPostgresTasksMaxGreaterThanOneRule(sev.get(RuleId.CONNECT_DEBEZIUM_POSTGRES_TASKS_MAX_GREATER_THAN_ONE)));
+        }
+        if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_TASKS_MAX_GREATER_THAN_ONE) != Severity.OFF) {
+            rules.add(new ConnectDebeziumMysqlTasksMaxGreaterThanOneRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_TASKS_MAX_GREATER_THAN_ONE)));
         }
         if (sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED) != Severity.OFF) {
             rules.add(new ConnectDebeziumMysqlServerIdSharedRule(sev.get(RuleId.CONNECT_DEBEZIUM_MYSQL_SERVER_ID_SHARED)));
