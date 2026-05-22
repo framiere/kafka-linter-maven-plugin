@@ -70,6 +70,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectDebeziumValueConverterByteA
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresPublicationAutocreateModeAllTablesRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPostgresSlotDropOnStopTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectDebeziumPublicationFilteredMissingFilterListRule;
+import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkAutoEvolveTrueWithoutAutoCreateTrueRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkDeleteEnabledTrueWithoutPkModeRecordKeyRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSinkUpsertOrUpdateWithoutPkRule;
 import io.conductor.kafkalinter.rules.connect.ConnectJdbcSourceModeColumnMissingRule;
@@ -1836,6 +1837,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_JDBC_SINK_UPSERT_OR_UPDATE_WITHOUT_PK) != Severity.OFF) {
             rules.add(new ConnectJdbcSinkUpsertOrUpdateWithoutPkRule(sev.get(RuleId.CONNECT_JDBC_SINK_UPSERT_OR_UPDATE_WITHOUT_PK)));
+        }
+        if (sev.get(RuleId.CONNECT_JDBC_SINK_AUTO_EVOLVE_TRUE_WITHOUT_AUTO_CREATE_TRUE) != Severity.OFF) {
+            rules.add(new ConnectJdbcSinkAutoEvolveTrueWithoutAutoCreateTrueRule(sev.get(RuleId.CONNECT_JDBC_SINK_AUTO_EVOLVE_TRUE_WITHOUT_AUTO_CREATE_TRUE)));
         }
         if (sev.get(RuleId.CONNECT_JDBC_SOURCE_QUERY_AND_TABLE_BOTH_SET) != Severity.OFF) {
             rules.add(new ConnectJdbcSourceQueryAndTableBothSetRule(sev.get(RuleId.CONNECT_JDBC_SOURCE_QUERY_AND_TABLE_BOTH_SET)));
