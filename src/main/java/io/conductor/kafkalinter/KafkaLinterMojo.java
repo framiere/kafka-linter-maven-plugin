@@ -192,6 +192,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultDeserializ
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultKeySerdeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultProductionExceptionHandlerAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultValueSerdeAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStandbyReplicasAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingGuaranteeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesReplicationFactorAbsentRule;
@@ -2179,6 +2180,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesProcessingGuaranteeAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_NUM_STANDBY_REPLICAS_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesNumStandbyReplicasAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_NUM_STANDBY_REPLICAS_ABSENT)));
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesNumStreamThreadsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT)));
