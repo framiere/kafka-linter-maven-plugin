@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>consumer-isolation-read-uncommitted-with-txn-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <CONSUMER_ISOLATION_READ_UNCOMMITTED_WITH_TXN>ERROR</CONSUMER_ISOLATION_READ_UNCOMMITTED_WITH_TXN>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                        <CONSUMER_GROUP_ID_MISSING>OFF</CONSUMER_GROUP_ID_MISSING>
+                        <CONSUMER_AUTO_OFFSET_RESET_LATEST>OFF</CONSUMER_AUTO_OFFSET_RESET_LATEST>
+                        <CONSUMER_AUTO_COMMIT_TRUE>OFF</CONSUMER_AUTO_COMMIT_TRUE>
+                        <KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER>OFF</KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER>
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE>OFF</PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE>
+                        <PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>OFF</PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>
+                        <PRODUCER_TRANSACTIONAL_ID_GENERIC>OFF</PRODUCER_TRANSACTIONAL_ID_GENERIC>
+                        <CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT>OFF</CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT>
+                        <SPRING_BOOT_CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT>OFF</SPRING_BOOT_CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT>
+                        <SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC>OFF</SPRING_BOOT_PRODUCER_TRANSACTION_ID_PREFIX_GENERIC>
+                        <SPRING_BOOT_PRODUCER_PROPERTIES_TRANSACTIONAL_ID_SET>OFF</SPRING_BOOT_PRODUCER_PROPERTIES_TRANSACTIONAL_ID_SET>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
