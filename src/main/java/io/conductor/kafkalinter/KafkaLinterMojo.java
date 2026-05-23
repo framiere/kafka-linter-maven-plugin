@@ -153,6 +153,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerSeekBeforePollRule;
 import io.conductor.kafkalinter.rules.clients.HeadersSensitiveKeysRule;
 import io.conductor.kafkalinter.rules.clients.SecurityProtocolPlaintextRemoteRule;
+import io.conductor.kafkalinter.rules.clients.KafkaClientMetadataRecoveryStrategyAbsentRule;
 import io.conductor.kafkalinter.rules.clients.KafkaClientTypoGroupIdRule;
 import io.conductor.kafkalinter.rules.clients.PollInRebalanceCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
@@ -2012,6 +2013,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SR_LATEST_CACHE_TTL_SEC_ABSENT) != Severity.OFF) {
             rules.add(new SrLatestCacheTtlSecAbsentRule(sev.get(RuleId.SR_LATEST_CACHE_TTL_SEC_ABSENT)));
+        }
+        if (sev.get(RuleId.KAFKA_CLIENT_METADATA_RECOVERY_STRATEGY_ABSENT) != Severity.OFF) {
+            rules.add(new KafkaClientMetadataRecoveryStrategyAbsentRule(sev.get(RuleId.KAFKA_CLIENT_METADATA_RECOVERY_STRATEGY_ABSENT)));
         }
         if (sev.get(RuleId.SR_JSON_VALUE_TYPE_MISSING) != Severity.OFF) {
             rules.add(new SrJsonValueTypeMissingRule(sev.get(RuleId.SR_JSON_VALUE_TYPE_MISSING)));
