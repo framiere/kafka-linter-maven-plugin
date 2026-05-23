@@ -60,6 +60,7 @@ import io.conductor.kafkalinter.rules.connect.ConnectSinkTopicsAndTopicsRegexNei
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxAbsentRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTasksMaxLessThanOneRule;
 import io.conductor.kafkalinter.rules.connect.ConnectTransformRegexRouterMissingRegexOrReplacementRule;
+import io.conductor.kafkalinter.rules.connect.ConnectErrorsRetryTimeoutAbsentRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAbsentRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoDlqRule;
 import io.conductor.kafkalinter.rules.connect.ConnectErrorsToleranceAllNoLogRule;
@@ -1826,6 +1827,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.CONNECT_ERRORS_TOLERANCE_ALL_NO_LOG) != Severity.OFF) {
             rules.add(new ConnectErrorsToleranceAllNoLogRule(sev.get(RuleId.CONNECT_ERRORS_TOLERANCE_ALL_NO_LOG)));
+        }
+        if (sev.get(RuleId.CONNECT_ERRORS_RETRY_TIMEOUT_ABSENT) != Severity.OFF) {
+            rules.add(new ConnectErrorsRetryTimeoutAbsentRule(sev.get(RuleId.CONNECT_ERRORS_RETRY_TIMEOUT_ABSENT)));
         }
         if (sev.get(RuleId.CONNECT_SINK_AUTO_COMMIT_TRUE) != Severity.OFF) {
             rules.add(new ConnectSinkAutoCommitTrueRule(sev.get(RuleId.CONNECT_SINK_AUTO_COMMIT_TRUE)));
