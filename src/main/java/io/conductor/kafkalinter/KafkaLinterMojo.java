@@ -219,6 +219,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadNoTimeoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRemoveThreadZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStoreQueryParametersNoStaleStoresRule;
 import io.conductor.kafkalinter.rules.security.CredAwsCredentialLiteralRule;
+import io.conductor.kafkalinter.rules.security.SecurityProtocolPlaceholderRule;
 import io.conductor.kafkalinter.rules.security.SecuritySaslMechanismPlainRule;
 import io.conductor.kafkalinter.rules.security.SecuritySaslOauthbearerTokenEndpointHttpRule;
 import io.conductor.kafkalinter.rules.security.SecuritySslKeystoreLocationTmpRule;
@@ -1961,6 +1962,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SECURITY_SSL_TRUSTSTORE_LOCATION_TMP) != Severity.OFF) {
             rules.add(new SecuritySslTruststoreLocationTmpRule(sev.get(RuleId.SECURITY_SSL_TRUSTSTORE_LOCATION_TMP)));
+        }
+        if (sev.get(RuleId.SECURITY_PROTOCOL_PLACEHOLDER) != Severity.OFF) {
+            rules.add(new SecurityProtocolPlaceholderRule(sev.get(RuleId.SECURITY_PROTOCOL_PLACEHOLDER)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTransformDefinedButNotListedRule(sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED)));
