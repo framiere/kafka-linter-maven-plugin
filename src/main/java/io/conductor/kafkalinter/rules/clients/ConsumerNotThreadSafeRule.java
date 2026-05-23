@@ -73,8 +73,8 @@ public final class ConsumerNotThreadSafeRule implements Rule {
                 if (!impl.getOwner().equals(cn.name)) continue;
                 if (!consumerTouchingLambdas.contains(impl.getName())) continue;
 
-                AbstractInsnNode next = AsmUtil.nextSignificant(indy);
-                if (!(next instanceof MethodInsnNode dispatch)) continue;
+                MethodInsnNode dispatch = AsmUtil.nextDispatchInvoke(indy);
+                if (dispatch == null) continue;
                 Set<String> names = DISPATCH_METHODS.get(dispatch.owner);
                 if (names == null || !names.contains(dispatch.name)) continue;
 

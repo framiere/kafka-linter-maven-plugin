@@ -64,10 +64,10 @@ import java.util.concurrent.Executors;
  *     thread after the batch completes.
  *
  * Each method below contains exactly one Bad call site → one fire.
- * Total: 4 violations in this class. A fifth shape
- * (ScheduledExecutorService.scheduleAtFixedRate with timing args)
- * is a documented false-negative — see
- * FalseNegativeScheduledDispatch in this directory.
+ * Total: 4 violations in this class. The
+ * ScheduledExecutorService.schedule/scheduleAtFixedRate shapes are
+ * caught in the sibling BadConsumerScheduledDispatch fixture (2
+ * additional fires).
  */
 public class BadConsumerNotThreadSafe {
 

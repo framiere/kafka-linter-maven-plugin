@@ -27,6 +27,62 @@ public final class AsmUtil {
         return n;
     }
 
+    /**
+     * Walk forward from {@code insn} skipping trivia and pure-push instructions
+     * (constants, GETSTATIC, LDC, *LOAD) — instructions that push without
+     * popping — and return the first {@link MethodInsnNode} encountered.
+     * Returns {@code null} if a non-pure-push, non-method instruction is
+     * reached first (POP, PUTFIELD, arithmetic, branch, INVOKEDYNAMIC, etc.).
+     *
+     * <p>Intended for finding the dispatch INVOKE that consumes a value pushed
+     * by an earlier instruction (typically an INVOKEDYNAMIC producing a
+     * functional-interface instance) when later args are pushed as constants
+     * or static fields between the producer and the dispatch site.
+     *
+     * <p>Tolerates the common shape
+     * {@code dispatch(lambda, c0, c1, TimeUnit.SECONDS)} — where the lambda
+     * is the first/deepest arg of the dispatcher and the trailing args are
+     * pure pushes. Does NOT tolerate intermediate method calls or POPs.
+     */
+    public static MethodInsnNode nextDispatchInvoke(AbstractInsnNode insn) {
+        AbstractInsnNode n = insn == null ? null : insn.getNext();
+        while (n != null) {
+            if (isTrivia(n)) {
+                n = n.getNext();
+                continue;
+            }
+            if (n instanceof MethodInsnNode mi) {
+                return mi;
+            }
+            if (isPurePush(n)) {
+                n = n.getNext();
+                continue;
+            }
+            return null;
+        }
+        return null;
+    }
+
+    private static boolean isPurePush(AbstractInsnNode n) {
+        int op = n.getOpcode();
+        switch (op) {
+            case Opcodes.ACONST_NULL:
+            case Opcodes.ICONST_M1: case Opcodes.ICONST_0: case Opcodes.ICONST_1:
+            case Opcodes.ICONST_2: case Opcodes.ICONST_3: case Opcodes.ICONST_4: case Opcodes.ICONST_5:
+            case Opcodes.LCONST_0: case Opcodes.LCONST_1:
+            case Opcodes.FCONST_0: case Opcodes.FCONST_1: case Opcodes.FCONST_2:
+            case Opcodes.DCONST_0: case Opcodes.DCONST_1:
+            case Opcodes.BIPUSH: case Opcodes.SIPUSH:
+            case Opcodes.LDC:
+            case Opcodes.GETSTATIC:
+            case Opcodes.ILOAD: case Opcodes.LLOAD: case Opcodes.FLOAD:
+            case Opcodes.DLOAD: case Opcodes.ALOAD:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     /** Walk backward skipping labels, line numbers, and frames. */
     public static AbstractInsnNode prevSignificant(AbstractInsnNode insn) {
         AbstractInsnNode n = insn == null ? null : insn.getPrevious();
