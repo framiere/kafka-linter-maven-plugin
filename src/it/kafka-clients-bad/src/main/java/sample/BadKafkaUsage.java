@@ -1081,7 +1081,7 @@ public final class BadKafkaUsage {
         producer.close();
     }
 
-    // RULE: JACKSON_DEFAULT_TYPING_ENABLED — both legacy enableDefaultTyping and modern activateDefaultTyping forms.
+    // RULE: DESER_JSON_TYPE_INFO_NO_ALLOWLIST — both legacy enableDefaultTyping and modern activateDefaultTyping forms.
     @SuppressWarnings("deprecation")
     public ObjectMapper jacksonDefaultTypingEnabled() {
         ObjectMapper mapper = new ObjectMapper();

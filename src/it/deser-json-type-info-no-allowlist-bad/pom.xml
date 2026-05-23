@@ -30,7 +30,6 @@
                 <configuration>
                     <severities>
                         <DESER_JSON_TYPE_INFO_NO_ALLOWLIST>ERROR</DESER_JSON_TYPE_INFO_NO_ALLOWLIST>
-                        <JACKSON_DEFAULT_TYPING_ENABLED>OFF</JACKSON_DEFAULT_TYPING_ENABLED>
                     </severities>
                 </configuration>
                 <executions>

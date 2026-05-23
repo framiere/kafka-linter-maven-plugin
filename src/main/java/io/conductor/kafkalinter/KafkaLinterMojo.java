@@ -1575,10 +1575,6 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.KAFKA_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_TOO_HIGH, s, KafkaTypes.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_KEY,
                 v -> { long n = parseLongOrZero(v); return n > 300_000L; },
                 "socket.connection.setup.timeout.max.ms={value} — above 5 min. Exponential-backoff cap for connection setup retries; after a few failed attempts every attempt costs the full cap. Detecting a dead broker takes minutes per attempt; client walks through bootstrap.servers an order of magnitude slower. Default 30 s is right."));
-        addIfEnabled(rules, sev, RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s -> new MethodCallRule(
-                RuleId.JACKSON_DEFAULT_TYPING_ENABLED, s, Set.of(KafkaTypes.OBJECT_MAPPER),
-                Set.of(KafkaTypes.JACKSON_ENABLE_DEFAULT_TYPING_METHOD, KafkaTypes.JACKSON_ACTIVATE_DEFAULT_TYPING_METHOD),
-                "ObjectMapper.enableDefaultTyping()/activateDefaultTyping() — RCE gadget. Inbound JSON with @class names an arbitrary class to instantiate; Jackson runs its constructor/setter graph. Use @JsonTypeInfo with @JsonSubTypes (closed-world) or a strict BasicPolymorphicTypeValidator allowlist; never LaissezFaireSubTypeValidator."));
         addIfEnabled(rules, sev, RuleId.STREAMS_LOCAL_THREADS_METADATA_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_LOCAL_THREADS_METADATA_DEPRECATED, s, Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("localThreadsMetadata"),
                 "KafkaStreams.localThreadsMetadata() is deprecated since Kafka Streams 3.0 — replaced by KafkaStreams.metadataForLocalThreads() (same return type Set<ThreadMetadata>, mechanical rename)."));
