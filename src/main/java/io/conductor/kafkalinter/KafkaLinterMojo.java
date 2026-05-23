@@ -199,6 +199,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesMaxTaskIdleMsAbse
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultTimestampExtractorAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesAcceptableRecoveryLagAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProbingRebalanceIntervalMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTopologyOptimizationAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingGuaranteeAbsentRule;
@@ -2211,6 +2212,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_ACCEPTABLE_RECOVERY_LAG_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesAcceptableRecoveryLagAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_ACCEPTABLE_RECOVERY_LAG_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_PROBING_REBALANCE_INTERVAL_MS_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesProbingRebalanceIntervalMsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_PROBING_REBALANCE_INTERVAL_MS_ABSENT)));
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesNumStreamThreadsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT)));
