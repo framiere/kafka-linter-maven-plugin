@@ -172,6 +172,7 @@ import io.conductor.kafkalinter.rules.observability.SchemaRegistryUrlMissingRule
 import io.conductor.kafkalinter.rules.observability.DeserSrNoAuthCredentialsRule;
 import io.conductor.kafkalinter.rules.observability.SrJsonValueTypeMissingRule;
 import io.conductor.kafkalinter.rules.observability.SrProtobufValueTypeMissingRule;
+import io.conductor.kafkalinter.rules.observability.SrNormalizeSchemasAbsentRule;
 import io.conductor.kafkalinter.rules.observability.SrUseLatestVersionMissingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkBlockingMissingOnIncomingRule;
 import io.conductor.kafkalinter.rules.quarkus.QkDevservicesInProdRule;
@@ -2004,6 +2005,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING) != Severity.OFF) {
             rules.add(new SrUseLatestVersionMissingRule(sev.get(RuleId.SR_USE_LATEST_VERSION_MISSING)));
+        }
+        if (sev.get(RuleId.SR_NORMALIZE_SCHEMAS_ABSENT) != Severity.OFF) {
+            rules.add(new SrNormalizeSchemasAbsentRule(sev.get(RuleId.SR_NORMALIZE_SCHEMAS_ABSENT)));
         }
         if (sev.get(RuleId.SR_JSON_VALUE_TYPE_MISSING) != Severity.OFF) {
             rules.add(new SrJsonValueTypeMissingRule(sev.get(RuleId.SR_JSON_VALUE_TYPE_MISSING)));
