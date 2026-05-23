@@ -199,6 +199,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultKeySerdeAb
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultProductionExceptionHandlerAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultValueSerdeAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingExceptionHandlerAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesClientRackAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultDslStoreAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesStatestoreCacheMaxBytesAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStandbyReplicasAbsentRule;
@@ -2266,6 +2267,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_DSL_STORE_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesDefaultDslStoreAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_DSL_STORE_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_CLIENT_RACK_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesClientRackAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_CLIENT_RACK_ABSENT)));
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesBootstrapServersAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT)));
