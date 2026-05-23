@@ -221,6 +221,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsStoreQueryParametersNoStale
 import io.conductor.kafkalinter.rules.security.CredAwsCredentialLiteralRule;
 import io.conductor.kafkalinter.rules.security.SecuritySaslMechanismPlainRule;
 import io.conductor.kafkalinter.rules.security.SecuritySaslOauthbearerTokenEndpointHttpRule;
+import io.conductor.kafkalinter.rules.security.SecuritySslKeystoreTypeJksRule;
 import io.conductor.kafkalinter.rules.security.SecuritySslProtocolLegacyRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerThreadSleepRule;
@@ -1949,6 +1950,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SECURITY_SASL_MECHANISM_PLAIN) != Severity.OFF) {
             rules.add(new SecuritySaslMechanismPlainRule(sev.get(RuleId.SECURITY_SASL_MECHANISM_PLAIN)));
+        }
+        if (sev.get(RuleId.SECURITY_SSL_KEYSTORE_TYPE_JKS) != Severity.OFF) {
+            rules.add(new SecuritySslKeystoreTypeJksRule(sev.get(RuleId.SECURITY_SSL_KEYSTORE_TYPE_JKS)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTransformDefinedButNotListedRule(sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED)));
