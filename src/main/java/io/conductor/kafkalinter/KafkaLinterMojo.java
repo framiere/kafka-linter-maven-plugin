@@ -197,6 +197,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultValueSerde
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStandbyReplicasAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesMaxTaskIdleMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbsentRule;
+import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultTimestampExtractorAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTopologyOptimizationAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStreamThreadsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProcessingGuaranteeAbsentRule;
@@ -2203,6 +2204,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_TASK_TIMEOUT_MS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesTaskTimeoutMsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_TASK_TIMEOUT_MS_ABSENT)));
+        }
+        if (sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_TIMESTAMP_EXTRACTOR_ABSENT) != Severity.OFF) {
+            rules.add(new StreamsPropertiesDefaultTimestampExtractorAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_DEFAULT_TIMESTAMP_EXTRACTOR_ABSENT)));
         }
         if (sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT) != Severity.OFF) {
             rules.add(new StreamsPropertiesNumStreamThreadsAbsentRule(sev.get(RuleId.STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT)));
