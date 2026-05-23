@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>qk-devservices-in-prod-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!--
+          Modern Quarkus messaging artifact (the renamed one) — present so the rule
+          recognises this as a Quarkus Kafka project. Using the *new* name keeps
+          QUARKUS_KAFKA_EXTENSION_RENAMED silent so this IT counts a single fire.
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
+            <version>3.15.5</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <QK_DEVSERVICES_IN_PROD>ERROR</QK_DEVSERVICES_IN_PROD>
+                        <!--
+                          quarkus-messaging-kafka 3.15.5 pulls kafka-clients 3.7.2
+                          transitively, which is vulnerable to CVE-2026-35554 and
+                          CVE-2024-56128. Silence those here so the assertion
+                          captures only the rule under test.
+                        -->
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
