@@ -224,6 +224,7 @@ import io.conductor.kafkalinter.rules.security.SecuritySaslOauthbearerTokenEndpo
 import io.conductor.kafkalinter.rules.security.SecuritySslKeystoreLocationTmpRule;
 import io.conductor.kafkalinter.rules.security.SecuritySslKeystoreTypeJksRule;
 import io.conductor.kafkalinter.rules.security.SecuritySslProtocolLegacyRule;
+import io.conductor.kafkalinter.rules.security.SecuritySslTruststoreLocationTmpRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerAsyncRule;
 import io.conductor.kafkalinter.rules.spring.SpringListenerThreadSleepRule;
 import io.conductor.kafkalinter.rules.version.JavaVersionTooLowRule;
@@ -1957,6 +1958,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP) != Severity.OFF) {
             rules.add(new SecuritySslKeystoreLocationTmpRule(sev.get(RuleId.SECURITY_SSL_KEYSTORE_LOCATION_TMP)));
+        }
+        if (sev.get(RuleId.SECURITY_SSL_TRUSTSTORE_LOCATION_TMP) != Severity.OFF) {
+            rules.add(new SecuritySslTruststoreLocationTmpRule(sev.get(RuleId.SECURITY_SSL_TRUSTSTORE_LOCATION_TMP)));
         }
         if (sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED) != Severity.OFF) {
             rules.add(new ConnectTransformDefinedButNotListedRule(sev.get(RuleId.CONNECT_TRANSFORM_DEFINED_BUT_NOT_LISTED)));
