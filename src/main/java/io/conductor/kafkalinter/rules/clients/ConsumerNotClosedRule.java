@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.RuleContext;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -84,6 +85,15 @@ public final class ConsumerNotClosedRule implements Rule {
                         && consumerSlots.containsKey(v.var)) {
                     escapedSlots.add(v.var);
                 }
+                continue;
+            }
+
+            // (3b) Lambda / method-reference capture: an ALOAD of a tracked slot
+            // consumed by an INVOKEDYNAMIC (e.g. `consumer::close` shutdown hook,
+            // `() -> consumer.close()`). The slot escapes via the captured lambda;
+            // another path may close it — mark ESCAPED.
+            if (insn instanceof InvokeDynamicInsnNode indy) {
+                escapedSlots.addAll(AsmUtil.indyCapturedSlots(indy, consumerSlots.keySet()));
                 continue;
             }
 

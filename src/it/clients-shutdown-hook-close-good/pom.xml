@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>clients-shutdown-hook-close-good</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!--
+          kafka-clients 4.1.2 is above every active-CVE floor (BUFFER_POOL >= 4.1.2,
+          SCRAM_REPLAY >= 3.9.1, etc.) so the surrounding version rules stay silent
+          and the build can succeed with zero violations.
+        -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Elevate the four resource-leak rules to ERROR so any false
+                          positive on the shutdown-hook patterns below fails this build.
+                          The four rules below are real ERROR rules that fire on the
+                          fixture by design (the fixture's shape is `client = new ...();
+                          shutdown hook; one use; return` — minimal noise for the
+                          *NotClosed scan) but are NOT what this IT exercises. Silence
+                          them so the build can succeed when (and only when) the four
+                          target rules stay silent on the lambda/method-ref close
+                          patterns.
+                        -->
+                        <PRODUCER_NOT_CLOSED>ERROR</PRODUCER_NOT_CLOSED>
+                        <CONSUMER_NOT_CLOSED>ERROR</CONSUMER_NOT_CLOSED>
+                        <ADMIN_NOT_CLOSED>ERROR</ADMIN_NOT_CLOSED>
+                        <STREAMS_NOT_CLOSED>ERROR</STREAMS_NOT_CLOSED>
+
+                        <!--
+                          PRODUCER_NO_COMPRESSION fires because the rule scope is
+                          method-local and the helper `producerProps()` (which sets
+                          compression.type=lz4) is in a different method — out of
+                          scope. Orthogonal to the shutdown-hook close pattern.
+                        -->
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <!--
+                          CONSUMER_NOT_THREAD_SAFE fires on `new Thread(() ->
+                          consumer.close(Duration))` because the rule detects a
+                          KafkaConsumer captured by a worker-thread lambda. close()
+                          is in fact one of the few thread-safe consumer methods, but
+                          teaching the rule that nuance is its own design exercise —
+                          out of scope here; the fixture is for *NotClosed.
+                        -->
+                        <CONSUMER_NOT_THREAD_SAFE>OFF</CONSUMER_NOT_THREAD_SAFE>
+                        <!--
+                          STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER and
+                          STREAMS_NO_STATE_LISTENER are project-wide rules: they fire
+                          on any KafkaStreams.start() call when the corresponding
+                          setter is not invoked anywhere in the project. The fixture
+                          only exercises the close hook; wiring the full Streams
+                          lifecycle is orthogonal.
+                        -->
+                        <STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>OFF</STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>
+                        <STREAMS_NO_STATE_LISTENER>OFF</STREAMS_NO_STATE_LISTENER>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

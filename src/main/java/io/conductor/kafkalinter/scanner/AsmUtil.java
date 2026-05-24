@@ -13,6 +13,8 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public final class AsmUtil {
@@ -81,6 +83,73 @@ public final class AsmUtil {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Collect the tracked local-variable slots that are captured by an
+     * {@link InvokeDynamicInsnNode} — i.e. {@code ALOAD N} pushes that sit
+     * immediately before the indy and feed its bootstrap-method capture args.
+     *
+     * <p>Backward walk through preceding significant instructions, stopping
+     * at the first non-pure-push (anything that pops, branches, or calls).
+     * The walk is bounded by the indy descriptor's stack-slot count so it
+     * never crosses a clean stack frame.
+     *
+     * <p>Use case: a method-local Kafka client closed via {@code client::close}
+     * shutdown hook or {@code () -> client.close()} lambda. The slot escapes
+     * via the indy capture, and the {@code *NotClosed} rules must not fire.
+     * Treating any captured tracked slot as ESCAPED is conservative — we
+     * acknowledge the slot is in the wild and another path may close it.
+     */
+    public static Set<Integer> indyCapturedSlots(InvokeDynamicInsnNode indy, Set<Integer> trackedSlots) {
+        if (indy == null || trackedSlots == null || trackedSlots.isEmpty()) return Collections.emptySet();
+        int sz = Type.getArgumentsAndReturnSizes(indy.desc);
+        int slotsNeeded = (sz >> 2) - 1;
+        if (slotsNeeded <= 0) return Collections.emptySet();
+        Set<Integer> out = new HashSet<>();
+        AbstractInsnNode cursor = prevSignificant(indy);
+        while (cursor != null && slotsNeeded > 0) {
+            // javac null-check idiom for `expr::method` references:
+            //     ALOAD slot; DUP; INVOKESTATIC Objects.requireNonNull; POP; INVOKEDYNAMIC
+            // The trio (DUP + requireNonNull + POP) has net stack effect 0 — the
+            // captured value is still the ALOAD that came before. Peel it off so
+            // the walk can reach the underlying ALOAD.
+            AbstractInsnNode peeled = peelNullCheck(cursor);
+            if (peeled != null) {
+                cursor = peeled;
+                continue;
+            }
+            int[] eff = stackEffect(cursor);
+            if (eff == null || eff[0] != 0 || eff[1] <= 0) break;
+            if (cursor instanceof VarInsnNode v && v.getOpcode() == Opcodes.ALOAD
+                    && trackedSlots.contains(v.var)) {
+                out.add(v.var);
+            }
+            slotsNeeded -= eff[1];
+            cursor = prevSignificant(cursor);
+        }
+        return out;
+    }
+
+    /**
+     * If {@code cursor} is the {@code POP} of the javac-emitted null-check trio
+     * {@code DUP / Objects.requireNonNull / POP}, return the significant
+     * instruction preceding the {@code DUP} (i.e. the value that was originally
+     * pushed). Otherwise return {@code null}.
+     */
+    private static AbstractInsnNode peelNullCheck(AbstractInsnNode cursor) {
+        if (cursor == null || cursor.getOpcode() != Opcodes.POP) return null;
+        AbstractInsnNode req = prevSignificant(cursor);
+        if (!(req instanceof MethodInsnNode m)
+                || m.getOpcode() != Opcodes.INVOKESTATIC
+                || !"java/util/Objects".equals(m.owner)
+                || !"requireNonNull".equals(m.name)
+                || !"(Ljava/lang/Object;)Ljava/lang/Object;".equals(m.desc)) {
+            return null;
+        }
+        AbstractInsnNode dup = prevSignificant(req);
+        if (dup == null || dup.getOpcode() != Opcodes.DUP) return null;
+        return prevSignificant(dup);
     }
 
     /** Walk backward skipping labels, line numbers, and frames. */

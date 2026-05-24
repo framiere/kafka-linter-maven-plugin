@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.RuleContext;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -86,6 +87,14 @@ public final class StreamsNotClosedRule implements Rule {
                         && streamsSlots.containsKey(v.var)) {
                     escapedSlots.add(v.var);
                 }
+                continue;
+            }
+
+            // Lambda / method-reference capture: ALOAD slot consumed by an INVOKEDYNAMIC
+            // (e.g. `streams::close` shutdown hook, `() -> streams.close()`). The slot
+            // is in the wild; the lambda body may close it — mark ESCAPED.
+            if (insn instanceof InvokeDynamicInsnNode indy) {
+                escapedSlots.addAll(AsmUtil.indyCapturedSlots(indy, streamsSlots.keySet()));
                 continue;
             }
 
