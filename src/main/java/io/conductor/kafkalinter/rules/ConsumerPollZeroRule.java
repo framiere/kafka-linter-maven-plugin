@@ -6,16 +6,13 @@ import io.conductor.kafkalinter.Violation;
 import io.conductor.kafkalinter.scanner.AsmUtil;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.RuleContext;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Flags {@code consumer.poll(...)} called with a literal-zero timeout. Both the
@@ -44,20 +41,21 @@ import java.util.Set;
  *   <li>{@code poll(Duration.ZERO)} — Duration overload preceded by
  *       {@code GETSTATIC Duration.ZERO}.</li>
  *   <li>{@code poll(Duration.ofXxx(0))} for every {@code Duration} long-arg
- *       factory ({@code ofMillis, ofSeconds, ofNanos, ofMinutes, ofHours,
- *       ofDays}), where the factory argument is a long-zero literal in any
- *       form recognised by {@link AsmUtil#isLongZeroLiteral(AbstractInsnNode)}.</li>
+ *       factory in {@link AsmUtil#DURATION_FACTORY_METHODS}, recognised via
+ *       {@link AsmUtil#zeroDurationLiteralShape(AbstractInsnNode)}.</li>
  * </ul>
  *
- * <p>The factory set deliberately mirrors {@link ConsumerCloseZeroDurationRule}
- * — both rules detect a {@code Duration.ofXxx(0)} argument flowing into a
- * Kafka consumer API, and a divergence in factory coverage between them
- * would be a silent gap. {@code ofMinutes(0)}/{@code ofHours(0)}/
- * {@code ofDays(0)} are not common in practice, but they are bit-exact
- * equivalents of {@code ofMillis(0)} and the literal {@code 0} can creep in
- * via inlined constants ({@code static final long IDLE_TIMEOUT = 0;}),
- * generated code, or refactors that erase a non-zero default — keeping
- * detection complete costs nothing and removes a future blind spot.
+ * <p>The Duration-zero shape recognition is shared with the close-Duration
+ * sibling rules (Admin / Consumer / Producer close, Streams close, Streams
+ * removeStreamThread) via {@link AsmUtil#zeroDurationLiteralShape} — every
+ * rule that inspects a "zero {@code Duration}" argument flowing into a
+ * Kafka client API goes through that one helper, so coverage cannot drift
+ * apart. {@code ofMinutes(0)} / {@code ofHours(0)} / {@code ofDays(0)} are
+ * not common in practice, but they are bit-exact equivalents of
+ * {@code ofMillis(0)} and the literal {@code 0} can creep in via inlined
+ * constants ({@code static final long IDLE_TIMEOUT = 0;}), generated code,
+ * or refactors that erase a non-zero default — keeping detection complete
+ * costs nothing and removes a future blind spot.
  *
  * <h2>What it does NOT fire on</h2>
  *
@@ -70,10 +68,6 @@ import java.util.Set;
  * production occurrences of this anti-pattern.
  */
 public final class ConsumerPollZeroRule implements Rule {
-
-    private static final Set<String> DURATION_FACTORY_METHODS = Set.of(
-            "ofMillis", "ofSeconds", "ofNanos", "ofMinutes", "ofHours", "ofDays"
-    );
 
     private final Severity severity;
 
@@ -126,21 +120,6 @@ public final class ConsumerPollZeroRule implements Rule {
             return AsmUtil.isLongZeroLiteral(prev) ? "0L" : null;
         }
         if (!argType.getInternalName().equals(KafkaTypes.DURATION)) return null;
-        if (prev instanceof FieldInsnNode f
-                && f.getOpcode() == Opcodes.GETSTATIC
-                && KafkaTypes.DURATION.equals(f.owner)
-                && "ZERO".equals(f.name)) {
-            return "Duration.ZERO";
-        }
-        if (prev instanceof MethodInsnNode m
-                && m.getOpcode() == Opcodes.INVOKESTATIC
-                && KafkaTypes.DURATION.equals(m.owner)
-                && DURATION_FACTORY_METHODS.contains(m.name)) {
-            AbstractInsnNode literal = AsmUtil.prevSignificant(m);
-            if (AsmUtil.isLongZeroLiteral(literal)) {
-                return "Duration." + m.name + "(0)";
-            }
-        }
-        return null;
+        return AsmUtil.zeroDurationLiteralShape(prev);
     }
 }

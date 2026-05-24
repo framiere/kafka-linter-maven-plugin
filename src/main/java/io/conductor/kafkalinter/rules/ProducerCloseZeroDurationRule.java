@@ -8,13 +8,11 @@ import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.RuleContext;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Fires when {@code producer.close(Duration.ZERO)} (or {@code close(Duration.ofXxx(0))})
@@ -23,12 +21,6 @@ import java.util.Set;
 public final class ProducerCloseZeroDurationRule implements Rule {
 
     private static final String CLOSE_DURATION_DESC = "(Ljava/time/Duration;)V";
-    private static final String DURATION_ZERO_FIELD = "ZERO";
-    private static final String DURATION_DESC = "Ljava/time/Duration;";
-
-    private static final Set<String> DURATION_FACTORY_METHODS = Set.of(
-            "ofMillis", "ofSeconds", "ofNanos", "ofMinutes", "ofHours", "ofDays"
-    );
 
     private final Severity severity;
 
@@ -48,7 +40,7 @@ public final class ProducerCloseZeroDurationRule implements Rule {
             for (AbstractInsnNode insn : mn.instructions) {
                 if (!isProducerCloseDuration(insn)) continue;
                 AbstractInsnNode arg = AsmUtil.prevSignificant(insn);
-                String shape = zeroDurationShape(arg);
+                String shape = AsmUtil.zeroDurationLiteralShape(arg);
                 if (shape == null) continue;
 
                 out.add(new Violation(
@@ -72,29 +64,5 @@ public final class ProducerCloseZeroDurationRule implements Rule {
         if (!KafkaTypes.PRODUCER_OWNERS.contains(mi.owner)) return false;
         if (!"close".equals(mi.name)) return false;
         return CLOSE_DURATION_DESC.equals(mi.desc);
-    }
-
-    /**
-     * Returns a human-readable shape string (e.g. "Duration.ZERO", "Duration.ofMillis(0)")
-     * if {@code arg} represents a zero Duration, otherwise null.
-     */
-    private static String zeroDurationShape(AbstractInsnNode arg) {
-        if (arg instanceof FieldInsnNode f
-                && f.getOpcode() == Opcodes.GETSTATIC
-                && KafkaTypes.DURATION.equals(f.owner)
-                && DURATION_ZERO_FIELD.equals(f.name)
-                && DURATION_DESC.equals(f.desc)) {
-            return "Duration.ZERO";
-        }
-        if (arg instanceof MethodInsnNode mi
-                && mi.getOpcode() == Opcodes.INVOKESTATIC
-                && KafkaTypes.DURATION.equals(mi.owner)
-                && DURATION_FACTORY_METHODS.contains(mi.name)) {
-            AbstractInsnNode literal = AsmUtil.prevSignificant(mi);
-            if (AsmUtil.isLongZeroLiteral(literal)) {
-                return "Duration." + mi.name + "(0)";
-            }
-        }
-        return null;
     }
 }

@@ -14,7 +14,6 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Fires when {@code consumer.poll(Duration.ofXxx(Long.MAX_VALUE))} is called —
@@ -25,10 +24,6 @@ public final class ConsumerPollInfiniteDurationRule implements Rule {
 
     private static final String POLL_DURATION_DESC =
             "(Ljava/time/Duration;)Lorg/apache/kafka/clients/consumer/ConsumerRecords;";
-
-    private static final Set<String> DURATION_FACTORY_METHODS = Set.of(
-            "ofMillis", "ofSeconds", "ofNanos", "ofMinutes", "ofHours", "ofDays"
-    );
 
     private final Severity severity;
 
@@ -80,7 +75,7 @@ public final class ConsumerPollInfiniteDurationRule implements Rule {
         if (!(insn instanceof MethodInsnNode mi)) return false;
         if (mi.getOpcode() != Opcodes.INVOKESTATIC) return false;
         if (!KafkaTypes.DURATION.equals(mi.owner)) return false;
-        return DURATION_FACTORY_METHODS.contains(mi.name);
+        return AsmUtil.DURATION_FACTORY_METHODS.contains(mi.name);
     }
 
     private static boolean isLongMaxValueLdc(AbstractInsnNode insn) {

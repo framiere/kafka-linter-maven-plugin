@@ -212,6 +212,73 @@ public final class AsmUtil {
     }
 
     /**
+     * The complete set of {@link java.time.Duration} static factory methods
+     * that take a single {@code long} argument. Shared by every rule that
+     * inspects a {@code Duration.ofXxx(literal)} call site — the
+     * zero-Duration close rules (Admin/Consumer/Producer/Streams), the
+     * zero-Duration poll rule, and the {@code Long.MAX_VALUE}-Duration poll
+     * rule. Centralising the set here guarantees those sibling detectors
+     * stay in lockstep: extending coverage (e.g. a new factory in a future
+     * JDK) needs one edit, not seven.
+     *
+     * <p>The set deliberately includes the coarse-grain factories
+     * ({@code ofMinutes / ofHours / ofDays}) even though zero values via
+     * those factories are uncommon in practice. They are bit-exact
+     * equivalents of the fine-grain ones — {@code Duration.ofHours(0)} is
+     * the same {@code Duration} as {@code Duration.ofMillis(0)} — and the
+     * literal-zero can creep in via inlined static-final constants, code
+     * generators, or refactors that erase a non-zero default. Skipping them
+     * would leave a silent gap.
+     */
+    public static final Set<String> DURATION_FACTORY_METHODS = Set.of(
+            "ofMillis", "ofSeconds", "ofNanos", "ofMinutes", "ofHours", "ofDays"
+    );
+
+    /**
+     * Recognise the bytecode shapes that produce a zero-{@link java.time.Duration}
+     * argument on the stack and return a human-readable shape string
+     * ({@code "Duration.ZERO"} or {@code "Duration.ofXxx(0)"}) for embedding in
+     * a violation message. Returns {@code null} when {@code arg} is not a
+     * statically-recognisable zero Duration — non-literal arguments
+     * (parameters, field reads, computed values) are out of scope by design.
+     *
+     * <p>Shapes accepted:
+     * <ul>
+     *   <li>{@code GETSTATIC Duration.ZERO} — the canonical static-field
+     *       reference. Returns {@code "Duration.ZERO"}.</li>
+     *   <li>{@code INVOKESTATIC Duration.ofXxx(long)} preceded by any
+     *       {@link #isLongZeroLiteral(AbstractInsnNode) long-zero literal},
+     *       for every factory in {@link #DURATION_FACTORY_METHODS}. Returns
+     *       e.g. {@code "Duration.ofMillis(0)"}.</li>
+     * </ul>
+     *
+     * <p>Five sibling close-Duration rules (Admin/Consumer/Producer close,
+     * Streams close, Streams removeStreamThread) plus the Duration path of
+     * the zero-poll rule share this exact recognition logic — extracting it
+     * here keeps them in lockstep so a new compiler quirk or a new
+     * {@code Duration} factory only needs fixing in one place.
+     */
+    public static String zeroDurationLiteralShape(AbstractInsnNode arg) {
+        if (arg instanceof FieldInsnNode f
+                && f.getOpcode() == Opcodes.GETSTATIC
+                && KafkaTypes.DURATION.equals(f.owner)
+                && "ZERO".equals(f.name)
+                && "Ljava/time/Duration;".equals(f.desc)) {
+            return "Duration.ZERO";
+        }
+        if (arg instanceof MethodInsnNode mi
+                && mi.getOpcode() == Opcodes.INVOKESTATIC
+                && KafkaTypes.DURATION.equals(mi.owner)
+                && DURATION_FACTORY_METHODS.contains(mi.name)) {
+            AbstractInsnNode literal = prevSignificant(mi);
+            if (isLongZeroLiteral(literal)) {
+                return "Duration." + mi.name + "(0)";
+            }
+        }
+        return null;
+    }
+
+    /**
      * Recognise the bytecode shapes that push a literal {@code long 0} onto the
      * stack. Used by rules that detect {@code Duration.ofXxx(0)} arguments to
      * Kafka client APIs — both the zero-timeout {@code poll} and the
