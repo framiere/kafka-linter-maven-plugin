@@ -128,6 +128,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerPropertiesRequestTimeoutMs
 import io.conductor.kafkalinter.rules.clients.ProducerPropertiesMaxBlockMsAbsentRule;
 import io.conductor.kafkalinter.rules.clients.ProducerFlushInCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsNotCalledRule;
+import io.conductor.kafkalinter.rules.clients.ProducerBeginTransactionNoAbortRule;
 import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
@@ -391,6 +392,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_REMOVE_THREAD_ZERO_DURATION,
                 StreamsRemoveThreadZeroDurationRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_CALLBACK, ProducerFlushInCallbackRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_BEGIN_TRANSACTION_NO_ABORT, ProducerBeginTransactionNoAbortRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);

@@ -43,6 +43,11 @@
                           silences the rule for the whole project.
                         -->
                         <PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>ERROR</PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>
+                        <!-- This fixture demonstrates init via method-ref, not abort lifecycle.
+                             Its begin/commit calls are intentionally NOT paired with an
+                             abort in the same method — that is the scope of a different
+                             rule (PRODUCER_BEGIN_TRANSACTION_NO_ABORT). Silenced here. -->
+                        <PRODUCER_BEGIN_TRANSACTION_NO_ABORT>OFF</PRODUCER_BEGIN_TRANSACTION_NO_ABORT>
                     </severities>
                 </configuration>
                 <executions>
