@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>kafka-streams-remove-thread-no-timeout-method-ref-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Bad fixtures capture `streams::removeStreamThread` into Runnable,
+                          Callable, Supplier, and Thread(Runnable) sinks. Without the indy
+                          walk, the user class has zero INVOKE* on removeStreamThread and
+                          this canonical scale-down hazard goes silently undetected.
+
+                          The good control captures into a lambda that calls the bounded
+                          overload — must NOT fire (handle's desc would be
+                          (Ljava/time/Duration;)Ljava/util/Optional;, mismatch).
+
+                          IT expects build failure because the bad shapes elevate to ERROR.
+                        -->
+                        <STREAMS_REMOVE_THREAD_NO_TIMEOUT>ERROR</STREAMS_REMOVE_THREAD_NO_TIMEOUT>
+                        <STREAMS_NOT_CLOSED>OFF</STREAMS_NOT_CLOSED>
+                        <STREAMS_CLOSE_NO_TIMEOUT>OFF</STREAMS_CLOSE_NO_TIMEOUT>
+                        <STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>OFF</STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>
+                        <STREAMS_NO_STATE_LISTENER>OFF</STREAMS_NO_STATE_LISTENER>
+                        <STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER>OFF</STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER>
+                        <!-- transitive kafka-clients 3.7.0 noise, orthogonal to this rule -->
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
