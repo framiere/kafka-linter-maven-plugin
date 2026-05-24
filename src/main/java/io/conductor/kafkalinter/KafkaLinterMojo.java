@@ -169,6 +169,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerPerRecordAllocationRule;
 import io.conductor.kafkalinter.rules.clients.ProducerUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordPartitionAndKeyRule;
 import io.conductor.kafkalinter.rules.clients.StringSerializerNonStringRule;
+import io.conductor.kafkalinter.rules.clients.ProducerTransactionalIdRandomRule;
 import io.conductor.kafkalinter.rules.clients.ProducerTxnIdWithoutIdempotenceRule;
 import io.conductor.kafkalinter.rules.config.ConfigKeyValueRule;
 import io.conductor.kafkalinter.rules.config.MethodCallRule;
@@ -597,6 +598,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.CONSUMER_ISOLATION_LEVEL_READ_UNCOMMITTED_EXPLICIT, s, KafkaTypes.ISOLATION_LEVEL_KEY, "read_uncommitted",
                 "isolation.level=read_uncommitted — consumer reads aborted/in-flight transactional records. On a transactional topic, use read_committed."));
         addIfEnabled(rules, sev, RuleId.PRODUCER_TXN_ID_WITHOUT_IDEMPOTENCE, ProducerTxnIdWithoutIdempotenceRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTIONAL_ID_RANDOM, ProducerTransactionalIdRandomRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, ProducerMaxInFlightTooHighRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ASSIGN_AND_SUBSCRIBE, ConsumerAssignAndSubscribeRule::new);
         addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_TYPO_GROUP_ID, KafkaClientTypoGroupIdRule::new);
