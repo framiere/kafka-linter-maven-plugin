@@ -7,6 +7,7 @@ public final class KafkaTypes {
 
     public static final String PRODUCER_RECORD = "org/apache/kafka/clients/producer/ProducerRecord";
     public static final String CONSUMER_RECORD = "org/apache/kafka/clients/consumer/ConsumerRecord";
+    public static final String OFFSET_AND_METADATA = "org/apache/kafka/clients/consumer/OffsetAndMetadata";
     public static final String TIMESTAMP_TYPE = "org/apache/kafka/common/record/TimestampType";
     public static final String KAFKA_PRODUCER = "org/apache/kafka/clients/producer/KafkaProducer";
     public static final String PRODUCER_INTERFACE = "org/apache/kafka/clients/producer/Producer";

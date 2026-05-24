@@ -7,6 +7,7 @@ import io.conductor.kafkalinter.rules.AdminCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerCommitOffsetOffByOneRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPauseNoResumeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollResultIgnoredRule;
 import io.conductor.kafkalinter.rules.ConsumerSubscribeInLoopRule;
@@ -427,6 +428,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_BEGIN_TRANSACTION_TWICE, ProducerBeginTransactionTwiceRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_OFFSET_OFF_BY_ONE, ConsumerCommitOffsetOffByOneRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_RESULT_IGNORED, ConsumerPollResultIgnoredRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_PAUSE_NO_RESUME, ConsumerPauseNoResumeRule::new);
