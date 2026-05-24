@@ -191,6 +191,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
+import io.conductor.kafkalinter.rules.streams.StreamsNoShutdownHookRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoUncaughtExceptionHandlerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNotClosedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesBootstrapServersAbsentRule;
@@ -2324,6 +2325,9 @@ public class KafkaLinterMojo extends AbstractMojo {
         }
         if (sev.get(RuleId.STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER) != Severity.OFF) {
             rules.add(new StreamsNoUncaughtExceptionHandlerRule(sev.get(RuleId.STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER)));
+        }
+        if (sev.get(RuleId.STREAMS_NO_SHUTDOWN_HOOK) != Severity.OFF) {
+            rules.add(new StreamsNoShutdownHookRule(sev.get(RuleId.STREAMS_NO_SHUTDOWN_HOOK)));
         }
         if (sev.get(RuleId.STREAMS_NO_STATE_LISTENER) != Severity.OFF) {
             rules.add(new StreamsNoStateListenerRule(sev.get(RuleId.STREAMS_NO_STATE_LISTENER)));
