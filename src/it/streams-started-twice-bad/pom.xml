@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>streams-started-twice-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Each BAD method calls streams.start() twice on the
+                          same local slot (direct double-start, retry loop
+                          around start, and ::start method-reference capture
+                          after a direct start). Each must fire once.
+                          GoodStreamsStartedOnce.java holds silent controls:
+                          single start, close-then-start-fresh-instance,
+                          and the cleanUp-without-restart shape.
+                        -->
+                        <STREAMS_STARTED_TWICE>ERROR</STREAMS_STARTED_TWICE>
+                        <!-- Silence ambient streams siblings so the build outcome reflects only the rule under test. -->
+                        <STREAMS_IN_LOOP>OFF</STREAMS_IN_LOOP>
+                        <STREAMS_NOT_CLOSED>OFF</STREAMS_NOT_CLOSED>
+                        <STREAMS_CLOSE_NO_TIMEOUT>OFF</STREAMS_CLOSE_NO_TIMEOUT>
+                        <STREAMS_CLOSE_ZERO_DURATION>OFF</STREAMS_CLOSE_ZERO_DURATION>
+                        <STREAMS_NO_SHUTDOWN_HOOK>OFF</STREAMS_NO_SHUTDOWN_HOOK>
+                        <STREAMS_NO_STATE_LISTENER>OFF</STREAMS_NO_STATE_LISTENER>
+                        <STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>OFF</STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>
+                        <STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER>OFF</STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER>
+                        <STREAMS_USED_AFTER_CLOSE>OFF</STREAMS_USED_AFTER_CLOSE>
+                        <STREAMS_CLEANUP_IN_PROD>OFF</STREAMS_CLEANUP_IN_PROD>
+                        <STREAMS_APPLICATION_ID_RANDOM>OFF</STREAMS_APPLICATION_ID_RANDOM>
+                        <STREAMS_APPLICATION_ID_GENERIC>OFF</STREAMS_APPLICATION_ID_GENERIC>
+                        <STREAMS_APPLICATION_ID_PLACEHOLDER>OFF</STREAMS_APPLICATION_ID_PLACEHOLDER>
+                        <STREAMS_APPLICATION_SERVER_LOCALHOST>OFF</STREAMS_APPLICATION_SERVER_LOCALHOST>
+                        <STREAMS_REPLICATION_FACTOR_ONE>OFF</STREAMS_REPLICATION_FACTOR_ONE>
+                        <STREAMS_REPLICATION_FACTOR_TWO>OFF</STREAMS_REPLICATION_FACTOR_TWO>
+                        <STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT>OFF</STREAMS_REPLICATION_FACTOR_BROKER_DEFAULT>
+                        <STREAMS_REPLICATION_FACTOR_TOO_HIGH>OFF</STREAMS_REPLICATION_FACTOR_TOO_HIGH>
+                        <STREAMS_STATE_DIR_TMP>OFF</STREAMS_STATE_DIR_TMP>
+                        <STREAMS_EOS_V1_DEPRECATED>OFF</STREAMS_EOS_V1_DEPRECATED>
+                        <STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT>OFF</STREAMS_PROCESSING_GUARANTEE_AT_LEAST_ONCE_EXPLICIT>
+                        <STREAMS_STREAM_NO_CONSUMED>OFF</STREAMS_STREAM_NO_CONSUMED>
+                        <STREAMS_TO_NO_PRODUCED>OFF</STREAMS_TO_NO_PRODUCED>
+                        <STREAMS_BUILDER_BUILD_NO_PROPERTIES>OFF</STREAMS_BUILDER_BUILD_NO_PROPERTIES>
+                        <STREAMS_PROPERTIES_ACCEPTABLE_RECOVERY_LAG_ABSENT>OFF</STREAMS_PROPERTIES_ACCEPTABLE_RECOVERY_LAG_ABSENT>
+                        <STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT>OFF</STREAMS_PROPERTIES_BOOTSTRAP_SERVERS_ABSENT>
+                        <STREAMS_PROPERTIES_CLIENT_RACK_ABSENT>OFF</STREAMS_PROPERTIES_CLIENT_RACK_ABSENT>
+                        <STREAMS_PROPERTIES_COMMIT_INTERVAL_MS_ABSENT>OFF</STREAMS_PROPERTIES_COMMIT_INTERVAL_MS_ABSENT>
+                        <STREAMS_PROPERTIES_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_ABSENT>OFF</STREAMS_PROPERTIES_DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_ABSENT>
+                        <STREAMS_PROPERTIES_DEFAULT_DSL_STORE_ABSENT>OFF</STREAMS_PROPERTIES_DEFAULT_DSL_STORE_ABSENT>
+                        <STREAMS_PROPERTIES_DEFAULT_KEY_SERDE_ABSENT>OFF</STREAMS_PROPERTIES_DEFAULT_KEY_SERDE_ABSENT>
+                        <STREAMS_PROPERTIES_DEFAULT_PRODUCTION_EXCEPTION_HANDLER_ABSENT>OFF</STREAMS_PROPERTIES_DEFAULT_PRODUCTION_EXCEPTION_HANDLER_ABSENT>
+                        <STREAMS_PROPERTIES_DEFAULT_TIMESTAMP_EXTRACTOR_ABSENT>OFF</STREAMS_PROPERTIES_DEFAULT_TIMESTAMP_EXTRACTOR_ABSENT>
+                        <STREAMS_PROPERTIES_DEFAULT_VALUE_SERDE_ABSENT>OFF</STREAMS_PROPERTIES_DEFAULT_VALUE_SERDE_ABSENT>
+                        <STREAMS_PROPERTIES_MAX_TASK_IDLE_MS_ABSENT>OFF</STREAMS_PROPERTIES_MAX_TASK_IDLE_MS_ABSENT>
+                        <STREAMS_PROPERTIES_MAX_WARMUP_REPLICAS_ABSENT>OFF</STREAMS_PROPERTIES_MAX_WARMUP_REPLICAS_ABSENT>
+                        <STREAMS_PROPERTIES_NUM_STANDBY_REPLICAS_ABSENT>OFF</STREAMS_PROPERTIES_NUM_STANDBY_REPLICAS_ABSENT>
+                        <STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT>OFF</STREAMS_PROPERTIES_NUM_STREAM_THREADS_ABSENT>
+                        <STREAMS_PROPERTIES_PROBING_REBALANCE_INTERVAL_MS_ABSENT>OFF</STREAMS_PROPERTIES_PROBING_REBALANCE_INTERVAL_MS_ABSENT>
+                        <STREAMS_PROPERTIES_PROCESSING_EXCEPTION_HANDLER_ABSENT>OFF</STREAMS_PROPERTIES_PROCESSING_EXCEPTION_HANDLER_ABSENT>
+                        <STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT>OFF</STREAMS_PROPERTIES_PROCESSING_GUARANTEE_ABSENT>
+                        <STREAMS_PROPERTIES_RACK_AWARE_ASSIGNMENT_TAGS_ABSENT>OFF</STREAMS_PROPERTIES_RACK_AWARE_ASSIGNMENT_TAGS_ABSENT>
+                        <STREAMS_PROPERTIES_REPLICATION_FACTOR_ABSENT>OFF</STREAMS_PROPERTIES_REPLICATION_FACTOR_ABSENT>
+                        <STREAMS_PROPERTIES_STATE_DIR_ABSENT>OFF</STREAMS_PROPERTIES_STATE_DIR_ABSENT>
+                        <STREAMS_PROPERTIES_STATESTORE_CACHE_MAX_BYTES_ABSENT>OFF</STREAMS_PROPERTIES_STATESTORE_CACHE_MAX_BYTES_ABSENT>
+                        <STREAMS_PROPERTIES_TASK_TIMEOUT_MS_ABSENT>OFF</STREAMS_PROPERTIES_TASK_TIMEOUT_MS_ABSENT>
+                        <STREAMS_PROPERTIES_TOPOLOGY_OPTIMIZATION_ABSENT>OFF</STREAMS_PROPERTIES_TOPOLOGY_OPTIMIZATION_ABSENT>
+                        <CLIENT_ID_MISSING>OFF</CLIENT_ID_MISSING>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
