@@ -144,6 +144,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerBeginTransactionTwiceRule;
 import io.conductor.kafkalinter.rules.clients.ProducerEndTransactionNotInTransactionRule;
 import io.conductor.kafkalinter.rules.clients.ProducerInitTransactionsTwiceRule;
 import io.conductor.kafkalinter.rules.clients.ProducerSendOffsetsToTransactionNotInTransactionRule;
+import io.conductor.kafkalinter.rules.clients.ProducerSendOutsideTransactionRule;
 import io.conductor.kafkalinter.rules.clients.ClientIdMissingRule;
 import io.conductor.kafkalinter.rules.clients.CommitAsyncNoFinalSyncRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerAssignAndSubscribeRule;
@@ -434,6 +435,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_END_TRANSACTION_NOT_IN_TRANSACTION, ProducerEndTransactionNotInTransactionRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TRANSACTION_NOT_IN_TRANSACTION, ProducerSendOffsetsToTransactionNotInTransactionRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_INIT_TRANSACTIONS_TWICE, ProducerInitTransactionsTwiceRule::new);
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OUTSIDE_TRANSACTION, ProducerSendOutsideTransactionRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_AUTO_COMMIT_TRUE, ConsumerAutoCommitTrueRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_OFFSET_OFF_BY_ONE, ConsumerCommitOffsetOffByOneRule::new);
