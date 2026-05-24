@@ -9,8 +9,6 @@ import io.conductor.kafkalinter.scanner.RuleContext;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -93,24 +91,10 @@ public final class ProducerCloseZeroDurationRule implements Rule {
                 && KafkaTypes.DURATION.equals(mi.owner)
                 && DURATION_FACTORY_METHODS.contains(mi.name)) {
             AbstractInsnNode literal = AsmUtil.prevSignificant(mi);
-            if (isLongZeroLiteral(literal)) {
+            if (AsmUtil.isLongZeroLiteral(literal)) {
                 return "Duration." + mi.name + "(0)";
             }
         }
         return null;
-    }
-
-    private static boolean isLongZeroLiteral(AbstractInsnNode insn) {
-        if (insn == null) return false;
-        if (insn.getOpcode() == Opcodes.LCONST_0) return true;
-        if (insn instanceof LdcInsnNode ldc && ldc.cst instanceof Long l && l == 0L) return true;
-        if (insn.getOpcode() == Opcodes.I2L) {
-            AbstractInsnNode prev = AsmUtil.prevSignificant(insn);
-            if (prev == null) return false;
-            return prev.getOpcode() == Opcodes.ICONST_0
-                    || (prev instanceof LdcInsnNode ldc && ldc.cst instanceof Integer i && i == 0)
-                    || (prev instanceof InsnNode && prev.getOpcode() == Opcodes.ICONST_0);
-        }
-        return false;
     }
 }
