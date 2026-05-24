@@ -160,6 +160,7 @@ import io.conductor.kafkalinter.rules.clients.HeadersSensitiveKeysRule;
 import io.conductor.kafkalinter.rules.clients.SecurityProtocolPlaintextRemoteRule;
 import io.conductor.kafkalinter.rules.clients.KafkaClientMetadataRecoveryStrategyAbsentRule;
 import io.conductor.kafkalinter.rules.clients.KafkaClientTypoGroupIdRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerCommitAsyncInRebalanceRule;
 import io.conductor.kafkalinter.rules.clients.PollInRebalanceCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ProducerMaxInFlightTooHighRule;
 import io.conductor.kafkalinter.rules.clients.PropertiesMutatedAfterCtorRule;
@@ -356,6 +357,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_PARTITION_AND_KEY, ProducerRecordPartitionAndKeyRule::new);
         addIfEnabled(rules, sev, RuleId.COMMIT_ASYNC_NO_FINAL_SYNC, CommitAsyncNoFinalSyncRule::new);
         addIfEnabled(rules, sev, RuleId.POLL_IN_REBALANCE_CALLBACK, PollInRebalanceCallbackRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITASYNC_IN_REBALANCE, ConsumerCommitAsyncInRebalanceRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SEEK_BEFORE_POLL, ConsumerSeekBeforePollRule::new);
         addIfEnabled(rules, sev, RuleId.PROPERTIES_MUTATED_AFTER_CTOR, PropertiesMutatedAfterCtorRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_USED_AFTER_CLOSE, ProducerUsedAfterCloseRule::new);
