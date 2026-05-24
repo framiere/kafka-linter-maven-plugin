@@ -170,6 +170,7 @@ import io.conductor.kafkalinter.rules.clients.ProducerCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ProducerNotClosedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerPerRecordAllocationRule;
 import io.conductor.kafkalinter.rules.clients.ProducerUsedAfterCloseRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordPartitionAndKeyRule;
 import io.conductor.kafkalinter.rules.clients.StringSerializerNonStringRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerGroupIdRandomRule;
@@ -366,6 +367,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_SEEK_BEFORE_POLL, ConsumerSeekBeforePollRule::new);
         addIfEnabled(rules, sev, RuleId.PROPERTIES_MUTATED_AFTER_CTOR, PropertiesMutatedAfterCtorRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_USED_AFTER_CLOSE, ProducerUsedAfterCloseRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_USED_AFTER_CLOSE, ConsumerUsedAfterCloseRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_NOT_CLOSED, ProducerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, ProducerCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_PER_RECORD_ALLOCATION, ProducerPerRecordAllocationRule::new);
