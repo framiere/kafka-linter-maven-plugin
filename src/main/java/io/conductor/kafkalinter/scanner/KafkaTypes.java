@@ -55,6 +55,15 @@ public final class KafkaTypes {
     public static final Set<String> CONSUMER_OWNERS = Set.of(KAFKA_CONSUMER, CONSUMER_INTERFACE);
     public static final Set<String> ADMIN_OWNERS = Set.of(ADMIN_INTERFACE, ADMIN_CLIENT);
 
+    /**
+     * Concrete kafka-clients / kafka-streams client classes that own a network
+     * connection and a background thread pool — i.e. the classes whose
+     * construction is structurally incompatible with class-initializer
+     * (&lt;clinit&gt;) execution. Used by KAFKA_CLIENT_IN_STATIC_INITIALIZER.
+     */
+    public static final Set<String> KAFKA_CLIENT_TYPES = Set.of(
+            KAFKA_PRODUCER, KAFKA_CONSUMER, ADMIN_CLIENT, KAFKA_STREAMS);
+
     public static final String FUTURE = "java/util/concurrent/Future";
     public static final String DURATION = "java/time/Duration";
     public static final String PROPERTIES = "java/util/Properties";
