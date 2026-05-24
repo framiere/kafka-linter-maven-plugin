@@ -87,6 +87,31 @@ public final class AsmUtil {
     }
 
     /**
+     * Inspect a {@link LambdaMetafactory}-shaped {@link InvokeDynamicInsnNode} and
+     * return the SAM method type — i.e. the abstract method's erased signature
+     * on the functional interface produced by the metafactory call site
+     * ({@code samMethodType}, {@code bsmArgs[0]} per the metafactory spec).
+     * Returns {@code null} when the indy is not a LambdaMetafactory call, when
+     * the bsm-arg list is missing the expected first element, or when that
+     * element is not a {@link Type}.
+     *
+     * <p>Use case: discriminate between a {@code Consumer}-shaped method-ref
+     * capture (SAM return is {@code void} → the deferred call's result is
+     * discarded by the SAM adapter — fire-and-forget) and a
+     * {@code Function}-shaped capture (SAM return is non-void → the caller
+     * of {@code apply} observes the return). Both compile to the same
+     * underlying impl handle; the SAM method type is what tells you which
+     * side of the discard you're on.
+     */
+    public static Type indySamMethodType(InvokeDynamicInsnNode indy) {
+        if (indy == null || indy.bsm == null) return null;
+        if (!"java/lang/invoke/LambdaMetafactory".equals(indy.bsm.getOwner())) return null;
+        if (indy.bsmArgs == null || indy.bsmArgs.length == 0) return null;
+        if (!(indy.bsmArgs[0] instanceof Type t)) return null;
+        return t;
+    }
+
+    /**
      * Inspect an {@link InvokeDynamicInsnNode}'s bootstrap-method arguments and
      * return the first {@link Handle} matching the given {@code owners} / {@code name} /
      * {@code desc}. Returns {@code null} if no such handle exists. Any of the

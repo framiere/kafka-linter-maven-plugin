@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>producer-send-no-callback-method-ref-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Bad fixtures: records.forEach(producer::send) — fire-and-forget
+                          via method-ref. Without the indy walk + SAM-return discriminator,
+                          PRODUCER_SEND_NO_CALLBACK would see no MethodInsnNode for `send`
+                          and emit ZERO violations on this code, leaving the canonical
+                          batch-send anti-pattern silently unmarked.
+
+                          Good fixtures: records.stream().map(producer::send).forEach(Future::get)
+                          — Function-shaped capture, SAM return non-void, Future observed.
+                          The rule must NOT fire on these.
+
+                          The IT expects build failure because the bad shapes outnumber the
+                          good ones and elevate to ERROR; a verify.groovy below cross-checks
+                          the exact violation count to catch over- or under-firing.
+                        -->
+                        <PRODUCER_SEND_NO_CALLBACK>ERROR</PRODUCER_SEND_NO_CALLBACK>
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>OFF</PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>
+                        <PRODUCER_CLOSE_NO_TIMEOUT>OFF</PRODUCER_CLOSE_NO_TIMEOUT>
+                        <PRODUCER_NOT_CLOSED>OFF</PRODUCER_NOT_CLOSED>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
