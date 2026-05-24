@@ -176,6 +176,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordPartitionAndKeyRule;
 import io.conductor.kafkalinter.rules.clients.StringSerializerNonStringRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerGroupIdRandomRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerGroupInstanceIdRandomRule;
 import io.conductor.kafkalinter.rules.clients.ProducerTransactionalIdRandomRule;
 import io.conductor.kafkalinter.rules.clients.ProducerTxnIdWithoutIdempotenceRule;
 import io.conductor.kafkalinter.rules.clients.StreamsApplicationIdRandomRule;
@@ -615,6 +616,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTIONAL_ID_RANDOM, ProducerTransactionalIdRandomRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_APPLICATION_ID_RANDOM, StreamsApplicationIdRandomRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_ID_RANDOM, ConsumerGroupIdRandomRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_GROUP_INSTANCE_ID_RANDOM, ConsumerGroupInstanceIdRandomRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_MAX_IN_FLIGHT_TOO_HIGH, ProducerMaxInFlightTooHighRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ASSIGN_AND_SUBSCRIBE, ConsumerAssignAndSubscribeRule::new);
         addIfEnabled(rules, sev, RuleId.KAFKA_CLIENT_TYPO_GROUP_ID, KafkaClientTypoGroupIdRule::new);

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>consumer-group-instance-id-random-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Every BAD method here sets group.instance.id to
+                          UUID.randomUUID().toString() via Properties.put,
+                          Properties.setProperty, ConsumerConfig.GROUP_INSTANCE_ID_CONFIG
+                          (an inlined String constant), or HashMap.put. Each shape
+                          must fire once. invoker.buildResult=failure asserts at
+                          least one ERROR was emitted.
+
+                          GoodConsumerGroupInstanceIdStable.java holds the silent
+                          controls: stable per-pod IDs from System.getenv("POD_NAME"),
+                          InetAddress.getLocalHost().getHostName(), an explicit literal,
+                          and the legitimate use of UUID.randomUUID() for a DIFFERENT
+                          key (client.id) — none should fire.
+                        -->
+                        <CONSUMER_GROUP_INSTANCE_ID_RANDOM>ERROR</CONSUMER_GROUP_INSTANCE_ID_RANDOM>
+                        <!-- Silence ambient siblings so the build outcome reflects only the rule under test. -->
+                        <CONSUMER_GROUP_ID_RANDOM>OFF</CONSUMER_GROUP_ID_RANDOM>
+                        <CONSUMER_GROUP_INSTANCE_ID_GENERIC>OFF</CONSUMER_GROUP_INSTANCE_ID_GENERIC>
+                        <CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER>OFF</CONSUMER_GROUP_INSTANCE_ID_PLACEHOLDER>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
