@@ -24,6 +24,7 @@ import io.conductor.kafkalinter.rules.ProducerSendNullCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AdminAlterConfigsDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUsedAfterCloseRule;
@@ -901,11 +902,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;")
                         && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
                 "Topology.addProcessor / Topology.addGlobalStore / StreamsBuilder.addGlobalStore overloads taking the legacy org.apache.kafka.streams.processor.ProcessorSupplier are deprecated since Kafka 3.3 (KIP-820). The new org.apache.kafka.streams.processor.api.ProcessorSupplier returns Processor<KIn, VIn, KOut, VOut> with typed Record<KIn, VIn>, named-child fan-out via context.forward(record, childName), and a compile-time fixed-key variant (FixedKeyProcessor) that the legacy API lacks. Change the import from `org.apache.kafka.streams.processor.ProcessorSupplier` to `org.apache.kafka.streams.processor.api.ProcessorSupplier` and refactor the Processor's process(K, V) into process(Record<K, V> record)."));
-        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_DESCRIBE_TOPICS_RESULT),
-                Set.of("values", "all"),
-                "DescribeTopicsResult.values() / DescribeTopicsResult.all() deprecated since Kafka 3.1 (KIP-516) — both predate topic IDs and silently return an EMPTY map when the underlying describeTopics call was made with TopicCollection.ofTopicIds(...). Migrate to topicNameValues() / allTopicNames() (if you queried by topic NAME) or topicIdValues() / allTopicIds() (if you queried by topic ID). The new accessors are identical in shape — same Map type, same KafkaFuture wrapping — they just communicate which key-space the result lives in and refuse to silently return empty results from the wrong-keyed query."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, AdminDescribeTopicsResultLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, s -> new MethodCallRule(
                 RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, s,
                 Set.of(KafkaTypes.ADMIN_FEATURE_UPDATE),
