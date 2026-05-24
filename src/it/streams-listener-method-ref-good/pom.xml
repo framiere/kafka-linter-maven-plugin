@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>streams-listener-method-ref-good</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Good fixture exercises the indy-aware setter-recognition
+                          on all three Streams presence-detector rules:
+
+                            - STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER
+                            - STREAMS_NO_STATE_LISTENER
+                            - STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER
+
+                          The fixture wires each setter via a conditional method-ref
+                          capture — the canonical
+                          `Optional.ofNullable(x).ifPresent(streams::setXxx)`
+                          shape that compiles to an INVOKEDYNAMIC whose bsm-args
+                          contain a direct REF_invokeVirtual handle on the setter
+                          and ZERO direct INVOKE* instructions targeting the
+                          setter in the user-class bytecode.
+
+                          Without the indy-arg inspection in each rule, a
+                          MethodInsnNode-only scan concludes "setter is never
+                          called anywhere in this project" and fires three
+                          false-positives at the start() site. With the indy
+                          walk, each rule recognises the captured handle as
+                          evidence that the setter is wired and suppresses.
+
+                          All three rules elevated to ERROR so a regression
+                          would FAIL the IT build, not silently warn.
+                        -->
+                        <STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>ERROR</STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>
+                        <STREAMS_NO_STATE_LISTENER>ERROR</STREAMS_NO_STATE_LISTENER>
+                        <STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER>ERROR</STREAMS_NO_GLOBAL_STATE_RESTORE_LISTENER>
+                        <!--
+                          Silence rules unrelated to the suppressors under test.
+                          The toy KafkaStreams setup here intentionally uses a
+                          single-broker bootstrap.servers and skips Consumed /
+                          Produced / build(props) / client.id config to keep
+                          the fixture short; those rules' contracts are
+                          tested in their own dedicated ITs.
+                        -->
+                        <KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER>OFF</KAFKA_BOOTSTRAP_SERVERS_SINGLE_BROKER>
+                        <CLIENT_ID_MISSING>OFF</CLIENT_ID_MISSING>
+                        <STREAMS_STREAM_NO_CONSUMED>OFF</STREAMS_STREAM_NO_CONSUMED>
+                        <STREAMS_TO_NO_PRODUCED>OFF</STREAMS_TO_NO_PRODUCED>
+                        <STREAMS_BUILDER_BUILD_NO_PROPERTIES>OFF</STREAMS_BUILDER_BUILD_NO_PROPERTIES>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

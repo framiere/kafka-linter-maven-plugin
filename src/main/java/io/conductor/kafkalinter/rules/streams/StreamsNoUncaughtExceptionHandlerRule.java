@@ -4,11 +4,13 @@ import io.conductor.kafkalinter.RuleId;
 import io.conductor.kafkalinter.Severity;
 import io.conductor.kafkalinter.Violation;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
+import io.conductor.kafkalinter.scanner.AsmUtil;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.ProjectContext;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -33,6 +36,20 @@ import java.util.stream.Stream;
  * replaced. The KafkaStreams client only transitions to {@code ERROR} after the
  * <em>last</em> StreamThread dies; until then, the application looks healthy but
  * processes nothing on the dead thread's tasks.
+ *
+ * <h2>Method-reference capture is recognised as a setter call</h2>
+ *
+ * <p>The setter is sometimes wired conditionally — e.g.
+ * {@code Optional.ofNullable(handler).ifPresent(streams::setUncaughtExceptionHandler)}.
+ * That method-ref compiles to an {@code INVOKEDYNAMIC} whose bootstrap-method args
+ * include a direct {@code REF_invokeVirtual KafkaStreams.setUncaughtExceptionHandler}
+ * handle. The user-class bytecode contains <strong>zero {@code INVOKE*}
+ * instructions targeting that setter</strong>, so a MethodInsnNode-only scan
+ * would conclude {@code hasHandler == false} and fire a false-positive
+ * "handler is never set anywhere in this project" — when it actually IS set
+ * at runtime, just via a deferred method-ref. The class-walk below treats any
+ * such captured handle (any descriptor — both legacy and KIP-671 overloads
+ * are accepted) as evidence that the handler is wired, suppressing the rule.
  */
 public final class StreamsNoUncaughtExceptionHandlerRule implements ProjectScopedRule {
 
@@ -68,6 +85,11 @@ public final class StreamsNoUncaughtExceptionHandlerRule implements ProjectScope
                     for (AbstractInsnNode insn : mn.instructions) {
                         if (insn instanceof LineNumberNode ln) {
                             currentLine = ln.line;
+                            continue;
+                        }
+                        if (insn instanceof InvokeDynamicInsnNode indy
+                                && AsmUtil.indyTargetHandle(indy, Set.of(KafkaTypes.KAFKA_STREAMS), SET_HANDLER, null) != null) {
+                            hasHandler = true;
                             continue;
                         }
                         if (!(insn instanceof MethodInsnNode mi)) continue;

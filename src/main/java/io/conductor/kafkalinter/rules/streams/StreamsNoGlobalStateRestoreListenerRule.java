@@ -4,11 +4,13 @@ import io.conductor.kafkalinter.RuleId;
 import io.conductor.kafkalinter.Severity;
 import io.conductor.kafkalinter.Violation;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
+import io.conductor.kafkalinter.scanner.AsmUtil;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.ProjectContext;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -30,6 +33,19 @@ import java.util.stream.Stream;
  * far through state-store restoration the application is. Large stateful
  * applications appear stuck in REBALANCING / RESTORING for minutes-to-hours
  * after a pod restart with no progress signal.
+ *
+ * <h2>Method-reference capture is recognised as a setter call</h2>
+ *
+ * <p>The setter is sometimes wired conditionally — e.g.
+ * {@code Optional.ofNullable(listener).ifPresent(streams::setGlobalStateRestoreListener)}.
+ * That method-ref compiles to an {@code INVOKEDYNAMIC} whose bootstrap-method args
+ * include a direct {@code REF_invokeVirtual KafkaStreams.setGlobalStateRestoreListener}
+ * handle. The user-class bytecode contains <strong>zero {@code INVOKE*} instructions
+ * targeting that setter</strong>, so a MethodInsnNode-only scan would conclude
+ * {@code hasListener == false} and fire a false-positive "listener is never set
+ * anywhere in this project" — when it actually IS set at runtime, just via a
+ * deferred method-ref. The class-walk below treats any such captured handle as
+ * evidence that the listener is wired, suppressing the rule.
  */
 public final class StreamsNoGlobalStateRestoreListenerRule implements ProjectScopedRule {
 
@@ -65,6 +81,11 @@ public final class StreamsNoGlobalStateRestoreListenerRule implements ProjectSco
                     for (AbstractInsnNode insn : mn.instructions) {
                         if (insn instanceof LineNumberNode ln) {
                             currentLine = ln.line;
+                            continue;
+                        }
+                        if (insn instanceof InvokeDynamicInsnNode indy
+                                && AsmUtil.indyTargetHandle(indy, Set.of(KafkaTypes.KAFKA_STREAMS), SET_RESTORE_LISTENER, null) != null) {
+                            hasListener = true;
                             continue;
                         }
                         if (!(insn instanceof MethodInsnNode mi)) continue;
