@@ -4,11 +4,14 @@ import io.conductor.kafkalinter.RuleId;
 import io.conductor.kafkalinter.Severity;
 import io.conductor.kafkalinter.Violation;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
+import io.conductor.kafkalinter.scanner.AsmUtil;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.ProjectContext;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -30,6 +33,19 @@ import java.util.stream.Stream;
  * {@code TransactionManager} starts in {@code UNINITIALIZED}; every transactional
  * method throws {@code KafkaException} until {@code initTransactions()} promotes
  * it to {@code READY}.
+ *
+ * <p>The {@code initTransactions} detector accepts BOTH direct calls
+ * (e.g. {@code producer.initTransactions()}) AND method-reference captures
+ * (e.g. {@code CompletableFuture.runAsync(producer::initTransactions)} for lazy
+ * startup wiring). javac compiles {@code producer::initTransactions} to an
+ * {@code INVOKEDYNAMIC} whose bootstrap-method args contain a direct
+ * {@code REF_invokeVirtual} / {@code REF_invokeInterface} handle to
+ * {@code Producer.initTransactions:()V} — no {@code lambda$N} body, no
+ * {@code INVOKE*} for {@code initTransactions} in the outer method's bytecode.
+ * The project-wide scan therefore inspects indy bootstrap-method handles in
+ * addition to {@link MethodInsnNode}s; without that, a project whose only
+ * {@code initTransactions} reference is a method reference would falsely fail
+ * the rule.
  */
 public final class ProducerInitTransactionsNotCalledRule implements ProjectScopedRule {
 
@@ -68,12 +84,23 @@ public final class ProducerInitTransactionsNotCalledRule implements ProjectScope
                             currentLine = ln.line;
                             continue;
                         }
-                        if (!(insn instanceof MethodInsnNode mi)) continue;
-                        if (!KafkaTypes.PRODUCER_OWNERS.contains(mi.owner)) continue;
-                        if (INIT_TRANSACTIONS.equals(mi.name) && INIT_TRANSACTIONS_DESC.equals(mi.desc)) {
-                            hasInit = true;
-                        } else if (TXN_LIFECYCLE_METHODS.contains(mi.name)) {
-                            sites.add(new TxnSite(cn.name, mn.name, currentLine, mi.name));
+                        if (insn instanceof MethodInsnNode mi
+                                && KafkaTypes.PRODUCER_OWNERS.contains(mi.owner)) {
+                            if (INIT_TRANSACTIONS.equals(mi.name) && INIT_TRANSACTIONS_DESC.equals(mi.desc)) {
+                                hasInit = true;
+                            } else if (TXN_LIFECYCLE_METHODS.contains(mi.name)) {
+                                sites.add(new TxnSite(cn.name, mn.name, currentLine, mi.name));
+                            }
+                            continue;
+                        }
+                        if (insn instanceof InvokeDynamicInsnNode indy) {
+                            Handle h = AsmUtil.indyTargetHandle(indy, KafkaTypes.PRODUCER_OWNERS, null, null);
+                            if (h == null) continue;
+                            if (INIT_TRANSACTIONS.equals(h.getName()) && INIT_TRANSACTIONS_DESC.equals(h.getDesc())) {
+                                hasInit = true;
+                            } else if (TXN_LIFECYCLE_METHODS.contains(h.getName())) {
+                                sites.add(new TxnSite(cn.name, mn.name, currentLine, h.getName()));
+                            }
                         }
                     }
                 }
