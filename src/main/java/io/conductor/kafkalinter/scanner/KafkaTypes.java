@@ -54,6 +54,7 @@ public final class KafkaTypes {
     public static final Set<String> PRODUCER_OWNERS = Set.of(KAFKA_PRODUCER, PRODUCER_INTERFACE);
     public static final Set<String> CONSUMER_OWNERS = Set.of(KAFKA_CONSUMER, CONSUMER_INTERFACE);
     public static final Set<String> ADMIN_OWNERS = Set.of(ADMIN_INTERFACE, ADMIN_CLIENT);
+    public static final Set<String> STREAMS_OWNERS = Set.of(KAFKA_STREAMS);
 
     /**
      * Concrete kafka-clients / kafka-streams client classes that own a network
