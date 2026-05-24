@@ -5,6 +5,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 
 /**
  * RULE: CONSUMER_COMMIT_PER_RECORD.
@@ -61,8 +62,28 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
  *       {@link ConsumerRecords}.</li>
  *   <li>{@code commitSync()} on the {@link KafkaConsumer} concrete
  *       class (INVOKEVIRTUAL) inside the same shape.</li>
+ *   <li>{@code records.forEach(r -> consumer.commitSync())} — the
+ *       per-record forEach-lambda shape. The user method body has
+ *       only an {@code INVOKEDYNAMIC} producing a
+ *       {@code Consumer<ConsumerRecord>} and an
+ *       {@code INVOKEINTERFACE Iterable.forEach}; the
+ *       {@code commitSync()} lives in a synthetic
+ *       {@code lambda$N$M} sibling. The inner-loop back-edge scan
+ *       can't see this — the iteration happens inside the JDK,
+ *       not in user bytecode — so the second detection pass
+ *       (indy walk with per-record instantiatedMethodType
+ *       discrimination) is what catches it.</li>
+ *   <li>{@code records.stream().forEach(r -> consumer.commitSync())}
+ *       — same blind spot via {@code Stream.forEach} instead of
+ *       {@code Iterable.forEach}; identical bytecode shape on the
+ *       indy side, same fire.</li>
  *   <li>Control: {@code commitSync()} placed AFTER the inner loop
  *       but still inside the outer poll loop — must NOT fire.</li>
+ *   <li>Control: {@code records.partitions().forEach(p -> consumer.commitSync())}
+ *       — iterates {@link TopicPartition}s, so the lambda's
+ *       instantiatedMethodType is {@code (LTopicPartition;)V}
+ *       — NOT per-record. The per-record discriminator on
+ *       {@code bsmArgs[2]} prevents this from firing.</li>
  * </ul>
  */
 public final class BadConsumerCommitPerRecord {
@@ -97,6 +118,67 @@ public final class BadConsumerCommitPerRecord {
                 process(r);
             }
             consumer.commitSync();
+        }
+    }
+
+    /**
+     * Anti-pattern: per-record commit via {@code records.forEach(lambda)} — FIRES.
+     *
+     * <p>Compiles to:
+     * <pre>
+     *   INVOKEDYNAMIC accept(LConsumer;)LConsumer;  // bsmArgs[1]=lambda$N$0, bsmArgs[2]=(LConsumerRecord;)V
+     *   INVOKEINTERFACE Iterable.forEach(LConsumer;)V
+     * </pre>
+     * The {@code commitSync()} call lives in synthetic {@code lambda$commitPerRecordForEach$0(...)}.
+     * The inner-loop back-edge scan finds zero back-edges in this method body and bails;
+     * the indy walk recovers the fire.
+     */
+    public void commitPerRecordForEach(Consumer<String, String> consumer) {
+        while (true) {
+            ConsumerRecords<String, String> recs = consumer.poll(Duration.ofMillis(500));
+            recs.forEach(r -> {
+                process(r);
+                consumer.commitSync(); // FIRES — coordinator RTT per record
+            });
+        }
+    }
+
+    /**
+     * Anti-pattern: per-record commit via {@code records.stream().forEach(lambda)} — FIRES.
+     *
+     * <p>Same shape as above but dispatched through {@code Stream.forEach} instead of
+     * {@code Iterable.forEach}. The instantiatedMethodType on the indy is still
+     * {@code (LConsumerRecord;)V} (Stream's element type), so the per-record
+     * discriminator hits.
+     */
+    public void commitPerRecordStreamForEach(Consumer<String, String> consumer) {
+        TopicPartition tp = new TopicPartition("topic-a", 0);
+        while (true) {
+            ConsumerRecords<String, String> recs = consumer.poll(Duration.ofMillis(500));
+            // records(TopicPartition) returns List<ConsumerRecord> → .stream() yields Stream<ConsumerRecord>.
+            recs.records(tp).stream().forEach(r -> {
+                process(r);
+                consumer.commitSync(); // FIRES — coordinator RTT per record
+            });
+        }
+    }
+
+    /**
+     * Control: per-partition commit via {@code records.partitions().forEach(lambda)}
+     * — must NOT fire.
+     *
+     * <p>The lambda's instantiatedMethodType is {@code (LTopicPartition;)V}: invoked
+     * once per partition, not per record. N commits per poll() where N is the partition
+     * count for this consumer — usually a small constant — is operationally fine.
+     * The per-record discriminator on {@code bsmArgs[2]} keeps this silent.
+     */
+    public void commitPerPartitionForEach(Consumer<String, String> consumer) {
+        while (true) {
+            ConsumerRecords<String, String> recs = consumer.poll(Duration.ofMillis(500));
+            for (ConsumerRecord<String, String> r : recs) {
+                process(r);
+            }
+            recs.partitions().forEach(p -> consumer.commitSync()); // MUST NOT FIRE
         }
     }
 

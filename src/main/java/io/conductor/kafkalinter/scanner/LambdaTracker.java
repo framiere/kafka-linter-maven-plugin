@@ -19,10 +19,31 @@ import java.util.Set;
  * instruction is an INVOKE* to an iterating method, the lambda's synthetic method
  * is treated as a loop body.
  *
+ * <p>Recognition has two layers:
+ * <ol>
+ *   <li>Owner+name match against {@link #ITERATING_METHODS} — covers the canonical
+ *       {@code java.lang.Iterable.forEach}, {@code java.util.Map.forEach},
+ *       {@code java.util.stream.Stream.forEach / forEachOrdered / map / filter /
+ *       peek / flatMap}, etc.</li>
+ *   <li>Signature-based fallback on {@code forEach(Consumer)V} /
+ *       {@code forEach(BiConsumer)V} regardless of owner — necessary because
+ *       javac emits the call with the receiver's STATIC type as the owner, not
+ *       the interface that declares {@code forEach}. E.g.
+ *       {@code recs.forEach(...)} on a {@code ConsumerRecords<K,V>} compiles to
+ *       {@code INVOKEVIRTUAL ConsumerRecords.forEach(Consumer)V}, NOT
+ *       {@code INVOKEINTERFACE Iterable.forEach}. Without the signature
+ *       fallback we'd have to enumerate every {@code Iterable} subtype in
+ *       Kafka + the JDK + user code; with it, any subtype's inherited
+ *       {@code forEach(Consumer)V} dispatch is treated as iterating, which is
+ *       what the Java collection-framework convention requires of overriders.</li>
+ * </ol>
+ *
  * Limitations (intentional, kept simple):
  *   - The lambda must be consumed by the immediately-following call. Storing the
  *     lambda in a local first is not tracked (false negative).
- *   - The iterating method list is closed. Custom iteration wrappers go undetected.
+ *   - Stream operations (map/filter/peek/flatMap) are still owner-based on
+ *     {@code java/util/stream/Stream} — subtype-static-call dispatches on stream
+ *     ops are not detected. Acceptable: Stream subtypes are rare in user code.
  */
 public final class LambdaTracker {
 
@@ -34,6 +55,9 @@ public final class LambdaTracker {
         "java/util/Map", Set.of("forEach"),
         "java/util/stream/Stream", Set.of("forEach", "forEachOrdered", "map", "filter", "peek", "flatMap")
     );
+
+    private static final String FOREACH_CONSUMER_DESC = "(Ljava/util/function/Consumer;)V";
+    private static final String FOREACH_BICONSUMER_DESC = "(Ljava/util/function/BiConsumer;)V";
 
     private LambdaTracker() {}
 
@@ -76,6 +100,12 @@ public final class LambdaTracker {
 
     private static boolean isIteratingCall(MethodInsnNode call) {
         Set<String> names = ITERATING_METHODS.get(call.owner);
-        return names != null && names.contains(call.name);
+        if (names != null && names.contains(call.name)) return true;
+        // Subtype-static-call fallback: any `forEach(Consumer)V` / `forEach(BiConsumer)V`
+        // dispatch is, by Java collection-framework convention, an iteration over the
+        // receiver. Catches `INVOKEVIRTUAL ConsumerRecords.forEach`, `INVOKEVIRTUAL
+        // ArrayList.forEach`, etc., without enumerating every Iterable subtype.
+        if (!"forEach".equals(call.name)) return false;
+        return FOREACH_CONSUMER_DESC.equals(call.desc) || FOREACH_BICONSUMER_DESC.equals(call.desc);
     }
 }
