@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommitOffsetOffByOneRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPauseNoResumeRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerCommittedSinglePartitionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollLongDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollResultIgnoredRule;
 import io.conductor.kafkalinter.rules.ConsumerSubscribeInLoopRule;
@@ -888,10 +889,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED, s, Set.of(KafkaTypes.KAFKA_STREAMS),
                 Set.of("allMetadataForStore", "allMetadata"),
                 "KafkaStreams.allMetadataForStore() / allMetadata() is deprecated since Kafka 3.0 (KIP-744) — returns the old org.apache.kafka.streams.state.StreamsMetadata, which silently elides standby-replica information. Interactive-query routers built on these methods cannot fall over to a standby host while the active is restoring; the IQ endpoint returns 503 for the full restore window. Use streamsMetadataForStore() / metadataForAllStreamsClients() which return the new org.apache.kafka.streams.StreamsMetadata with standbyStateStoreNames() populated."));
-        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, s -> new MethodCallRule(
-                RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, s, KafkaTypes.CONSUMER_OWNERS, Set.of("committed"),
-                desc -> desc != null && desc.startsWith("(Lorg/apache/kafka/common/TopicPartition;"),
-                "Consumer.committed(TopicPartition) / committed(TopicPartition, Duration) deprecated since Kafka 2.4 (KIP-520). Each call is one OFFSET_FETCH round trip for a single partition; a loop over an N-partition assignment becomes N × broker-RTT of sequential serial fetches. Use the batched overloads consumer.committed(Set.of(tp1, tp2, ...)) and consumer.committed(Set<TopicPartition>, Duration) which return a Map<TopicPartition, OffsetAndMetadata> in a single round trip."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, ConsumerCommittedSinglePartitionDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s,
                 Set.of(KafkaTypes.TIME_WINDOWS, KafkaTypes.JOIN_WINDOWS, KafkaTypes.SESSION_WINDOWS),
