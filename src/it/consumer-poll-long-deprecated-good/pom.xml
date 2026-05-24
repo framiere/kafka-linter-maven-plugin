@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>consumer-poll-long-deprecated-good</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <CONSUMER_POLL_LONG_DEPRECATED>ERROR</CONSUMER_POLL_LONG_DEPRECATED>
+                        <CONSUMER_POLL_ZERO>OFF</CONSUMER_POLL_ZERO>
+                        <CONSUMER_POLL_INFINITE_DURATION>OFF</CONSUMER_POLL_INFINITE_DURATION>
+                        <CONSUMER_POLL_RESULT_IGNORED>OFF</CONSUMER_POLL_RESULT_IGNORED>
+                        <CONSUMER_CLOSE_NO_TIMEOUT>OFF</CONSUMER_CLOSE_NO_TIMEOUT>
+                        <CONSUMER_AUTO_COMMIT_TRUE>OFF</CONSUMER_AUTO_COMMIT_TRUE>
+                        <CONSUMER_PROPERTIES_MAX_POLL_INTERVAL_MS_ABSENT>OFF</CONSUMER_PROPERTIES_MAX_POLL_INTERVAL_MS_ABSENT>
+                        <CONSUMER_PROPERTIES_MAX_POLL_RECORDS_ABSENT>OFF</CONSUMER_PROPERTIES_MAX_POLL_RECORDS_ABSENT>
+                        <CONSUMER_GROUP_ID_RANDOM>OFF</CONSUMER_GROUP_ID_RANDOM>
+                        <CONSUMER_NOT_CLOSED>OFF</CONSUMER_NOT_CLOSED>
+                        <CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER>OFF</CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

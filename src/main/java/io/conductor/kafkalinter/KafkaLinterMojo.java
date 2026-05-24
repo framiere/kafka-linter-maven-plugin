@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommitOffsetOffByOneRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPauseNoResumeRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPollLongDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollResultIgnoredRule;
 import io.conductor.kafkalinter.rules.ConsumerSubscribeInLoopRule;
 import io.conductor.kafkalinter.rules.ProducerCloseZeroDurationRule;
@@ -444,10 +445,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_RESULT_IGNORED, ConsumerPollResultIgnoredRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_PAUSE_NO_RESUME, ConsumerPauseNoResumeRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_LONG_DEPRECATED, s -> new MethodCallRule(
-                RuleId.CONSUMER_POLL_LONG_DEPRECATED, s, KafkaTypes.CONSUMER_OWNERS, Set.of("poll"),
-                desc -> desc != null && desc.startsWith("(J)"),
-                "Consumer.poll(long) is deprecated since Kafka 2.0 (KIP-266) — replaced by poll(Duration). The long variant blocks indefinitely waiting for an initial group-coordinator assignment regardless of the timeout argument; the Duration variant returns an empty record set when the duration elapses, making coordinator-unavailability visible to the caller. The deprecated method is slated for removal in Kafka 4.x."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_LONG_DEPRECATED, ConsumerPollLongDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitSync"),
                 desc -> desc != null && (desc.equals("()V") || desc.equals("(Ljava/util/Map;)V")),
