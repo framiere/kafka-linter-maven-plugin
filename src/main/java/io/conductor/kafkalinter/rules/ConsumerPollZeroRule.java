@@ -10,22 +10,70 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
- * Flags consumer.poll(0L) and consumer.poll(Duration.ZERO) — both busy-loop the consumer.
+ * Flags {@code consumer.poll(...)} called with a literal-zero timeout. Both the
+ * deprecated long-millis overload and the modern {@code Duration} overload are
+ * covered, in every literal-zero shape javac (and other JVM bytecode
+ * emitters) produce.
  *
- * Forms detected:
- *   - poll(J)  preceded by LCONST_0          → poll(0L)
- *   - poll(Duration) preceded by GETSTATIC Duration.ZERO  → poll(Duration.ZERO)
- *   - poll(Duration) preceded by INVOKESTATIC Duration.ofMillis(0)/ofNanos(0)  → handled
+ * <h2>Why this matters</h2>
+ *
+ * <p>{@code consumer.poll(timeout)} is the consumer's hot-path loop: it fetches
+ * records, processes coordinator heartbeats, drains the fetcher network
+ * buffers, and blocks UP TO {@code timeout} waiting for the broker to deliver
+ * records. If {@code timeout} is zero, the call returns IMMEDIATELY regardless
+ * of broker activity. The almost-universal calling shape
+ * {@code while (running) { records = consumer.poll(t); process(records); }}
+ * then becomes a tight busy-spin: a single thread pins one CPU core making
+ * tens of thousands of poll() calls per second, while the broker pays the
+ * fetch-request cost on every one of them and tail latency rises for every
+ * OTHER consumer group on the same coordinator.
+ *
+ * <h2>Shapes detected</h2>
+ *
+ * <ul>
+ *   <li>{@code poll(0L)} — long-millis overload preceded by the long-zero
+ *       literal (bytecode {@code LCONST_0}).</li>
+ *   <li>{@code poll(Duration.ZERO)} — Duration overload preceded by
+ *       {@code GETSTATIC Duration.ZERO}.</li>
+ *   <li>{@code poll(Duration.ofXxx(0))} for every {@code Duration} long-arg
+ *       factory ({@code ofMillis, ofSeconds, ofNanos, ofMinutes, ofHours,
+ *       ofDays}), where the factory argument is a long-zero literal in any
+ *       form recognised by {@link AsmUtil#isLongZeroLiteral(AbstractInsnNode)}.</li>
+ * </ul>
+ *
+ * <p>The factory set deliberately mirrors {@link ConsumerCloseZeroDurationRule}
+ * — both rules detect a {@code Duration.ofXxx(0)} argument flowing into a
+ * Kafka consumer API, and a divergence in factory coverage between them
+ * would be a silent gap. {@code ofMinutes(0)}/{@code ofHours(0)}/
+ * {@code ofDays(0)} are not common in practice, but they are bit-exact
+ * equivalents of {@code ofMillis(0)} and the literal {@code 0} can creep in
+ * via inlined constants ({@code static final long IDLE_TIMEOUT = 0;}),
+ * generated code, or refactors that erase a non-zero default — keeping
+ * detection complete costs nothing and removes a future blind spot.
+ *
+ * <h2>What it does NOT fire on</h2>
+ *
+ * <p>Non-literal arguments — {@code poll(timeout)} where {@code timeout} is a
+ * method parameter, field read, or computed value — are intentionally out of
+ * scope. Dynamic-zero cases are a tiny minority of real occurrences and
+ * proving them statically would require value-flow analysis; the cost in
+ * false positives (and rule complexity) is not worth the few additional
+ * fires. Literal-zero detection covers the overwhelming majority of
+ * production occurrences of this anti-pattern.
  */
 public final class ConsumerPollZeroRule implements Rule {
+
+    private static final Set<String> DURATION_FACTORY_METHODS = Set.of(
+            "ofMillis", "ofSeconds", "ofNanos", "ofMinutes", "ofHours", "ofDays"
+    );
 
     private final Severity severity;
 
@@ -51,42 +99,48 @@ public final class ConsumerPollZeroRule implements Rule {
                 if (args.length != 1) continue;
 
                 AbstractInsnNode prev = AsmUtil.prevSignificant(insn);
-                if (isPollZero(prev, args[0])) {
-                    out.add(new Violation(
-                            RuleId.CONSUMER_POLL_ZERO,
-                            severity,
-                            ctx.classNode().name,
-                            mn.name,
-                            AsmUtil.lineOf(insn),
-                            "poll() called with zero timeout — busy-loops the consumer."));
-                }
+                String shape = zeroTimeoutShape(prev, args[0]);
+                if (shape == null) continue;
+
+                out.add(new Violation(
+                        RuleId.CONSUMER_POLL_ZERO,
+                        severity,
+                        ctx.classNode().name,
+                        mn.name,
+                        AsmUtil.lineOf(insn),
+                        "consumer.poll(" + shape + ") — zero-timeout busy-spin. poll() returns "
+                                + "immediately whether or not records are available, so the typical "
+                                + "while-true polling loop becomes a tight CPU-bound spin: tens of "
+                                + "thousands of fetch requests per second, one CPU core pinned, "
+                                + "and tail latency rising for every other consumer group on the "
+                                + "same coordinator. Pass a Duration matched to the consumer's "
+                                + "back-pressure tolerance — typically 100ms to 1s."));
             }
         }
         return out;
     }
 
-    private static boolean isPollZero(AbstractInsnNode prev, Type argType) {
-        if (prev == null) return false;
-
+    private static String zeroTimeoutShape(AbstractInsnNode prev, Type argType) {
+        if (prev == null) return null;
         if (argType.getSort() == Type.LONG) {
-            return prev.getOpcode() == Opcodes.LCONST_0;
+            return AsmUtil.isLongZeroLiteral(prev) ? "0L" : null;
         }
-        if (argType.getInternalName().equals(KafkaTypes.DURATION)) {
-            if (prev instanceof FieldInsnNode f
-                    && f.getOpcode() == Opcodes.GETSTATIC
-                    && f.owner.equals(KafkaTypes.DURATION)
-                    && f.name.equals("ZERO")) {
-                return true;
-            }
-            // Duration.ofMillis(0) / ofNanos(0) / ofSeconds(0)
-            if (prev instanceof MethodInsnNode m
-                    && m.getOpcode() == Opcodes.INVOKESTATIC
-                    && m.owner.equals(KafkaTypes.DURATION)
-                    && (m.name.equals("ofMillis") || m.name.equals("ofNanos") || m.name.equals("ofSeconds"))) {
-                AbstractInsnNode beforeOf = AsmUtil.prevSignificant(m);
-                return beforeOf != null && beforeOf.getOpcode() == Opcodes.LCONST_0;
+        if (!argType.getInternalName().equals(KafkaTypes.DURATION)) return null;
+        if (prev instanceof FieldInsnNode f
+                && f.getOpcode() == Opcodes.GETSTATIC
+                && KafkaTypes.DURATION.equals(f.owner)
+                && "ZERO".equals(f.name)) {
+            return "Duration.ZERO";
+        }
+        if (prev instanceof MethodInsnNode m
+                && m.getOpcode() == Opcodes.INVOKESTATIC
+                && KafkaTypes.DURATION.equals(m.owner)
+                && DURATION_FACTORY_METHODS.contains(m.name)) {
+            AbstractInsnNode literal = AsmUtil.prevSignificant(m);
+            if (AsmUtil.isLongZeroLiteral(literal)) {
+                return "Duration." + m.name + "(0)";
             }
         }
-        return false;
+        return null;
     }
 }

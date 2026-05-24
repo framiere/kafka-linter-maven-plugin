@@ -6,6 +6,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -208,6 +209,46 @@ public final class AsmUtil {
         AbstractInsnNode dup = prevSignificant(req);
         if (dup == null || dup.getOpcode() != Opcodes.DUP) return null;
         return prevSignificant(dup);
+    }
+
+    /**
+     * Recognise the bytecode shapes that push a literal {@code long 0} onto the
+     * stack. Used by rules that detect {@code Duration.ofXxx(0)} arguments to
+     * Kafka client APIs — both the zero-timeout {@code poll} and the
+     * zero-grace-period {@code close}. Centralising the shapes here keeps
+     * those sibling detectors in lockstep so a new compiler quirk only needs
+     * fixing in one place.
+     *
+     * <p>Shapes accepted:
+     * <ul>
+     *   <li>{@code LCONST_0} — the canonical javac emission for the literal
+     *       {@code 0L}.</li>
+     *   <li>{@code LDC 0L} — emitted when the long literal is sourced from a
+     *       static-final-long constant pool entry rather than the dedicated
+     *       LCONST_0 opcode. javac uses LCONST_0 for {@code 0L} written
+     *       inline, but the constant pool entry shape appears for inlined
+     *       compile-time constants from other classes.</li>
+     *   <li>{@code I2L} preceded by an int-zero push ({@code ICONST_0} or
+     *       {@code LDC (int) 0}) — emitted when an {@code int}-typed
+     *       expression is widened to satisfy a {@code long} parameter. javac
+     *       does NOT emit this for {@code 0} (it folds to LCONST_0), but
+     *       Kotlin's kotlinc and various bytecode rewriters do, so accepting
+     *       it widens the rule's coverage to non-javac toolchains without
+     *       affecting javac-emitted bytecode.</li>
+     * </ul>
+     */
+    public static boolean isLongZeroLiteral(AbstractInsnNode insn) {
+        if (insn == null) return false;
+        if (insn.getOpcode() == Opcodes.LCONST_0) return true;
+        if (insn instanceof LdcInsnNode ldc && ldc.cst instanceof Long l && l == 0L) return true;
+        if (insn.getOpcode() == Opcodes.I2L) {
+            AbstractInsnNode prev = prevSignificant(insn);
+            if (prev == null) return false;
+            return prev.getOpcode() == Opcodes.ICONST_0
+                    || (prev instanceof LdcInsnNode ldc && ldc.cst instanceof Integer i && i == 0)
+                    || (prev instanceof InsnNode && prev.getOpcode() == Opcodes.ICONST_0);
+        }
+        return false;
     }
 
     /** Walk backward skipping labels, line numbers, and frames. */

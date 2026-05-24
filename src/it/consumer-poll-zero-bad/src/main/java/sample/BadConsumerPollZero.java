@@ -21,6 +21,15 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
  *       factory.</li>
  *   <li>{@code poll(Duration.ofSeconds(0))} — same shape, different
  *       factory.</li>
+ *   <li>{@code poll(Duration.ofMinutes(0))} /
+ *       {@code poll(Duration.ofHours(0))} /
+ *       {@code poll(Duration.ofDays(0))} — coarse-grain factories. Less
+ *       common in practice but still bit-exact equivalents of
+ *       {@code Duration.ZERO}; can creep in via inlined static-final
+ *       constants ({@code static final long IDLE = 0;}), generated code,
+ *       or refactors that erase a non-zero default. The rule covers them
+ *       so detection stays complete and matches the sibling
+ *       {@code CONSUMER_CLOSE_ZERO_DURATION} factory set.</li>
  * </ul>
  *
  * <p>Why poll(0) is wrong:
@@ -100,6 +109,21 @@ public final class BadConsumerPollZero {
     /** Anti-pattern: poll(Duration.ofSeconds(0)) — FIRES. */
     public ConsumerRecords<String, String> pollOfSecondsZero(Consumer<String, String> consumer) {
         return consumer.poll(Duration.ofSeconds(0)); // FIRES
+    }
+
+    /** Anti-pattern: poll(Duration.ofMinutes(0)) — FIRES (coarse factory still folds to zero). */
+    public ConsumerRecords<String, String> pollOfMinutesZero(Consumer<String, String> consumer) {
+        return consumer.poll(Duration.ofMinutes(0)); // FIRES
+    }
+
+    /** Anti-pattern: poll(Duration.ofHours(0)) — FIRES (coarse factory still folds to zero). */
+    public ConsumerRecords<String, String> pollOfHoursZero(Consumer<String, String> consumer) {
+        return consumer.poll(Duration.ofHours(0)); // FIRES
+    }
+
+    /** Anti-pattern: poll(Duration.ofDays(0)) — FIRES (coarse factory still folds to zero). */
+    public ConsumerRecords<String, String> pollOfDaysZero(Consumer<String, String> consumer) {
+        return consumer.poll(Duration.ofDays(0)); // FIRES
     }
 
     /** Anti-pattern: poll(0L) on KafkaConsumer concrete — FIRES (deprecated long overload, LCONST_0). */
