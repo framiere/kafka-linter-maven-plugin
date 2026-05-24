@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>admin-result-discarded-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Every BAD method in this fixture invokes a STATE-MUTATING
+                          admin operation (createTopics / deleteTopics / createAcls /
+                          alterConfigs / incrementalAlterConfigs / createPartitions /
+                          electLeaders) and discards the returned *Result via POP. The
+                          AdminClient still sends the request to the broker, but the
+                          KafkaFuture(s) wrapping the broker response are immediately
+                          garbage-collected — any failure (topic exists, ACL denied,
+                          policy violation, broker timeout, fencing, …) is invisible
+                          to the application. invoker.buildResult=failure asserts at
+                          least one ERROR was emitted.
+
+                          GoodAdminResultObserved.java holds the silent controls: the
+                          same admin operations but with .all().get() chained, stored
+                          in a local var, returned, or wrapped in a non-mutating call
+                          that is itself observed. None of those should fire.
+                        -->
+                        <ADMIN_RESULT_DISCARDED>ERROR</ADMIN_RESULT_DISCARDED>
+                        <!-- Silence ambient siblings so the build outcome reflects only the rule under test. -->
+                        <ADMIN_NOT_CLOSED>OFF</ADMIN_NOT_CLOSED>
+                        <ADMIN_USED_AFTER_CLOSE>OFF</ADMIN_USED_AFTER_CLOSE>
+                        <ADMIN_CLOSE_NO_TIMEOUT>OFF</ADMIN_CLOSE_NO_TIMEOUT>
+                        <ADMIN_NEW_TOPIC_REPLICATION_FACTOR_ONE>OFF</ADMIN_NEW_TOPIC_REPLICATION_FACTOR_ONE>
+                        <ADMIN_CREATE_TOPICS_NO_OPTIONS>OFF</ADMIN_CREATE_TOPICS_NO_OPTIONS>
+                        <ADMIN_DELETE_TOPICS_NO_OPTIONS>OFF</ADMIN_DELETE_TOPICS_NO_OPTIONS>
+                        <ADMIN_CREATE_ACLS_NO_OPTIONS>OFF</ADMIN_CREATE_ACLS_NO_OPTIONS>
+                        <ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS>OFF</ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS>
+                        <ADMIN_ELECT_LEADERS_NO_OPTIONS>OFF</ADMIN_ELECT_LEADERS_NO_OPTIONS>
+                        <ADMIN_CREATE_PARTITIONS_NO_OPTIONS>OFF</ADMIN_CREATE_PARTITIONS_NO_OPTIONS>
+                        <ADMIN_ALTER_CONFIGS_DEPRECATED>OFF</ADMIN_ALTER_CONFIGS_DEPRECATED>
+                        <ADMIN_LIST_TOPICS_NO_OPTIONS>OFF</ADMIN_LIST_TOPICS_NO_OPTIONS>
+                        <ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS>OFF</ADMIN_DESCRIBE_CLUSTER_NO_OPTIONS>
+                        <KAFKA_FUTURE_GET_NO_TIMEOUT>OFF</KAFKA_FUTURE_GET_NO_TIMEOUT>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
