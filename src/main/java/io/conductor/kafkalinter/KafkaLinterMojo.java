@@ -23,6 +23,7 @@ import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerSubscribeAndAssignMixedRule;
+import io.conductor.kafkalinter.rules.clients.StreamsSetListenerAfterStartRule;
 import io.conductor.kafkalinter.rules.clients.StreamsStartedTwiceRule;
 import io.conductor.kafkalinter.rules.clients.StreamsUsedAfterCloseRule;
 import io.conductor.kafkalinter.rules.clients.AdminNewTopicReplicationFactorOneRule;
@@ -381,6 +382,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_USED_AFTER_CLOSE, AdminUsedAfterCloseRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_USED_AFTER_CLOSE, StreamsUsedAfterCloseRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STARTED_TWICE, StreamsStartedTwiceRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_SET_LISTENER_AFTER_START, StreamsSetListenerAfterStartRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_RESULT_DISCARDED, AdminResultDiscardedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_NOT_CLOSED, ProducerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, ProducerCloseNoTimeoutRule::new);
