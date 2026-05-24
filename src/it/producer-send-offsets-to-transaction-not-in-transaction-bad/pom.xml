@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>producer-send-offsets-to-transaction-not-in-transaction-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Each BAD method holds a KafkaProducer slot whose
+                          TransactionManager is NOT in IN_TRANSACTION at the
+                          sendOffsetsToTransaction() call site — either no
+                          preceding begin, or a prior commit/abort already
+                          drove the manager back to READY. Each must fire
+                          exactly once. GoodProducerSendOffsetsPaired holds
+                          the silent controls: matched begin+sendOffsets+commit,
+                          multiple sendOffsets in same transaction, deprecated
+                          (Map, String) overload inside a transaction.
+                        -->
+                        <PRODUCER_SEND_OFFSETS_TO_TRANSACTION_NOT_IN_TRANSACTION>ERROR</PRODUCER_SEND_OFFSETS_TO_TRANSACTION_NOT_IN_TRANSACTION>
+                        <!-- Silence sibling state-machine rules to keep the build outcome attributable to the rule under test. -->
+                        <PRODUCER_BEGIN_TRANSACTION_TWICE>OFF</PRODUCER_BEGIN_TRANSACTION_TWICE>
+                        <PRODUCER_BEGIN_TRANSACTION_NO_ABORT>OFF</PRODUCER_BEGIN_TRANSACTION_NO_ABORT>
+                        <PRODUCER_END_TRANSACTION_NOT_IN_TRANSACTION>OFF</PRODUCER_END_TRANSACTION_NOT_IN_TRANSACTION>
+                        <PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>OFF</PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>
+                        <PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED>OFF</PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED>
+                        <!-- Silence ambient producer-lifecycle siblings so the build outcome reflects only the rule under test. -->
+                        <PRODUCER_NOT_CLOSED>OFF</PRODUCER_NOT_CLOSED>
+                        <PRODUCER_CLOSE_NO_TIMEOUT>OFF</PRODUCER_CLOSE_NO_TIMEOUT>
+                        <PRODUCER_CLOSE_ZERO_DURATION>OFF</PRODUCER_CLOSE_ZERO_DURATION>
+                        <PRODUCER_SEND_NO_CALLBACK>OFF</PRODUCER_SEND_NO_CALLBACK>
+                        <PRODUCER_SEND_NULL_CALLBACK>OFF</PRODUCER_SEND_NULL_CALLBACK>
+                        <PRODUCER_SEND_BLOCKING_GET>OFF</PRODUCER_SEND_BLOCKING_GET>
+                        <PRODUCER_USED_AFTER_CLOSE>OFF</PRODUCER_USED_AFTER_CLOSE>
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <CLIENT_ID_MISSING>OFF</CLIENT_ID_MISSING>
+                        <PRODUCER_TRANSACTIONAL_ID_RANDOM>OFF</PRODUCER_TRANSACTIONAL_ID_RANDOM>
+                        <PRODUCER_TRANSACTIONAL_ID_GENERIC>OFF</PRODUCER_TRANSACTIONAL_ID_GENERIC>
+                        <CONSUMER_NOT_CLOSED>OFF</CONSUMER_NOT_CLOSED>
+                        <CONSUMER_CLOSE_NO_TIMEOUT>OFF</CONSUMER_CLOSE_NO_TIMEOUT>
+                        <CONSUMER_CLOSE_ZERO_DURATION>OFF</CONSUMER_CLOSE_ZERO_DURATION>
+                        <CONSUMER_USED_AFTER_CLOSE>OFF</CONSUMER_USED_AFTER_CLOSE>
+                        <CONSUMER_GROUP_ID_RANDOM>OFF</CONSUMER_GROUP_ID_RANDOM>
+                        <CONSUMER_GROUP_ID_GENERIC>OFF</CONSUMER_GROUP_ID_GENERIC>
+                        <CONSUMER_AUTO_OFFSET_RESET_LATEST>OFF</CONSUMER_AUTO_OFFSET_RESET_LATEST>
+                        <CONSUMER_AUTO_COMMIT_TRUE>OFF</CONSUMER_AUTO_COMMIT_TRUE>
+                        <CONSUMER_POLL_INFINITE_DURATION>OFF</CONSUMER_POLL_INFINITE_DURATION>
+                        <CONSUMER_COMMIT_OFFSET_OFF_BY_ONE>OFF</CONSUMER_COMMIT_OFFSET_OFF_BY_ONE>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
