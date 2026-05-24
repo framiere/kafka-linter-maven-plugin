@@ -24,6 +24,7 @@ import io.conductor.kafkalinter.rules.ProducerSendNullCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AdminAlterConfigsDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminDeleteTopicsResultValuesDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
@@ -961,11 +962,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 KafkaTypes.DEFAULT_DSL_STORE_KEY,
                 v -> v != null && !v.isEmpty(),
                 "`default.dsl.store` config key deprecated since Kafka 3.5 (KIP-954) — the string-valued key accepted only `rocksDB` / `in_memory` and locks users out of new built-in stores (KIP-986 versioned stores) and any third-party DslStoreSuppliers. Replace with `StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG` and pass `BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class.getName()` (default) or `InMemoryDslStoreSuppliers.class.getName()`. Remove entirely if you want the RocksDB default — that's the right move for almost all production apps."));
-        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_DELETE_TOPICS_RESULT),
-                Set.of("values"),
-                "DeleteTopicsResult.values() deprecated since Kafka 3.0 (KIP-516) — returns Map<String, KafkaFuture<Void>> with no awareness of topic IDs. Throws UnsupportedOperationException at runtime if deleteTopics() was called with TopicCollection.ofTopicIds(...). Replace with topicNameValues() for delete-by-name or topicIdValues() (returns Map<Uuid, KafkaFuture<Void>>) for delete-by-id. The renamed accessors make the key-space explicit at the callsite."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, AdminDeleteTopicsResultValuesDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, s -> new MethodCallRule(
                 RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, s,
                 Set.of(KafkaTypes.RECORD_METADATA),
