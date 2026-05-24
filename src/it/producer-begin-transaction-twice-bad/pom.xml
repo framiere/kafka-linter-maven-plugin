@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>producer-begin-transaction-twice-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Each BAD method holds a KafkaProducer slot whose
+                          TransactionManager is driven into IN_TRANSACTION and
+                          then begin()-ed a SECOND time without an intervening
+                          commit/abort. Each must fire once.
+                          GoodProducerSingleTransaction holds the silent
+                          controls: single begin, begin-commit-begin (valid
+                          serial transactions), begin-abort-begin (valid
+                          recovery shape).
+                        -->
+                        <PRODUCER_BEGIN_TRANSACTION_TWICE>ERROR</PRODUCER_BEGIN_TRANSACTION_TWICE>
+                        <!-- Silence the begin-without-abort sibling: the BAD samples deliberately omit aborts in some shapes. -->
+                        <PRODUCER_BEGIN_TRANSACTION_NO_ABORT>OFF</PRODUCER_BEGIN_TRANSACTION_NO_ABORT>
+                        <!-- Silence the project-scoped init-transactions check; the BAD samples call init in some methods and not others. -->
+                        <PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>OFF</PRODUCER_INIT_TRANSACTIONS_NOT_CALLED>
+                        <!-- Silence ambient producer-lifecycle siblings so the build outcome reflects only the rule under test. -->
+                        <PRODUCER_NOT_CLOSED>OFF</PRODUCER_NOT_CLOSED>
+                        <PRODUCER_CLOSE_NO_TIMEOUT>OFF</PRODUCER_CLOSE_NO_TIMEOUT>
+                        <PRODUCER_CLOSE_ZERO_DURATION>OFF</PRODUCER_CLOSE_ZERO_DURATION>
+                        <PRODUCER_SEND_NO_CALLBACK>OFF</PRODUCER_SEND_NO_CALLBACK>
+                        <PRODUCER_SEND_NULL_CALLBACK>OFF</PRODUCER_SEND_NULL_CALLBACK>
+                        <PRODUCER_SEND_BLOCKING_GET>OFF</PRODUCER_SEND_BLOCKING_GET>
+                        <PRODUCER_USED_AFTER_CLOSE>OFF</PRODUCER_USED_AFTER_CLOSE>
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <CLIENT_ID_MISSING>OFF</CLIENT_ID_MISSING>
+                        <PRODUCER_TRANSACTIONAL_ID_RANDOM>OFF</PRODUCER_TRANSACTIONAL_ID_RANDOM>
+                        <PRODUCER_TRANSACTIONAL_ID_GENERIC>OFF</PRODUCER_TRANSACTIONAL_ID_GENERIC>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
