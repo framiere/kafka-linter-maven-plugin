@@ -11,6 +11,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitOffsetOffByOneRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPauseNoResumeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommittedSinglePartitionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollLongDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.ProducerSendOffsetsToTxnGroupIdDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollResultIgnoredRule;
 import io.conductor.kafkalinter.rules.ConsumerSubscribeInLoopRule;
 import io.conductor.kafkalinter.rules.ProducerCloseZeroDurationRule;
@@ -767,10 +768,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("globalTable"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
                 "StreamsBuilder.globalTable(topic) / globalTable(topic, Consumed) with no Materialized — the global state store is auto-named from the topology graph index. After a topology edit, every Streams instance restores an empty new-named global store; stream-globalTable joins return null for every key during the (potentially multi-hour) restore. Use globalTable(topic, Materialized.as(\"name\"))."));
-        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, s -> new MethodCallRule(
-                RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, s, KafkaTypes.PRODUCER_OWNERS, Set.of("sendOffsetsToTransaction"),
-                desc -> desc != null && desc.equals("(Ljava/util/Map;Ljava/lang/String;)V"),
-                "Producer.sendOffsetsToTransaction(Map, String groupId) is deprecated since Kafka 3.0 (KIP-447) — the String-groupId form bypasses the broker's generation/member fencing and lets a zombie producer overwrite a rebalanced consumer's committed offsets. Use sendOffsetsToTransaction(Map, consumer.groupMetadata())."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, ProducerSendOffsetsToTxnGroupIdDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s -> new MethodCallRule(
                 RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin"),
                 desc -> desc != null

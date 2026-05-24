@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>producer-send-offsets-to-txn-group-id-deprecated-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED>ERROR</PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED>
+                        <PRODUCER_NOT_CLOSED>OFF</PRODUCER_NOT_CLOSED>
+                        <PRODUCER_CLOSE_NO_TIMEOUT>OFF</PRODUCER_CLOSE_NO_TIMEOUT>
+                        <PRODUCER_IDEMPOTENCE_DISABLED>OFF</PRODUCER_IDEMPOTENCE_DISABLED>
+                        <PRODUCER_PROPERTIES_LINGER_MS_ABSENT>OFF</PRODUCER_PROPERTIES_LINGER_MS_ABSENT>
+                        <PRODUCER_PROPERTIES_BATCH_SIZE_ABSENT>OFF</PRODUCER_PROPERTIES_BATCH_SIZE_ABSENT>
+                        <PRODUCER_PROPERTIES_COMPRESSION_TYPE_ABSENT>OFF</PRODUCER_PROPERTIES_COMPRESSION_TYPE_ABSENT>
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <PRODUCER_SEND_NO_CALLBACK>OFF</PRODUCER_SEND_NO_CALLBACK>
+                        <PRODUCER_BEGIN_TRANSACTION_NO_ABORT>OFF</PRODUCER_BEGIN_TRANSACTION_NO_ABORT>
+                        <PRODUCER_TRANSACTIONAL_ID_RANDOM>OFF</PRODUCER_TRANSACTIONAL_ID_RANDOM>
+                        <CONSUMER_NOT_CLOSED>OFF</CONSUMER_NOT_CLOSED>
+                        <CONSUMER_CLOSE_NO_TIMEOUT>OFF</CONSUMER_CLOSE_NO_TIMEOUT>
+                        <CONSUMER_AUTO_COMMIT_TRUE>OFF</CONSUMER_AUTO_COMMIT_TRUE>
+                        <CONSUMER_PROPERTIES_MAX_POLL_INTERVAL_MS_ABSENT>OFF</CONSUMER_PROPERTIES_MAX_POLL_INTERVAL_MS_ABSENT>
+                        <CONSUMER_PROPERTIES_MAX_POLL_RECORDS_ABSENT>OFF</CONSUMER_PROPERTIES_MAX_POLL_RECORDS_ABSENT>
+                        <CONSUMER_GROUP_ID_RANDOM>OFF</CONSUMER_GROUP_ID_RANDOM>
+                        <CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER>OFF</CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER>
+                        <CONSUMER_ISOLATION_READ_UNCOMMITTED_WITH_TXN>OFF</CONSUMER_ISOLATION_READ_UNCOMMITTED_WITH_TXN>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
