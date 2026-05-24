@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>consumer-not-thread-safe-method-ref-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          Bad fixture captures KafkaConsumer method references
+                          (consumer::commitSync, consumer::commitAsync,
+                          consumer::unsubscribe) into Runnable sinks dispatched to
+                          another thread (executor.execute, new Thread, scheduler,
+                          CompletableFuture.runAsync). Without the impl-handle
+                          inspection on the indy bsm-args, the user class contains
+                          ZERO INVOKE* targeting those consumer methods and the
+                          rule emits zero violations — the canonical "offload the
+                          blocking commit to a worker" anti-pattern slips through
+                          silently. IT expects build failure because
+                          CONSUMER_NOT_THREAD_SAFE is elevated to ERROR.
+
+                          Companion good controls in the fixture capture
+                          `consumer::wakeup` (the only thread-safe consumer
+                          method) into the same dispatcher shapes — must NOT
+                          fire.
+                        -->
+                        <CONSUMER_NOT_THREAD_SAFE>ERROR</CONSUMER_NOT_THREAD_SAFE>
+                        <CONSUMER_NOT_CLOSED>OFF</CONSUMER_NOT_CLOSED>
+                        <CONSUMER_CLOSE_NO_TIMEOUT>OFF</CONSUMER_CLOSE_NO_TIMEOUT>
+                        <CONSUMER_NO_WAKEUP_SHUTDOWN>OFF</CONSUMER_NO_WAKEUP_SHUTDOWN>
+                        <COMMIT_ASYNC_NO_FINAL_SYNC>OFF</COMMIT_ASYNC_NO_FINAL_SYNC>
+                        <CLIENT_ID_MISSING>OFF</CLIENT_ID_MISSING>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

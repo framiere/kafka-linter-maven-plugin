@@ -43,6 +43,23 @@
                           silent.
                         -->
                         <COMMIT_ASYNC_NO_FINAL_SYNC>ERROR</COMMIT_ASYNC_NO_FINAL_SYNC>
+                        <!--
+                          CONSUMER_NOT_THREAD_SAFE legitimately fires on
+                          `new Thread(consumer::commitSync)` — commitSync goes
+                          through KafkaConsumer's `acquireAndEnsureOpen()`, which
+                          throws ConcurrentModificationException ("KafkaConsumer
+                          is not safe for multi-threaded access") the first time
+                          the shutdown-hook thread touches the consumer while the
+                          poll thread is mid-poll. That is the real-world hazard
+                          of the shape shown here, and the rule is right to flag
+                          it. Suppressed in THIS IT only because the test target
+                          is the indy-aware commitSync suppressor inside
+                          CommitAsyncNoFinalSyncRule — orthogonal to the thread-
+                          safety question. The sibling IT
+                          `consumer-not-thread-safe-method-ref-bad` exercises the
+                          method-ref dispatch detection directly.
+                        -->
+                        <CONSUMER_NOT_THREAD_SAFE>OFF</CONSUMER_NOT_THREAD_SAFE>
                     </severities>
                 </configuration>
                 <executions>
