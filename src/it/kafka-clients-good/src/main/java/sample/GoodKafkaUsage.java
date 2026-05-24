@@ -53,7 +53,11 @@ public final class GoodKafkaUsage {
 
     public void publishBatch(List<String> keys, List<String> messages) {
         for (int i = 0; i < messages.size(); i++) {
-            producer.send(new ProducerRecord<>("topic", keys.get(i), messages.get(i)), (md, ex) -> {});
+            producer.send(new ProducerRecord<>("topic", keys.get(i), messages.get(i)), (md, ex) -> {
+                if (ex != null) {
+                    System.err.println("batch send failed: " + ex.getMessage());
+                }
+            });
         }
     }
 

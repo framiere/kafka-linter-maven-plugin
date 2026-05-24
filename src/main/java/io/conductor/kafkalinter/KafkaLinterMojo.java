@@ -170,6 +170,7 @@ import io.conductor.kafkalinter.rules.config.ConfigKeyValueRule;
 import io.conductor.kafkalinter.rules.config.MethodCallRule;
 import io.conductor.kafkalinter.rules.config.PropertyFileRule;
 import io.conductor.kafkalinter.rules.observability.JacksonDefaultTypingRule;
+import io.conductor.kafkalinter.rules.observability.LambdaProducerCallbackEmptyRule;
 import io.conductor.kafkalinter.rules.observability.SchemaRegistryUrlMissingRule;
 import io.conductor.kafkalinter.rules.observability.DeserSrNoAuthCredentialsRule;
 import io.conductor.kafkalinter.rules.observability.SrJsonValueTypeMissingRule;
@@ -377,6 +378,8 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_BLOCKING_GET, ProducerSendBlockingGetRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NO_CALLBACK, ProducerSendNoCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_NULL_CALLBACK, ProducerSendNullCallbackRule::new);
+        addIfEnabled(rules, sev, RuleId.LAMBDA_PRODUCER_CALLBACK_EMPTY,
+                LambdaProducerCallbackEmptyRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_FLUSH_IN_LOOP, ProducerFlushInLoopRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_IN_LOOP, ConsumerSubscribeInLoopRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_INFINITE_DURATION, ConsumerPollInfiniteDurationRule::new);
