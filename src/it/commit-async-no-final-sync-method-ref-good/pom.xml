@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>commit-async-no-final-sync-method-ref-good</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          The whole point of this IT: the class's ONLY commitSync
+                          reference is a method-ref (`consumer::commitSync`) wired
+                          into a shutdown hook. The class also uses
+                          consumer.commitAsync() in the poll loop. Without the indy
+                          bsm-arg scan, the rule's syncFound stays false, the rule
+                          fires, and this build would FAIL with a
+                          COMMIT_ASYNC_NO_FINAL_SYNC error. The fact that this IT is
+                          configured with invoker.buildResult=success asserts that
+                          the indy walk in CommitAsyncNoFinalSyncRule is working —
+                          the suppressor sees the method-ref commitSync and stays
+                          silent.
+                        -->
+                        <COMMIT_ASYNC_NO_FINAL_SYNC>ERROR</COMMIT_ASYNC_NO_FINAL_SYNC>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
