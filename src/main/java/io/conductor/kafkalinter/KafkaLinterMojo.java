@@ -7,6 +7,7 @@ import io.conductor.kafkalinter.rules.AdminCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPauseNoResumeRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPollResultIgnoredRule;
 import io.conductor.kafkalinter.rules.ConsumerSubscribeInLoopRule;
 import io.conductor.kafkalinter.rules.ProducerCloseZeroDurationRule;
@@ -400,6 +401,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_PER_RECORD, ConsumerCommitPerRecordRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_ZERO, ConsumerPollZeroRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_RESULT_IGNORED, ConsumerPollResultIgnoredRule::new);
+        addIfEnabled(rules, sev, RuleId.CONSUMER_PAUSE_NO_RESUME, ConsumerPauseNoResumeRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_LONG_DEPRECATED, s -> new MethodCallRule(
                 RuleId.CONSUMER_POLL_LONG_DEPRECATED, s, KafkaTypes.CONSUMER_OWNERS, Set.of("poll"),
                 desc -> desc != null && desc.startsWith("(J)"),
