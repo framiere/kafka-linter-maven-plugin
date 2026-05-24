@@ -361,6 +361,8 @@ public class KafkaLinterMojo extends AbstractMojo {
                 s -> new ProducerInLoopRule(RuleId.PRODUCER_IN_LOOP, s, Set.of(KafkaTypes.KAFKA_PRODUCER)));
         addIfEnabled(rules, sev, RuleId.CONSUMER_IN_LOOP,
                 s -> new ProducerInLoopRule(RuleId.CONSUMER_IN_LOOP, s, Set.of(KafkaTypes.KAFKA_CONSUMER)));
+        addIfEnabled(rules, sev, RuleId.STREAMS_IN_LOOP,
+                s -> new ProducerInLoopRule(RuleId.STREAMS_IN_LOOP, s, Set.of(KafkaTypes.KAFKA_STREAMS)));
         addIfEnabled(rules, sev, RuleId.PRODUCER_NO_COMPRESSION, ProducerNoCompressionRule::new);
         addIfEnabled(rules, sev, RuleId.CLIENT_ID_MISSING, ClientIdMissingRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_PARTITION_AND_KEY, ProducerRecordPartitionAndKeyRule::new);
