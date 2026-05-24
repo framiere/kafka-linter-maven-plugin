@@ -204,6 +204,7 @@ import io.conductor.kafkalinter.rules.quarkus.SmallRyeChannelConfigRule;
 import io.conductor.kafkalinter.rules.spring.SpringErrorHandlingDeserializerNoDelegatesRule;
 import io.conductor.kafkalinter.rules.spring.SpringJsonDeserializerTrustedPackagesWildcardRule;
 import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplateRule;
+import io.conductor.kafkalinter.rules.streams.StreamsCleanupAfterStartRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCleanupInProdRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
@@ -384,6 +385,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_USED_AFTER_CLOSE, StreamsUsedAfterCloseRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STARTED_TWICE, StreamsStartedTwiceRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SET_LISTENER_AFTER_START, StreamsSetListenerAfterStartRule::new);
+        addIfEnabled(rules, sev, RuleId.STREAMS_CLEANUP_AFTER_START, StreamsCleanupAfterStartRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_RESULT_DISCARDED, AdminResultDiscardedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_NOT_CLOSED, ProducerNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_CLOSE_NO_TIMEOUT, ProducerCloseNoTimeoutRule::new);
