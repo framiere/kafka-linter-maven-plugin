@@ -20,6 +20,7 @@ import io.conductor.kafkalinter.rules.ProducerSendNoCallbackRule;
 import io.conductor.kafkalinter.rules.ProducerSendNullCallbackRule;
 import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
+import io.conductor.kafkalinter.rules.clients.AdminAlterConfigsDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUsedAfterCloseRule;
@@ -398,6 +399,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_CLOSE_NO_TIMEOUT, ConsumerCloseNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_NOT_CLOSED, AdminNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_CLOSE_NO_TIMEOUT, AdminCloseNoTimeoutRule::new);
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_CONFIGS_DEPRECATED, AdminAlterConfigsDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_NEW_TOPIC_REPLICATION_FACTOR_ONE, AdminNewTopicReplicationFactorOneRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_NOT_CLOSED, StreamsNotClosedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STORE_QUERY_PARAMETERS_NO_STALE_STORES,
@@ -822,9 +824,6 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteTopicsOptions;"),
                 "Admin.deleteTopics() with no DeleteTopicsOptions — destructive operation using the default request.timeout.ms (~30s) with no caller-visible bound; TimeoutException does NOT mean the delete failed. Pass new DeleteTopicsOptions().timeoutMs(60_000)."));
-        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_CONFIGS_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_ALTER_CONFIGS_DEPRECATED, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterConfigs"),
-                "Admin.alterConfigs(Map<ConfigResource, Config>) is deprecated since Kafka 2.3 (KIP-339) — it performs a FULL REPLACEMENT, so any key not present in the Config payload gets reset to broker default. Use incrementalAlterConfigs(Map<ConfigResource, Collection<AlterConfigOp>>) which mutates only the keys you name."));
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_FILTER_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_KTABLE_FILTER_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("filter", "filterNot"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
