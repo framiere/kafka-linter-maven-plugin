@@ -8,6 +8,7 @@ import io.conductor.kafkalinter.scanner.AsmUtil;
 import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.RuleContext;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -27,6 +28,16 @@ import java.util.List;
  * {@code Producer} interface or the {@code KafkaProducer} concrete class.
  * The {@code close(Duration)} overload (descriptor
  * {@code (Ljava/time/Duration;)V}) is intentionally not flagged.
+ *
+ * <p>Method references like {@code producer::close} ARE flagged. javac
+ * compiles {@code new Thread(producer::close)} to an {@code INVOKEDYNAMIC}
+ * whose bootstrap-method arguments include a direct
+ * {@code REF_invokeVirtual KafkaProducer.close:()V} handle — no
+ * {@code lambda$N} body, no {@code INVOKEVIRTUAL} in the outer method. The
+ * deferred call has the same effect as a direct no-arg close: when the
+ * shutdown thread runs the {@code Runnable}, it invokes
+ * {@code close(Duration.ofMillis(Long.MAX_VALUE))} and parks the shutdown
+ * thread until every in-flight record drains.
  */
 public final class ProducerCloseNoTimeoutRule implements Rule {
 
@@ -49,34 +60,46 @@ public final class ProducerCloseNoTimeoutRule implements Rule {
         List<Violation> out = new ArrayList<>();
         for (MethodNode mn : ctx.classNode().methods) {
             for (AbstractInsnNode insn : mn.instructions) {
-                if (!(insn instanceof MethodInsnNode mi)) continue;
-                if (!KafkaTypes.PRODUCER_OWNERS.contains(mi.owner)) continue;
-                if (!CLOSE.equals(mi.name)) continue;
-                if (!CLOSE_NO_ARG_DESC.equals(mi.desc)) continue;
-                out.add(new Violation(
-                        RuleId.PRODUCER_CLOSE_NO_TIMEOUT, severity,
-                        ctx.classNode().name, mn.name, AsmUtil.lineOf(insn),
-                        "Producer.close() (no-argument overload) is called here. Internally "
-                                + "this delegates to close(Duration.ofMillis(Long.MAX_VALUE)) — the "
-                                + "caller stops accepting new sends, then parks until the Sender thread "
-                                + "has drained the accumulator. Every record still in flight has up to "
-                                + "delivery.timeout.ms (default 120 s) to land before the producer "
-                                + "considers it failed; with retries enabled this stretches further. On "
-                                + "a partition with acks=all and unreachable brokers, a producer with "
-                                + "100 unflushed records can block close() for 100 × delivery.timeout.ms "
-                                + "in the worst case. In Kubernetes this is the single most common "
-                                + "cause of 'pod stuck terminating': the shutdown hook calls "
-                                + "producer.close(), the calling thread parks for minutes during a "
-                                + "broker outage, terminationGracePeriodSeconds (default 30 s) expires, "
-                                + "SIGKILL fires, and the JVM dies mid-flush — leaving any in-flight "
-                                + "transactional commit hanging on transaction.timeout.ms broker-side. "
-                                + "Use the bounded overload close(Duration). Pick a timeout matching "
-                                + "your pod's terminationGracePeriodSeconds minus a buffer "
-                                + "(e.g. Duration.ofSeconds(20) for a 30 s grace) and treat 'close did "
-                                + "not complete in time' as a metric/alert signal rather than a hidden "
-                                + "data-loss event."));
+                if (insn instanceof MethodInsnNode mi
+                        && KafkaTypes.PRODUCER_OWNERS.contains(mi.owner)
+                        && CLOSE.equals(mi.name)
+                        && CLOSE_NO_ARG_DESC.equals(mi.desc)) {
+                    out.add(violation(ctx, mn, insn));
+                    continue;
+                }
+                if (insn instanceof InvokeDynamicInsnNode indy
+                        && AsmUtil.indyTargetHandle(indy, KafkaTypes.PRODUCER_OWNERS, CLOSE, CLOSE_NO_ARG_DESC) != null) {
+                    out.add(violation(ctx, mn, insn));
+                }
             }
         }
         return out;
+    }
+
+    private Violation violation(RuleContext ctx, MethodNode mn, AbstractInsnNode insn) {
+        return new Violation(
+                RuleId.PRODUCER_CLOSE_NO_TIMEOUT, severity,
+                ctx.classNode().name, mn.name, AsmUtil.lineOf(insn),
+                "Producer.close() (no-argument overload) is reached here — either as a direct "
+                        + "call or as a method-reference capture (e.g. `producer::close`) whose "
+                        + "deferred invocation has the same effect. Internally "
+                        + "this delegates to close(Duration.ofMillis(Long.MAX_VALUE)) — the "
+                        + "caller stops accepting new sends, then parks until the Sender thread "
+                        + "has drained the accumulator. Every record still in flight has up to "
+                        + "delivery.timeout.ms (default 120 s) to land before the producer "
+                        + "considers it failed; with retries enabled this stretches further. On "
+                        + "a partition with acks=all and unreachable brokers, a producer with "
+                        + "100 unflushed records can block close() for 100 × delivery.timeout.ms "
+                        + "in the worst case. In Kubernetes this is the single most common "
+                        + "cause of 'pod stuck terminating': the shutdown hook calls "
+                        + "producer.close(), the calling thread parks for minutes during a "
+                        + "broker outage, terminationGracePeriodSeconds (default 30 s) expires, "
+                        + "SIGKILL fires, and the JVM dies mid-flush — leaving any in-flight "
+                        + "transactional commit hanging on transaction.timeout.ms broker-side. "
+                        + "Use the bounded overload close(Duration). Pick a timeout matching "
+                        + "your pod's terminationGracePeriodSeconds minus a buffer "
+                        + "(e.g. Duration.ofSeconds(20) for a 30 s grace) and treat 'close did "
+                        + "not complete in time' as a metric/alert signal rather than a hidden "
+                        + "data-loss event.");
     }
 }

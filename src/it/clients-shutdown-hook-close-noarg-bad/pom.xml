@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>clients-shutdown-hook-close-noarg-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <!--
+                          The four CLOSE_NO_TIMEOUT rules default to WARNING, but for
+                          this fixture they MUST fail the build. The fixture's whole
+                          purpose is to assert the *::close method-ref capture is
+                          caught — without the indy bootstrap-handle scan this IT
+                          would silently pass with zero errors and the regression
+                          would slip through. Elevate all four to ERROR.
+                        -->
+                        <PRODUCER_CLOSE_NO_TIMEOUT>ERROR</PRODUCER_CLOSE_NO_TIMEOUT>
+                        <CONSUMER_CLOSE_NO_TIMEOUT>ERROR</CONSUMER_CLOSE_NO_TIMEOUT>
+                        <ADMIN_CLOSE_NO_TIMEOUT>ERROR</ADMIN_CLOSE_NO_TIMEOUT>
+                        <STREAMS_CLOSE_NO_TIMEOUT>ERROR</STREAMS_CLOSE_NO_TIMEOUT>
+
+                        <!--
+                          Silence everything else that this fixture's shape would
+                          otherwise trip. The fixture is for *CLOSE_NO_TIMEOUT only.
+                        -->
+                        <PRODUCER_NOT_CLOSED>OFF</PRODUCER_NOT_CLOSED>
+                        <CONSUMER_NOT_CLOSED>OFF</CONSUMER_NOT_CLOSED>
+                        <ADMIN_NOT_CLOSED>OFF</ADMIN_NOT_CLOSED>
+                        <STREAMS_NOT_CLOSED>OFF</STREAMS_NOT_CLOSED>
+                        <PRODUCER_NO_COMPRESSION>OFF</PRODUCER_NO_COMPRESSION>
+                        <CONSUMER_NOT_THREAD_SAFE>OFF</CONSUMER_NOT_THREAD_SAFE>
+                        <STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>OFF</STREAMS_NO_UNCAUGHT_EXCEPTION_HANDLER>
+                        <STREAMS_NO_STATE_LISTENER>OFF</STREAMS_NO_STATE_LISTENER>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

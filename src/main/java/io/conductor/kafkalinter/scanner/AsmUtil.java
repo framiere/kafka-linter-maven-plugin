@@ -1,5 +1,6 @@
 package io.conductor.kafkalinter.scanner;
 
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -83,6 +84,38 @@ public final class AsmUtil {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Inspect an {@link InvokeDynamicInsnNode}'s bootstrap-method arguments and
+     * return the first {@link Handle} matching the given {@code owners} / {@code name} /
+     * {@code desc}. Returns {@code null} if no such handle exists. Any of the
+     * filters may be {@code null} to disable that filter.
+     *
+     * <p>Use case: a method reference like {@code client::close} is compiled to
+     * an INVOKEDYNAMIC whose bootstrap-method args contain a direct
+     * {@code REF_invokeVirtual} (or {@code REF_invokeInterface}) handle pointing
+     * straight at the target method — no synthetic {@code lambda$N} body is
+     * generated. The outer-method bytecode therefore contains zero
+     * {@code INVOKE*} instructions pointing at the target, and naive
+     * MethodInsnNode scans miss the callsite entirely. This helper recovers it
+     * by reading the bootstrap arg list.
+     *
+     * <p>Concretely: this turns false-negatives like
+     * {@code Runtime.getRuntime().addShutdownHook(new Thread(consumer::close))}
+     * into a fire of CONSUMER_CLOSE_NO_TIMEOUT — the no-arg close descriptor
+     * {@code ()V} is the very thing the method reference captures.
+     */
+    public static Handle indyTargetHandle(InvokeDynamicInsnNode indy, Set<String> owners, String name, String desc) {
+        if (indy == null || indy.bsmArgs == null) return null;
+        for (Object arg : indy.bsmArgs) {
+            if (!(arg instanceof Handle h)) continue;
+            if (owners != null && !owners.contains(h.getOwner())) continue;
+            if (name != null && !name.equals(h.getName())) continue;
+            if (desc != null && !desc.equals(h.getDesc())) continue;
+            return h;
+        }
+        return null;
     }
 
     /**
