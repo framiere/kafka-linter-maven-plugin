@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.scanner.KafkaTypes;
 import io.conductor.kafkalinter.scanner.RuleContext;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -25,7 +26,14 @@ import java.util.List;
  * <p>Suppression rules:
  * <ul>
  *   <li>If any method in the class calls {@code wakeup()} on a Consumer / KafkaConsumer
- *       receiver, the class is considered safe — no violations are produced.</li>
+ *       receiver — either as a direct {@code consumer.wakeup()} invocation or as a
+ *       method-reference capture (e.g. {@code consumer::wakeup} handed to
+ *       {@code new Thread(...)} for a shutdown hook) — the class is considered safe and
+ *       no violations are produced. The method-reference form is the canonical Kafka
+ *       shutdown idiom and compiles to an {@code INVOKEDYNAMIC} whose bootstrap-method
+ *       args carry the {@code REF_invokeVirtual KafkaConsumer.wakeup:()V} handle: there
+ *       is no {@code INVOKEVIRTUAL wakeup} in the outer method's bytecode, so the
+ *       suppressor must inspect the indy bootstrap args to see it.</li>
  *   <li>If any method in the class is annotated with Spring's {@code @KafkaListener}, the
  *       consumer is framework-managed and the lifecycle is the container's responsibility.</li>
  * </ul>
@@ -75,9 +83,18 @@ public final class ConsumerNoWakeupShutdownRule implements Rule {
     private static boolean hasAnyWakeup(RuleContext ctx) {
         for (MethodNode mn : ctx.classNode().methods) {
             for (AbstractInsnNode insn : mn.instructions) {
-                if (!(insn instanceof MethodInsnNode mi)) continue;
-                if (!KafkaTypes.CONSUMER_OWNERS.contains(mi.owner)) continue;
-                if ("wakeup".equals(mi.name)) return true;
+                if (insn instanceof MethodInsnNode mi
+                        && KafkaTypes.CONSUMER_OWNERS.contains(mi.owner)
+                        && "wakeup".equals(mi.name)) {
+                    return true;
+                }
+                // Method-reference capture: `consumer::wakeup` compiles to an
+                // INVOKEDYNAMIC whose bootstrap args contain a direct handle to
+                // Consumer.wakeup:()V — no INVOKEVIRTUAL appears in the outer method.
+                if (insn instanceof InvokeDynamicInsnNode indy
+                        && AsmUtil.indyTargetHandle(indy, KafkaTypes.CONSUMER_OWNERS, "wakeup", "()V") != null) {
+                    return true;
+                }
             }
         }
         return false;
