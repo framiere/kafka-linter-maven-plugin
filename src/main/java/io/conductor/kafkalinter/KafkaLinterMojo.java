@@ -35,6 +35,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerBeginningOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPositionNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureGetNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
@@ -486,10 +487,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, ConsumerEndOffsetsNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, ConsumerBeginningOffsetsNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, ConsumerOffsetsForTimesNoTimeoutRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_POSITION_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("position"),
-                desc -> desc != null && desc.equals("(Lorg/apache/kafka/common/TopicPartition;)J"),
-                "Consumer.position(TopicPartition) (no Duration) can block for up to default.api.timeout.ms on coordinator unavailability when the cached position is stale. Lag/health probes that use this overload hang for 60 s per partition during outages. Use position(TopicPartition, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, ConsumerPositionNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("partitionsFor"),
                 desc -> desc != null && desc.equals("(Ljava/lang/String;)Ljava/util/List;"),
