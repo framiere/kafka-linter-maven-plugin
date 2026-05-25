@@ -250,6 +250,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchedNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStreamNoConsumedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsSplitNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToNoProducedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
@@ -784,10 +785,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_BRANCHED_NO_NAMED, StreamsBranchedNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_NO_CONSUMED, StreamsStreamNoConsumedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_NO_PRODUCED, StreamsToNoProducedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_SPLIT_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_SPLIT_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("split"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "KStream.split() with no Named — the split parent node is graph-index-derived (KSTREAM-BRANCH-<N>) and prefixes every branch map key. Even branches passed Branched.as(\"x\") end up as keys \"<auto-name>-x\". Use split(Named.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SPLIT_NO_NAMED, StreamsSplitNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("createTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/CreateTopicsOptions;"),
