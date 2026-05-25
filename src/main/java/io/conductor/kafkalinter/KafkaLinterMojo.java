@@ -34,6 +34,7 @@ import io.conductor.kafkalinter.rules.clients.AdminUpdateFeaturesOptionsDryRunDe
 import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerBeginningOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureGetNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
@@ -484,10 +485,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, ConsumerCommitSyncNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, ConsumerEndOffsetsNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, ConsumerBeginningOffsetsNoTimeoutRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("offsetsForTimes"),
-                desc -> desc != null && desc.equals("(Ljava/util/Map;)Ljava/util/Map;"),
-                "Consumer.offsetsForTimes(Map) (no Duration) blocks for up to default.api.timeout.ms (60 s by default) on broker/leader unavailability. Replay tooling that uses this overload appears 'stuck' during exactly the incidents that prompt replay. Use offsetsForTimes(Map, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, ConsumerOffsetsForTimesNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_POSITION_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("position"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/common/TopicPartition;)J"),
