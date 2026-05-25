@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.conductor.kafkalinter.it</groupId>
+    <artifactId>consumer-commitsync-no-timeout-bad</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.conductor</groupId>
+                <artifactId>kafka-linter-maven-plugin</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <configuration>
+                    <severities>
+                        <CONSUMER_COMMITSYNC_NO_TIMEOUT>ERROR</CONSUMER_COMMITSYNC_NO_TIMEOUT>
+                        <CONSUMER_NOT_THREAD_SAFE>OFF</CONSUMER_NOT_THREAD_SAFE>
+                        <CONSUMER_CLOSE_NO_TIMEOUT>OFF</CONSUMER_CLOSE_NO_TIMEOUT>
+                        <CLIENT_ID_MISSING>OFF</CLIENT_ID_MISSING>
+                        <KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>OFF</KAFKA_CLIENTS_CVE_CONFIG_PROVIDER>
+                        <KAFKA_CLIENTS_CVE_BUFFER_POOL>OFF</KAFKA_CLIENTS_CVE_BUFFER_POOL>
+                        <KAFKA_CLIENTS_CVE_SCRAM_REPLAY>OFF</KAFKA_CLIENTS_CVE_SCRAM_REPLAY>
+                    </severities>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>lint</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
