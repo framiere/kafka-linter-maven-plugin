@@ -258,6 +258,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableFilterNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamFilterNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsKStreamMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -814,10 +815,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.flatMap(KeyValueMapper) with no Named — flatMap is KEY-CHANGING AND fan-out; auto-repartition topic carries N× input throughput. Topology edits orphan N× the broker-disk volume vs map. Use flatMap(mapper, Named.as(\"...\")) — or use flatMapValues then selectKey to isolate fan-out from key-change."));
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_FILTER_NO_NAMED, StreamsKStreamFilterNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_MAP_VALUES_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_KSTREAM_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("mapValues"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "KStream.mapValues with no Named — KSTREAM-MAPVALUES-<N> graph-index-derived; NOT key-changing so no auto-repartition (safe alternative to map() when only the value changes), but still rebrand metric tags on topology edits. Use mapValues(mapper, Named.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_MAP_VALUES_NO_NAMED, StreamsKStreamMapValuesNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_IN_MEMORY_KV_STORE, s -> new MethodCallRule(
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
