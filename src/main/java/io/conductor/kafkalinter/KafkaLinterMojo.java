@@ -248,6 +248,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRu
 import io.conductor.kafkalinter.rules.streams.StreamsMergeNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
@@ -774,10 +775,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_SELECT_KEY_NO_NAMED, StreamsSelectKeyNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_MERGE_NO_NAMED, StreamsMergeNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, StreamsToTableNoMaterializedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_PROCESS_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_PROCESS_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("process", "processValues"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "KStream.process(supplier, stateStores...) / processValues(supplier, stateStores...) with no Named — the processor node name is graph-index-derived, breaking per-node metric labels (process-rate, dropped-records-rate) on every topology edit. Use process(supplier, Named.as(\"...\"), stateStores...)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_PROCESS_NO_NAMED, StreamsProcessNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s -> new MethodCallRule(
                 RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupByKey"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Grouped;"),
