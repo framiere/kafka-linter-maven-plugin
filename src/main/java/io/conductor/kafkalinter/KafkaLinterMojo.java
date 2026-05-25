@@ -249,6 +249,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsMergeNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchedNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsStreamNoConsumedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -780,10 +781,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_PROCESS_NO_NAMED, StreamsProcessNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, StreamsGroupByKeyNoGroupedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_BRANCHED_NO_NAMED, StreamsBranchedNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_NO_CONSUMED, s -> new MethodCallRule(
-                RuleId.STREAMS_STREAM_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("stream"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
-                "StreamsBuilder.stream(topic) with no Consumed — source node name is graph-index-derived (KSTREAM-SOURCE-<N>, breaks source-tagged metrics on topology edits) AND serdes default to global default.key.serde / default.value.serde, so config-level changes silently corrupt this source's deserialization. Use stream(topic, Consumed.with(keySerde, valueSerde).withName(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_NO_CONSUMED, StreamsStreamNoConsumedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_NO_PRODUCED, s -> new MethodCallRule(
                 RuleId.STREAMS_TO_NO_PRODUCED, s, Set.of(KafkaTypes.KSTREAM), Set.of("to"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Produced;"),
