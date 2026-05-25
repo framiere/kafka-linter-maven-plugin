@@ -29,6 +29,7 @@ import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDe
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUsedAfterCloseRule;
@@ -952,12 +953,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 v -> v != null && !v.isEmpty(),
                 "`default.dsl.store` config key deprecated since Kafka 3.5 (KIP-954) — the string-valued key accepted only `rocksDB` / `in_memory` and locks users out of new built-in stores (KIP-986 versioned stores) and any third-party DslStoreSuppliers. Replace with `StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG` and pass `BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class.getName()` (default) or `InMemoryDslStoreSuppliers.class.getName()`. Remove entirely if you want the RocksDB default — that's the right move for almost all production apps."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, AdminDeleteTopicsResultValuesDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, s -> new MethodCallRule(
-                RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, s,
-                Set.of(KafkaTypes.RECORD_METADATA),
-                Set.of("<init>"),
-                desc -> desc != null && desc.contains("Ljava/lang/Long;II)V"),
-                "RecordMetadata 7-arg constructor with `Long checksum` parameter deprecated since Kafka 2.0 (KIP-101 / KIP-82) — the v2 message format (KIP-98 in 0.11) moved CRCs to the batch level; per-record checksum carries no useful information. Replace with the 6-arg constructor `new RecordMetadata(tp, baseOffset, (int) batchIndex, timestamp, keySize, valueSize)`. Affects test/mock scaffolding and mock-producer libraries that hand-roll RecordMetadata."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, s -> new MethodCallRule(
                 RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, s,
                 Set.of(KafkaTypes.KAFKA_FUTURE),
