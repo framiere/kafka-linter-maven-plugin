@@ -35,6 +35,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerBeginningOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerCommitAsyncNoCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommittedNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerListTopicsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
@@ -759,10 +760,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && !desc.contains("Lorg/apache/kafka/streams/kstream/Joined;")
                         && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.join() / leftJoin() / outerJoin() without a naming argument (StreamJoined for KStream-KStream, Joined for KStream-KTable, Named for KStream-GlobalKTable) — auto-generated repartition topic and join state-store names are derived from the topology graph index, so any upstream edit renames them and the join produces nulls on the next deploy."));
-        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, s -> new MethodCallRule(
-                RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, s, KafkaTypes.CONSUMER_OWNERS, Set.of("commitAsync"),
-                desc -> desc != null && desc.equals("()V"),
-                "Consumer.commitAsync() with no callback — failed commits (rebalance, coordinator unreachable, network error) are silently swallowed and the application has no signal to detect or retry. Pass an OffsetCommitCallback."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, ConsumerCommitAsyncNoCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, s -> new MethodCallRule(
                 RuleId.PRODUCER_RECORD_NO_KEY, s, Set.of(KafkaTypes.PRODUCER_RECORD), Set.of("<init>"),
                 desc -> desc != null && desc.equals("(Ljava/lang/String;Ljava/lang/Object;)V"),
