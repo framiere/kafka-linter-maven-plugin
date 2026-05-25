@@ -35,6 +35,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerBeginningOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerListTopicsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPositionNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureGetNoTimeoutRule;
@@ -490,10 +491,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, ConsumerOffsetsForTimesNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, ConsumerPositionNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, ConsumerPartitionsForNoTimeoutRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("listTopics"),
-                desc -> desc != null && desc.equals("()Ljava/util/Map;"),
-                "Consumer.listTopics() (no Duration) blocks for up to default.api.timeout.ms (60 s) and returns the full-cluster metadata snapshot. Expensive even on a healthy cluster; thread-pinning hazard during outages. Use listTopics(Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, ConsumerListTopicsNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("committed"),
                 desc -> desc != null && desc.equals("(Ljava/util/Set;)Ljava/util/Map;"),
