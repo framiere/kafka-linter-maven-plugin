@@ -256,6 +256,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsSplitNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToNoProducedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableFilterNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsKTableMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
@@ -792,10 +793,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, AdminCreateTopicsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, AdminDeleteTopicsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_FILTER_NO_NAMED, StreamsKTableFilterNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("mapValues"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "KTable.mapValues with no Named — the mapValues node name is graph-index-derived (KTABLE-MAPVALUES-<N>); editing the topology renumbers the index and silently rebrands every metric tag and (for materialized variants) the changelog/state-store name. Use mapValues(mapper, Named.as(\"...\")) or mapValues(mapper, Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_MAP_VALUES_NO_NAMED, StreamsKTableMapValuesNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FOREACH_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_FOREACH_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("foreach"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
