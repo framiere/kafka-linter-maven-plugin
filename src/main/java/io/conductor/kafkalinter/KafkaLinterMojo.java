@@ -35,6 +35,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerBeginningOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerCommittedNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerListTopicsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPositionNoTimeoutRule;
@@ -492,10 +493,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, ConsumerPositionNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, ConsumerPartitionsForNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, ConsumerListTopicsNoTimeoutRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("committed"),
-                desc -> desc != null && desc.equals("(Ljava/util/Set;)Ljava/util/Map;"),
-                "Consumer.committed(Set) (no Duration) blocks for up to default.api.timeout.ms (60 s) on group-coordinator outage. Lag monitors that use this overload pin threads during exactly the incidents that justify monitoring. Use committed(Set, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_NO_TIMEOUT, ConsumerCommittedNoTimeoutRule::new);
 
         addIfEnabled(rules, sev, RuleId.PRODUCER_ACKS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.PRODUCER_ACKS_ZERO, s, KafkaTypes.ACKS_KEY, "0",
