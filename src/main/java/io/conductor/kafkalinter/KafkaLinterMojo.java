@@ -29,6 +29,7 @@ import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDe
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminTopicListingNameInternalCtorDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
@@ -952,12 +953,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "`default.dsl.store` config key deprecated since Kafka 3.5 (KIP-954) — the string-valued key accepted only `rocksDB` / `in_memory` and locks users out of new built-in stores (KIP-986 versioned stores) and any third-party DslStoreSuppliers. Replace with `StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG` and pass `BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class.getName()` (default) or `InMemoryDslStoreSuppliers.class.getName()`. Remove entirely if you want the RocksDB default — that's the right move for almost all production apps."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, AdminDeleteTopicsResultValuesDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, s -> new MethodCallRule(
-                RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, s,
-                Set.of(KafkaTypes.KAFKA_FUTURE),
-                Set.of("thenApply"),
-                desc -> desc != null && desc.contains("Lorg/apache/kafka/common/KafkaFuture$Function;"),
-                "KafkaFuture.thenApply(KafkaFuture.Function) deprecated since Kafka 3.0 (KIP-707) — the legacy `Function` interface declared a checked-exception apply() that forces awkward try/catch wrapping at every callsite. Replace with `KafkaFuture.BaseFunction` (same `apply(T)` shape, no checked exception) or, for new code, switch to `kafkaFuture.toCompletionStage().thenApply(...)` with standard java.util.function.Function. The plugin distinguishes the deprecated overload from the modern thenApply(BaseFunction) via descriptor."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, KafkaFutureThenApplyFunctionDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, s,
                 Set.of(KafkaTypes.KAFKA_FUTURE),
