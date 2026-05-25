@@ -246,6 +246,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesMaxTaskIdleMsAbse
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoSizeDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsFlatTransformDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsJoinWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsLocalThreadsMetadataDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTransformDeprecatedRule;
@@ -1595,9 +1596,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 v -> { long n = parseLongOrZero(v); return n > 300_000L; },
                 "socket.connection.setup.timeout.max.ms={value} — above 5 min. Exponential-backoff cap for connection setup retries; after a few failed attempts every attempt costs the full cap. Detecting a dead broker takes minutes per attempt; client walks through bootstrap.servers an order of magnitude slower. Default 30 s is right."));
         addIfEnabled(rules, sev, RuleId.STREAMS_LOCAL_THREADS_METADATA_DEPRECATED, StreamsLocalThreadsMetadataDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_TRANSFORM_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_FLAT_TRANSFORM_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("flatTransform", "flatTransformValues"),
-                "KStream.flatTransform()/flatTransformValues() are deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) / processValues(FixedKeyProcessorSupplier) where fan-out is the default (call context.forward zero, one, or many times)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_TRANSFORM_DEPRECATED, StreamsFlatTransformDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWS_OF_DEPRECATED, StreamsTimeWindowsOfDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_JOIN_WINDOWS_OF_DEPRECATED, StreamsJoinWindowsOfDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, StreamsSessionWindowsWithDeprecatedRule::new);
