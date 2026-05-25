@@ -28,6 +28,7 @@ import io.conductor.kafkalinter.rules.clients.AdminDeleteTopicsResultValuesDepre
 import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUsedAfterCloseRule;
@@ -934,12 +935,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 KafkaTypes.STREAMS_DEFAULT_WINDOWED_VALUE_SERDE_INNER_KEY,
                 v -> v != null && !v.isEmpty(),
                 "default.windowed.value.serde.inner Streams config key deprecated since Kafka 2.7 (KIP-684) — global implicit inner-serde for the default windowed value-serde. A topology with multiple windowed aggregations producing different value-types cannot satisfy one global setting; wrong wiring writes corrupt bytes to the changelog topic that surface as deserialization errors on state-store recovery. Replace with explicit per-operator Materialized.with(keySerde, innerValueSerde) at every windowed-aggregation site."));
-        addIfEnabled(rules, sev, RuleId.CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED, s -> new MethodCallRule(
-                RuleId.CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED, s,
-                Set.of(KafkaTypes.CONSUMER_RECORD),
-                Set.of("<init>"),
-                desc -> desc != null && (desc.contains("Lorg/apache/kafka/common/record/TimestampType;J") || desc.contains("Lorg/apache/kafka/common/record/TimestampType;Ljava/lang/Long;")),
-                "ConsumerRecord constructor with checksum parameter deprecated since Kafka 2.0 (KIP-101 / KIP-82) — the per-record CRC field carries no useful information after the v2 message format moved CRCs to the batch level (KIP-98 in 0.11). Replace with ConsumerRecord(topic, partition, offset, ts, TimestampType.CREATE_TIME, keySize, valueSize, key, value, new RecordHeaders(), Optional.empty()) or the 5-arg shortcut ConsumerRecord(topic, partition, offset, key, value). Affects test/mock scaffolding that hand-rolls ConsumerRecord instances."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_RECORD_LEGACY_CHECKSUM_CTOR_DEPRECATED, ConsumerRecordLegacyChecksumCtorDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_RETRIES_CONFIG_DEPRECATED, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_RETRIES_CONFIG_DEPRECATED, s,
                 KafkaTypes.STREAMS_RETRIES_KEY,
