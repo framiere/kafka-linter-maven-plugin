@@ -28,6 +28,7 @@ import io.conductor.kafkalinter.rules.clients.AdminDeleteTopicsResultValuesDepre
 import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminTopicListingNameInternalCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
@@ -920,12 +921,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of(KafkaTypes.ADMIN_UPDATE_FEATURES_OPTIONS),
                 Set.of("dryRun"),
                 "UpdateFeaturesOptions.dryRun() / dryRun(boolean) deprecated since Kafka 3.5 (KIP-919) — UpdateFeaturesOptions was the only AdminClient *Options class that called the validate-without-apply mode `dryRun` instead of the canonical `validateOnly`. Rename callsites to validateOnly() / validateOnly(boolean) — wire-equivalent (same internal field), purely a naming-consistency cleanup with the rest of the AdminClient Options surface."));
-        addIfEnabled(rules, sev, RuleId.ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_TOPIC_LISTING),
-                Set.of("<init>"),
-                desc -> desc != null && desc.equals("(Ljava/lang/String;Z)V"),
-                "TopicListing(String name, boolean isInternal) constructor deprecated since Kafka 3.0 (KIP-516) — predates topic IDs and constructs a TopicListing whose topicId() returns Uuid.ZERO_UUID (the sentinel for pre-2.8 brokers). Replace with new TopicListing(name, topicId, isInternal). If you genuinely don't have a topic-ID, pass Uuid.ZERO_UUID explicitly to make the intent visible. Affects test/mock/scaffolding code that hand-rolls TopicListing instances — Admin.listTopics() callers are unaffected."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED, AdminTopicListingNameInternalCtorDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED, s,
                 KafkaTypes.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_KEY,
