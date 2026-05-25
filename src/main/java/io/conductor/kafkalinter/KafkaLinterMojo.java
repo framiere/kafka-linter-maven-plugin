@@ -261,6 +261,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsKStreamFilterNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsMapNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsFlatMapNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsFlatMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -803,10 +804,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_FOREACH_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("foreach"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.foreach() with no Named — TERMINAL sink, action runs synchronously on the Streams thread, so I/O inside the action caps topology throughput. Node name is graph-index-derived (KSTREAM-FOREACH-<N>); metric tags churn on topology edits. Use foreach(action, Named.as(\"...\")) — and audit whether terminal-side-effect operators belong here at all (consider an explicit sink topic + a separate downstream consumer)."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_MAP_VALUES_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_FLAT_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("flatMapValues"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "KStream.flatMapValues() with no Named — fan-out (one input → N outputs) but NOT key-changing, so no auto-repartition. Pure observability hazard: node name is graph-index-derived (KSTREAM-FLATMAPVALUES-<N>); throughput dashboards rebrand on topology edits. Use flatMapValues(mapper, Named.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_MAP_VALUES_NO_NAMED, StreamsFlatMapValuesNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_TO_STREAM_NO_NAMED, StreamsKTableToStreamNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_MAP_NO_NAMED, StreamsMapNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_MAP_NO_NAMED, StreamsFlatMapNoNamedRule::new);
