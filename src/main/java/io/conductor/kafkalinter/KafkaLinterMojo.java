@@ -247,6 +247,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbse
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoSizeDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsFlatTransformDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsThroughDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsJoinWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsLocalThreadsMetadataDeprecatedRule;
@@ -724,11 +725,8 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
                 RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.STORE_BUILDER), Set.of("withLoggingDisabled"),
                 "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED, s,
-                Set.of(KafkaTypes.KAFKA_STREAMS), Set.of("setUncaughtExceptionHandler"),
-                desc -> desc != null && desc.equals("(Ljava/lang/Thread$UncaughtExceptionHandler;)V"),
-                "KafkaStreams.setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler) is deprecated since 2.8 (KIP-671) — use the StreamsUncaughtExceptionHandler overload to return REPLACE_THREAD / SHUTDOWN_CLIENT / SHUTDOWN_APPLICATION instead of letting threads die silently."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED,
+                StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s -> new MethodCallRule(
                 RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s, KafkaTypes.CONSUMER_OWNERS, Set.of("subscribe"),
                 desc -> desc != null && (desc.equals("(Ljava/util/Collection;)V") || desc.equals("(Ljava/util/regex/Pattern;)V")),
