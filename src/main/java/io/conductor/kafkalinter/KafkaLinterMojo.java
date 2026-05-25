@@ -243,6 +243,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableGroupByNoGroupedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
@@ -763,10 +764,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, ProducerRecordNoKeyRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, StreamsKTableGroupByNoGroupedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_MATERIALIZED, StreamsTableNoMaterializedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
-                RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("globalTable"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
-                "StreamsBuilder.globalTable(topic) / globalTable(topic, Consumed) with no Materialized — the global state store is auto-named from the topology graph index. After a topology edit, every Streams instance restores an empty new-named global store; stream-globalTable joins return null for every key during the (potentially multi-hour) restore. Use globalTable(topic, Materialized.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, StreamsGlobalTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, ProducerSendOffsetsToTxnGroupIdDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s -> new MethodCallRule(
                 RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin"),
