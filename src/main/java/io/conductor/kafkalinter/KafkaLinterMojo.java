@@ -247,6 +247,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbse
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoSizeDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsFlatTransformDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsThroughDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsJoinWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsLocalThreadsMetadataDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTransformDeprecatedRule;
@@ -1180,9 +1181,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_PEEK_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("peek"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.peek() with no Named — the peek processor node name is graph-index-derived (KSTREAM-PEEK-<N>); per-node metric tags rebrand on every topology edit. Also: audit whether the peek belongs in production at all (debug-style peeks ship every record through a synchronous callback). Use peek(action, Named.as(\"...\"))."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_THROUGH_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("through"),
-                "KStream.through() is deprecated since Kafka 2.6 — use repartition() or an explicit to()/stream() pair."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_THROUGH_DEPRECATED, StreamsThroughDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_NUM_STANDBY_REPLICAS_ZERO, s -> ConfigKeyValueRule.literal(
                 RuleId.STREAMS_NUM_STANDBY_REPLICAS_ZERO, s, KafkaTypes.STREAMS_NUM_STANDBY_REPLICAS_KEY, "0",
                 "num.standby.replicas=0 — any instance failure forces a full changelog restore on a peer (minutes-to-hours of recovery)."));
