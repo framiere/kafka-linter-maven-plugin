@@ -245,6 +245,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableGroupByNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeignKeyJoinNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsMergeNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
@@ -770,11 +771,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, ProducerSendOffsetsToTxnGroupIdDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, StreamsForeignKeyJoinNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SELECT_KEY_NO_NAMED, StreamsSelectKeyNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_MERGE_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_MERGE_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("merge"),
-                desc -> desc != null
-                        && desc.equals("(Lorg/apache/kafka/streams/kstream/KStream;)Lorg/apache/kafka/streams/kstream/KStream;"),
-                "KStream.merge(KStream) with no Named — merge processor node name is graph-index-derived. Per-node metrics tagged by node ID break dashboards on every topology edit. Use merge(other, Named.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MERGE_NO_NAMED, StreamsMergeNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
                 RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.KSTREAM), Set.of("toTable"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
