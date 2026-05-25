@@ -243,6 +243,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableGroupByNoGroupedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
@@ -761,10 +762,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, ConsumerCommitAsyncNoCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, ProducerRecordNoKeyRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, StreamsKTableGroupByNoGroupedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
-                RuleId.STREAMS_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
-                "StreamsBuilder.table(topic) / table(topic, Consumed) with no Materialized — the local KeyValueStore name and its changelog topic name are derived from the topology graph index. Any topology edit renames them; the new application restores from an empty changelog; every KTable lookup returns null. Use table(topic, Materialized.as(\"name\")) or the three-arg overload."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_MATERIALIZED, StreamsTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
                 RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("globalTable"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
