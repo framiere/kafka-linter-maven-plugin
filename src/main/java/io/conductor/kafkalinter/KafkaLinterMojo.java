@@ -39,6 +39,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitAsyncNoCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommittedNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEnforceRebalanceNoReasonRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerSubscribeWithoutRebalanceListenerRule;
+import io.conductor.kafkalinter.rules.clients.ProducerRecordNoKeyRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerListTopicsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPositionNoTimeoutRule;
@@ -757,10 +758,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.join() / leftJoin() / outerJoin() without a naming argument (StreamJoined for KStream-KStream, Joined for KStream-KTable, Named for KStream-GlobalKTable) — auto-generated repartition topic and join state-store names are derived from the topology graph index, so any upstream edit renames them and the join produces nulls on the next deploy."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, ConsumerCommitAsyncNoCallbackRule::new);
-        addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, s -> new MethodCallRule(
-                RuleId.PRODUCER_RECORD_NO_KEY, s, Set.of(KafkaTypes.PRODUCER_RECORD), Set.of("<init>"),
-                desc -> desc != null && desc.equals("(Ljava/lang/String;Ljava/lang/Object;)V"),
-                "new ProducerRecord<>(topic, value) — 2-arg constructor sets the key to null. Records have no per-key ordering, log-compacted topics cannot dedupe by key, and the default partitioner uses sticky-batching across partitions. Pass an explicit key as the second argument."));
+        addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, ProducerRecordNoKeyRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
                 RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KTABLE), Set.of("groupBy"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedTable;"),
