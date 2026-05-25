@@ -227,6 +227,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
+import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoShutdownHookRule;
@@ -954,14 +955,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of("get"),
                 desc -> "()Ljava/lang/Object;".equals(desc),
                 "KafkaFuture.get() (no-argument, unbounded) — parks the calling thread until the kafka-clients machinery resolves the future, with no caller-side deadline. In AdminClient code paths (createTopics, deleteTopics, describeCluster, alterConfigs, listConsumerGroupOffsets, ...), a slow/unreachable controller can hang the caller indefinitely; the AdminClient's `default.api.timeout.ms` is the only escape and it is configurable to Long.MAX_VALUE. Replace with the bounded overload `.get(timeout, TimeUnit)` matched to the surrounding deadline (HTTP request budget, reconciliation interval, terminationGracePeriodSeconds minus a buffer). The plugin matches `INVOKEVIRTUAL`/`INVOKEINTERFACE org/apache/kafka/common/KafkaFuture.get()Ljava/lang/Object;` — the bounded `.get(long, TimeUnit)` overload has a different descriptor and is not flagged."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, s,
-                Set.of(KafkaTypes.KSTREAM),
-                Set.of("process"),
-                desc -> desc != null
-                        && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;")
-                        && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
-                "KStream.process(legacy org.apache.kafka.streams.processor.ProcessorSupplier, String...) is deprecated since Kafka Streams 3.3 (KIP-820). The legacy Processor API uses untyped process(K, V) returning void with context.forward(K, V), preventing downstream DSL chaining. Switch the import to `org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, KOut, VOut>` and refactor the Processor's process(K, V) to process(Record<KIn, VIn> record). The modern overload returns KStream<KOut, VOut> so subsequent .filter()/.map()/.to(...) DSL operators chain naturally."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, StreamsKStreamProcessLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWED_DESERIALIZER_NO_SIZE_DEPRECATED, StreamsTimeWindowedDeserializerNoSizeDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, StreamsWindowedSerdesTimeFromClassDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
