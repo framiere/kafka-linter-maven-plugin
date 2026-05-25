@@ -225,6 +225,7 @@ import io.conductor.kafkalinter.rules.spring.SpringRetryableTopicNoKafkaTemplate
 import io.conductor.kafkalinter.rules.streams.StreamsCleanupAfterStartRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCleanupInProdRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseNoTimeoutRule;
+import io.conductor.kafkalinter.rules.streams.StreamsBuilderAddGlobalStoreLegacySupplierRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
@@ -1123,10 +1124,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "Admin.fenceProducers(Collection<String>) with no FenceProducersOptions — KIP-664 destructive operation that bumps the transactional.id epoch on the transaction coordinator, forcibly invalidating any live producer using that tx-id. The no-options form inherits the default request.timeout.ms (~30 s); on a busy transaction coordinator (typical during the EOS-v2 recovery scenarios where fenceProducers is actually called) a mid-batch TimeoutException leaves some tx-ids fenced and others NOT, producing a split-brain state. Pass new FenceProducersOptions().timeoutMs(120_000) and fence one transactional.id per call when possible."));
         addIfEnabled(rules, sev, RuleId.TOPOLOGY_ADD_PROCESSOR_LEGACY_SUPPLIER, TopologyAddProcessorLegacySupplierRule::new);
         addIfEnabled(rules, sev, RuleId.TOPOLOGY_ADD_GLOBAL_STORE_LEGACY_SUPPLIER, TopologyAddGlobalStoreLegacySupplierRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMSBUILDER_ADDGLOBALSTORE_LEGACY_SUPPLIER, s -> new MethodCallRule(
-                RuleId.STREAMSBUILDER_ADDGLOBALSTORE_LEGACY_SUPPLIER, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("addGlobalStore"),
-                desc -> desc != null && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;"),
-                "StreamsBuilder.addGlobalStore(StoreBuilder, topic, Consumed, ProcessorSupplier) called with the LEGACY org.apache.kafka.streams.processor.ProcessorSupplier — KIP-820 (Kafka 3.0+) replaced it with the typed org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, Void, Void>. The DSL-level entry point for global stores; same deprecation timer as the PAPI Topology.addGlobalStore form. Migrate to api.ProcessorSupplier and Processor#process(Record)."));
+        addIfEnabled(rules, sev, RuleId.STREAMSBUILDER_ADDGLOBALSTORE_LEGACY_SUPPLIER, StreamsBuilderAddGlobalStoreLegacySupplierRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
