@@ -257,6 +257,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsToNoProducedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableFilterNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableMapValuesNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
@@ -802,10 +803,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_FLAT_MAP_VALUES_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("flatMapValues"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
                 "KStream.flatMapValues() with no Named — fan-out (one input → N outputs) but NOT key-changing, so no auto-repartition. Pure observability hazard: node name is graph-index-derived (KSTREAM-FLATMAPVALUES-<N>); throughput dashboards rebrand on topology edits. Use flatMapValues(mapper, Named.as(\"...\"))."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_TO_STREAM_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_KTABLE_TO_STREAM_NO_NAMED, s, Set.of(KafkaTypes.KTABLE), Set.of("toStream"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "KTable.toStream() with no Named — transition node is graph-index-derived (KTABLE-TOSTREAM-<N>); per-node metric tags rebrand on topology edits. Use toStream(Named.as(\"...\")). For the KeyValueMapper overload, this is also key-changing — see STREAMS_MAP_NO_NAMED for the downstream auto-repartition hazard."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_TO_STREAM_NO_NAMED, StreamsKTableToStreamNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_MAP_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_MAP_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("map"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
