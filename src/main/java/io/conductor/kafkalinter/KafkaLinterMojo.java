@@ -37,6 +37,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommitAsyncNoCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommittedNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerEnforceRebalanceNoReasonRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerSubscribeWithoutRebalanceListenerRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerListTopicsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
@@ -724,10 +725,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED,
                 StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, ConsumerSubscribeWithoutRebalanceListenerRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, s -> new MethodCallRule(
-                RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, s, KafkaTypes.CONSUMER_OWNERS, Set.of("enforceRebalance"),
-                desc -> desc != null && !desc.contains("Ljava/lang/String;"),
-                "Consumer.enforceRebalance() with no reason String — KIP-735 (Kafka 3.0+) added the enforceRebalance(String) overload so broker-side group-coordinator logs capture WHO triggered each manually-initiated rebalance. Without a reason, an SRE investigating 'why did this group rebalance N times in M minutes?' has no cross-actor attribution. Pass enforceRebalance(\"<actor> <event-context>\") — e.g. enforceRebalance(\"autoscaler scale-out svc-payments-prod 21→30\")."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, ConsumerEnforceRebalanceNoReasonRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_REPARTITION_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("repartition"),
                 desc -> desc != null && desc.equals("()Lorg/apache/kafka/streams/kstream/KStream;"),
