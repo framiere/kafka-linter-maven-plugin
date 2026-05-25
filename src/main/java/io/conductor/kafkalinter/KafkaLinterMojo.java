@@ -244,6 +244,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStandbyReplica
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesMaxTaskIdleMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoSizeDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsWindowedSerdesTimeFromClassDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultTimestampExtractorAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesAcceptableRecoveryLagAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProbingRebalanceIntervalMsAbsentRule;
@@ -972,12 +973,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
                 "KStream.process(legacy org.apache.kafka.streams.processor.ProcessorSupplier, String...) is deprecated since Kafka Streams 3.3 (KIP-820). The legacy Processor API uses untyped process(K, V) returning void with context.forward(K, V), preventing downstream DSL chaining. Switch the import to `org.apache.kafka.streams.processor.api.ProcessorSupplier<KIn, VIn, KOut, VOut>` and refactor the Processor's process(K, V) to process(Record<KIn, VIn> record). The modern overload returns KStream<KOut, VOut> so subsequent .filter()/.map()/.to(...) DSL operators chain naturally."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWED_DESERIALIZER_NO_SIZE_DEPRECATED, StreamsTimeWindowedDeserializerNoSizeDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, s,
-                Set.of(KafkaTypes.WINDOWED_SERDES),
-                Set.of("timeWindowedSerdeFrom"),
-                desc -> "(Ljava/lang/Class;)Lorg/apache/kafka/common/serialization/Serde;".equals(desc),
-                "WindowedSerdes.timeWindowedSerdeFrom(Class) — the 1-arg static factory that omits windowSize — is deprecated since Kafka Streams 2.8 (KIP-659). Internally it wires a TimeWindowedDeserializer without windowSize, so the resulting Serde<Windowed<T>> produces Windowed<T> instances with bogus windowEnd. Use the 2-arg form: WindowedSerdes.timeWindowedSerdeFrom(InnerKey.class, Duration.ofMinutes(5).toMillis())."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, StreamsWindowedSerdesTimeFromClassDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_LOW, s -> new ConfigKeyValueRule(
                 RuleId.PRODUCER_TRANSACTION_TIMEOUT_MS_TOO_LOW, s, KafkaTypes.TRANSACTION_TIMEOUT_MS_KEY,
                 v -> { long n = parseLongOrZero(v); return n > 0 && n < 30_000L; },
