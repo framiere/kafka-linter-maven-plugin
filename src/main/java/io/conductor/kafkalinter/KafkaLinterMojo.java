@@ -4,6 +4,7 @@ import io.conductor.kafkalinter.report.Reporter;
 import io.conductor.kafkalinter.rules.ConsumerAutoCommitTrueRule;
 import io.conductor.kafkalinter.rules.ConsumerCommitPerRecordRule;
 import io.conductor.kafkalinter.rules.AdminCloseZeroDurationRule;
+import io.conductor.kafkalinter.rules.admin.AdminCreateTopicsNoOptionsRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollZeroRule;
@@ -786,10 +787,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_NO_CONSUMED, StreamsStreamNoConsumedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_NO_PRODUCED, StreamsToNoProducedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SPLIT_NO_NAMED, StreamsSplitNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
-                RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("createTopics"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/CreateTopicsOptions;"),
-                "Admin.createTopics(Collection<NewTopic>) with no CreateTopicsOptions — uses the default request.timeout.ms (~30s) with no caller-visible bound. Pass new CreateTopicsOptions().timeoutMs(60_000) so retry logic can distinguish 'in flight' from 'failed'."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_TOPICS_NO_OPTIONS, AdminCreateTopicsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_DELETE_TOPICS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteTopics"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteTopicsOptions;"),
