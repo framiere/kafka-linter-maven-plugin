@@ -245,6 +245,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesNumStandbyReplica
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesMaxTaskIdleMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoSizeDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsAllMetadataForStoreDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsFlatTransformDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule;
@@ -900,10 +901,8 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && desc.contains("Ljava/util/function/Function;")
                         && !desc.contains("Lorg/apache/kafka/streams/kstream/TableJoined;"),
                 "KTable.join(KTable, Function, ValueJoiner...) foreign-key join with no TableJoined — the subscription registration topic AND the subscription response topic are both graph-index-derived (KTABLE-FK-JOIN-SUBSCRIPTION-REGISTRATION-<N>-topic and -RESPONSE-<N>-topic). Any topology edit renames both; the new deploy starts with empty subscription topics and the FK join produces NO output until every left-side key is re-emitted. Pass TableJoined.with(Named.as(\"my-fk-join\"))."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED, s, Set.of(KafkaTypes.KAFKA_STREAMS),
-                Set.of("allMetadataForStore", "allMetadata"),
-                "KafkaStreams.allMetadataForStore() / allMetadata() is deprecated since Kafka 3.0 (KIP-744) — returns the old org.apache.kafka.streams.state.StreamsMetadata, which silently elides standby-replica information. Interactive-query routers built on these methods cannot fall over to a standby host while the active is restoring; the IQ endpoint returns 503 for the full restore window. Use streamsMetadataForStore() / metadataForAllStreamsClients() which return the new org.apache.kafka.streams.StreamsMetadata with standbyStateStoreNames() populated."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED,
+                StreamsAllMetadataForStoreDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, ConsumerCommittedSinglePartitionDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s,
