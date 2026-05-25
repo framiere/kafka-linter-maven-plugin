@@ -257,6 +257,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsTransformValuesDeprecatedRu
 import io.conductor.kafkalinter.rules.streams.StreamsSessionWindowsWithDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsWindowedSerdesTimeFromClassDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsWindowsGraceDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultTimestampExtractorAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesAcceptableRecoveryLagAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesProbingRebalanceIntervalMsAbsentRule;
@@ -904,11 +905,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED,
                 StreamsAllMetadataForStoreDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, ConsumerCommittedSinglePartitionDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, s,
-                Set.of(KafkaTypes.TIME_WINDOWS, KafkaTypes.JOIN_WINDOWS, KafkaTypes.SESSION_WINDOWS),
-                Set.of("grace"),
-                "TimeWindows.grace() / JoinWindows.grace() / SessionWindows.grace() chained-instance methods deprecated since Kafka 3.0 (KIP-633). The legacy `Windows.of(size).grace(grace)` pattern hid a 24-hour default grace period when `.grace()` was omitted, silently buffering late events for a day. Migrate to the new static factories that make grace explicit at construction: TimeWindows.ofSizeAndGrace(size, grace) / TimeWindows.ofSizeWithNoGrace(size); JoinWindows.ofTimeDifferenceAndGrace(diff, grace) / ofTimeDifferenceWithNoGrace(diff); SessionWindows.ofInactivityGapAndGrace(gap, grace) / ofInactivityGapWithNoGrace(gap). Calling `.grace()` after a new factory throws IllegalStateException at runtime."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, StreamsWindowsGraceDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, s,
                 Set.of(KafkaTypes.TOPOLOGY, KafkaTypes.STREAMS_BUILDER),
