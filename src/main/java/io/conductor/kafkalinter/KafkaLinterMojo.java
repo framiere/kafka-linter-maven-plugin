@@ -246,6 +246,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsPropertiesMaxTaskIdleMsAbse
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesTaskTimeoutMsAbsentRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoSizeDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsJoinWindowsOfDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsSessionWindowsWithDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsWindowedSerdesTimeFromClassDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsPropertiesDefaultTimestampExtractorAbsentRule;
@@ -1597,9 +1598,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "KStream.flatTransform()/flatTransformValues() are deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) / processValues(FixedKeyProcessorSupplier) where fan-out is the default (call context.forward zero, one, or many times)."));
         addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWS_OF_DEPRECATED, StreamsTimeWindowsOfDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_JOIN_WINDOWS_OF_DEPRECATED, StreamsJoinWindowsOfDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, s, Set.of(KafkaTypes.SESSION_WINDOWS), Set.of("with"),
-                "SessionWindows.with(Duration) is deprecated since Kafka Streams 2.7 — replaced by SessionWindows.ofInactivityGapWithNoGrace(Duration) or ofInactivityGapAndGrace(Duration, Duration). The legacy 24-hour default grace period silently inflated session-store size by ~1440×."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, StreamsSessionWindowsWithDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_TRANSFORM_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("transform"),
                 "KStream.transform() is deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) with the new org.apache.kafka.streams.processor.api.Processor."));
