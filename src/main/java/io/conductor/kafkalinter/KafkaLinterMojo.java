@@ -25,6 +25,7 @@ import io.conductor.kafkalinter.rules.ProjectScopedRule;
 import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AdminAlterConfigsDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDeleteTopicsResultValuesDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
@@ -915,11 +916,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 Set.of(KafkaTypes.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_OPTIONS),
                 Set.of("topicPartitions"),
                 "ListConsumerGroupOffsetsOptions.topicPartitions(List<TopicPartition>) / topicPartitions() deprecated since Kafka 3.3 (KIP-709) — the per-Options TP filter is silently IGNORED by the new batched Admin.listConsumerGroupOffsets(Map<String, ListConsumerGroupOffsetsSpec>) overload, where each Spec carries its own per-group TP filter. Use new ListConsumerGroupOffsetsSpec().topicPartitions(tps) per-group inside the Map; the batched form fans out OFFSET_FETCH RPCs to all coordinators in parallel instead of N × broker-RTT sequential per-group queries."));
-        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_DESCRIBE_LOG_DIRS_RESULT),
-                Set.of("values", "all"),
-                "DescribeLogDirsResult.values() / DescribeLogDirsResult.all() deprecated since Kafka 3.0 (KIP-743) — both return the INTERNAL `org.apache.kafka.common.requests.DescribeLogDirsResponse$LogDirInfo` type, leaking wire-protocol shape into AdminClient consumers and missing newer fields (totalBytes, usableBytes). Migrate to descriptions() / allDescriptions() returning the public `org.apache.kafka.clients.admin.LogDirDescription`. The internal LogDirInfo lives in the `common.requests` non-public package and its field layout changes between minor Kafka releases."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, AdminDescribeLogDirsResultLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s -> new MethodCallRule(
                 RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s,
                 Set.of(KafkaTypes.ADMIN_UPDATE_FEATURES_OPTIONS),
