@@ -26,6 +26,7 @@ import io.conductor.kafkalinter.rules.Rule;
 import io.conductor.kafkalinter.rules.clients.AdminAlterConfigsDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDeleteTopicsResultValuesDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminListConsumerGroupOffsetsTopicPartitionsDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminTopicListingNameInternalCtorDeprecatedRule;
@@ -910,11 +911,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, StreamsLegacyProcessorApiDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, AdminDescribeTopicsResultLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, AdminFeatureUpdateAllowDowngradeDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_OPTIONS),
-                Set.of("topicPartitions"),
-                "ListConsumerGroupOffsetsOptions.topicPartitions(List<TopicPartition>) / topicPartitions() deprecated since Kafka 3.3 (KIP-709) — the per-Options TP filter is silently IGNORED by the new batched Admin.listConsumerGroupOffsets(Map<String, ListConsumerGroupOffsetsSpec>) overload, where each Spec carries its own per-group TP filter. Use new ListConsumerGroupOffsetsSpec().topicPartitions(tps) per-group inside the Map; the batched form fans out OFFSET_FETCH RPCs to all coordinators in parallel instead of N × broker-RTT sequential per-group queries."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, AdminListConsumerGroupOffsetsTopicPartitionsDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, AdminDescribeLogDirsResultLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s -> new MethodCallRule(
                 RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s,
