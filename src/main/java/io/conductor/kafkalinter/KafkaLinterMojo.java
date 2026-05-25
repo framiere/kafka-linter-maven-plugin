@@ -31,6 +31,7 @@ import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDep
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminTopicListingNameInternalCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUpdateFeaturesOptionsDryRunDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.KafkaFutureGetNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule;
@@ -949,12 +950,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_TOPICS_RESULT_VALUES_DEPRECATED, AdminDeleteTopicsResultValuesDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_METADATA_LEGACY_CHECKSUM_CTOR_DEPRECATED, ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_THENAPPLY_FUNCTION_DEPRECATED, KafkaFutureThenApplyFunctionDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, s,
-                Set.of(KafkaTypes.KAFKA_FUTURE),
-                Set.of("get"),
-                desc -> "()Ljava/lang/Object;".equals(desc),
-                "KafkaFuture.get() (no-argument, unbounded) — parks the calling thread until the kafka-clients machinery resolves the future, with no caller-side deadline. In AdminClient code paths (createTopics, deleteTopics, describeCluster, alterConfigs, listConsumerGroupOffsets, ...), a slow/unreachable controller can hang the caller indefinitely; the AdminClient's `default.api.timeout.ms` is the only escape and it is configurable to Long.MAX_VALUE. Replace with the bounded overload `.get(timeout, TimeUnit)` matched to the surrounding deadline (HTTP request budget, reconciliation interval, terminationGracePeriodSeconds minus a buffer). The plugin matches `INVOKEVIRTUAL`/`INVOKEINTERFACE org/apache/kafka/common/KafkaFuture.get()Ljava/lang/Object;` — the bounded `.get(long, TimeUnit)` overload has a different descriptor and is not flagged."));
+        addIfEnabled(rules, sev, RuleId.KAFKA_FUTURE_GET_NO_TIMEOUT, KafkaFutureGetNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_PROCESS_LEGACY_DEPRECATED, StreamsKStreamProcessLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWED_DESERIALIZER_NO_SIZE_DEPRECATED, StreamsTimeWindowedDeserializerNoSizeDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWED_SERDES_TIME_FROM_CLASS_DEPRECATED, StreamsWindowedSerdesTimeFromClassDeprecatedRule::new);
