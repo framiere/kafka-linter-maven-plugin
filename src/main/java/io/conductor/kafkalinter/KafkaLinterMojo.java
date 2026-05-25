@@ -248,6 +248,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoS
 import io.conductor.kafkalinter.rules.streams.StreamsBranchDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsJoinWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsLocalThreadsMetadataDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsTransformDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSessionWindowsWithDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowsOfDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsWindowedSerdesTimeFromClassDeprecatedRule;
@@ -1599,9 +1600,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_TIME_WINDOWS_OF_DEPRECATED, StreamsTimeWindowsOfDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_JOIN_WINDOWS_OF_DEPRECATED, StreamsJoinWindowsOfDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SESSION_WINDOWS_WITH_DEPRECATED, StreamsSessionWindowsWithDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_TRANSFORM_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("transform"),
-                "KStream.transform() is deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.process(ProcessorSupplier) with the new org.apache.kafka.streams.processor.api.Processor."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_DEPRECATED, StreamsTransformDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TRANSFORM_VALUES_DEPRECATED, s -> new MethodCallRule(
                 RuleId.STREAMS_TRANSFORM_VALUES_DEPRECATED, s, Set.of(KafkaTypes.KSTREAM), Set.of("transformValues"),
                 "KStream.transformValues() is deprecated since Kafka Streams 3.3 (KIP-820) — replaced by KStream.processValues(FixedKeyProcessorSupplier) which type-enforces the key-invariant."));
