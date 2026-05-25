@@ -27,6 +27,7 @@ import io.conductor.kafkalinter.rules.clients.AdminAlterConfigsDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDeleteTopicsResultValuesDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeLogDirsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminCloseNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.AdminResultDiscardedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUsedAfterCloseRule;
@@ -905,12 +906,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                         && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
                 "Topology.addProcessor / Topology.addGlobalStore / StreamsBuilder.addGlobalStore overloads taking the legacy org.apache.kafka.streams.processor.ProcessorSupplier are deprecated since Kafka 3.3 (KIP-820). The new org.apache.kafka.streams.processor.api.ProcessorSupplier returns Processor<KIn, VIn, KOut, VOut> with typed Record<KIn, VIn>, named-child fan-out via context.forward(record, childName), and a compile-time fixed-key variant (FixedKeyProcessor) that the legacy API lacks. Change the import from `org.apache.kafka.streams.processor.ProcessorSupplier` to `org.apache.kafka.streams.processor.api.ProcessorSupplier` and refactor the Processor's process(K, V) into process(Record<K, V> record)."));
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, AdminDescribeTopicsResultLegacyDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_FEATURE_UPDATE),
-                Set.of("<init>", "allowDowngrade"),
-                desc -> desc != null && (desc.equals("(SZ)V") || desc.equals("()Z")),
-                "FeatureUpdate(short, boolean) constructor and FeatureUpdate.allowDowngrade() getter deprecated since Kafka 3.3 (KIP-778). The boolean flag conflates SAFE_DOWNGRADE (data files still readable) with UNSAFE_DOWNGRADE (broker may refuse to start) — there is no boolean expression for the unsafe path, so old-API callers cannot force a data-format-breaking downgrade. Replace with new FeatureUpdate(version, FeatureUpdate.UpgradeType.UPGRADE | SAFE_DOWNGRADE | UNSAFE_DOWNGRADE) and update.upgradeType() != UpgradeType.UPGRADE for read-side checks."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, AdminFeatureUpdateAllowDowngradeDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s -> new MethodCallRule(
                 RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s,
                 Set.of(KafkaTypes.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_OPTIONS),
