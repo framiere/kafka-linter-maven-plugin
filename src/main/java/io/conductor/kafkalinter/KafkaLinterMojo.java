@@ -37,6 +37,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommitAsyncNoCallbackRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommittedNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerSubscribeWithoutRebalanceListenerRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerListTopicsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPositionNoTimeoutRule;
@@ -722,10 +723,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
         addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED,
                 StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s -> new MethodCallRule(
-                RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, s, KafkaTypes.CONSUMER_OWNERS, Set.of("subscribe"),
-                desc -> desc != null && (desc.equals("(Ljava/util/Collection;)V") || desc.equals("(Ljava/util/regex/Pattern;)V")),
-                "Consumer.subscribe(Collection)/subscribe(Pattern) without a ConsumerRebalanceListener — the consumer cannot flush in-memory state, commit final offsets, or release per-partition resources before partition revoke. Pass a ConsumerRebalanceListener."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, ConsumerSubscribeWithoutRebalanceListenerRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, s -> new MethodCallRule(
                 RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, s, KafkaTypes.CONSUMER_OWNERS, Set.of("enforceRebalance"),
                 desc -> desc != null && !desc.contains("Ljava/lang/String;"),
