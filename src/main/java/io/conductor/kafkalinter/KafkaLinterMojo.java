@@ -32,6 +32,7 @@ import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDe
 import io.conductor.kafkalinter.rules.clients.AdminTopicListingNameInternalCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminUpdateFeaturesOptionsDryRunDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureGetNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
@@ -480,10 +481,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_PAUSE_NO_RESUME, ConsumerPauseNoResumeRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POLL_LONG_DEPRECATED, ConsumerPollLongDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITSYNC_NO_TIMEOUT, ConsumerCommitSyncNoTimeoutRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("endOffsets"),
-                desc -> desc != null && desc.equals("(Ljava/util/Collection;)Ljava/util/Map;"),
-                "Consumer.endOffsets(Collection) (no Duration) blocks for up to default.api.timeout.ms (60 s by default) on broker/leader unavailability. Lag-monitoring scripts and admin tooling that use this overload pin threads during the exact outages they exist to detect. Use endOffsets(Collection, Duration) so timeouts surface as recoverable TimeoutException."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_END_OFFSETS_NO_TIMEOUT, ConsumerEndOffsetsNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("beginningOffsets"),
                 desc -> desc != null && desc.equals("(Ljava/util/Collection;)Ljava/util/Map;"),
