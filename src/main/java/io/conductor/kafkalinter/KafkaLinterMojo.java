@@ -30,6 +30,7 @@ import io.conductor.kafkalinter.rules.clients.AdminListConsumerGroupOffsetsTopic
 import io.conductor.kafkalinter.rules.clients.AdminDescribeTopicsResultLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminFeatureUpdateAllowDowngradeDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.AdminTopicListingNameInternalCtorDeprecatedRule;
+import io.conductor.kafkalinter.rules.clients.AdminUpdateFeaturesOptionsDryRunDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerRecordLegacyChecksumCtorDeprecatedRule;
 import io.conductor.kafkalinter.rules.clients.ProducerRecordMetadataLegacyChecksumCtorDeprecatedRule;
@@ -914,11 +915,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, AdminFeatureUpdateAllowDowngradeDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, AdminListConsumerGroupOffsetsTopicPartitionsDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_LOG_DIRS_RESULT_LEGACY_DEPRECATED, AdminDescribeLogDirsResultLegacyDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s -> new MethodCallRule(
-                RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, s,
-                Set.of(KafkaTypes.ADMIN_UPDATE_FEATURES_OPTIONS),
-                Set.of("dryRun"),
-                "UpdateFeaturesOptions.dryRun() / dryRun(boolean) deprecated since Kafka 3.5 (KIP-919) — UpdateFeaturesOptions was the only AdminClient *Options class that called the validate-without-apply mode `dryRun` instead of the canonical `validateOnly`. Rename callsites to validateOnly() / validateOnly(boolean) — wire-equivalent (same internal field), purely a naming-consistency cleanup with the rest of the AdminClient Options surface."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_UPDATE_FEATURES_OPTIONS_DRY_RUN_DEPRECATED, AdminUpdateFeaturesOptionsDryRunDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_TOPIC_LISTING_NAME_INTERNAL_CTOR_DEPRECATED, AdminTopicListingNameInternalCtorDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED, s -> new ConfigKeyValueRule(
                 RuleId.STREAMS_DEFAULT_WINDOWED_KEY_SERDE_INNER_DEPRECATED, s,
