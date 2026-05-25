@@ -245,6 +245,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableGroupByNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeignKeyJoinNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
@@ -768,11 +769,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, StreamsGlobalTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, ProducerSendOffsetsToTxnGroupIdDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, StreamsForeignKeyJoinNoMaterializedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_SELECT_KEY_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_SELECT_KEY_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("selectKey"),
-                desc -> desc != null
-                        && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KStream;"),
-                "KStream.selectKey(KeyValueMapper) with no Named — the SelectKey processor node name (and any downstream repartition topic name) is graph-index-derived. Any topology edit renames the downstream repartition topic; aggregations restart from offset 0. Use selectKey(mapper, Named.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SELECT_KEY_NO_NAMED, StreamsSelectKeyNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_MERGE_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_MERGE_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("merge"),
                 desc -> desc != null
