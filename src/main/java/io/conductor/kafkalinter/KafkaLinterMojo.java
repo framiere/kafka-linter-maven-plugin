@@ -248,6 +248,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRu
 import io.conductor.kafkalinter.rules.streams.StreamsMergeNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsBranchedNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -778,10 +779,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, StreamsToTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_PROCESS_NO_NAMED, StreamsProcessNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, StreamsGroupByKeyNoGroupedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_BRANCHED_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_BRANCHED_NO_NAMED, s, Set.of(KafkaTypes.BRANCHED_KSTREAM), Set.of("branch"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Branched;"),
-                "BranchedKStream.branch(Predicate) with no Branched — each branch's sub-graph is named from the topology graph index; the returned Map<String, KStream> uses those auto-names as keys, so branches.get(\"X-PREDICATE-N\") returns null after any topology edit. Use branch(predicate, Branched.as(\"branchName\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BRANCHED_NO_NAMED, StreamsBranchedNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_NO_CONSUMED, s -> new MethodCallRule(
                 RuleId.STREAMS_STREAM_NO_CONSUMED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("stream"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Consumed;"),
