@@ -243,6 +243,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableGroupByNoGroupedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsForeignKeyJoinNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
@@ -766,12 +767,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_MATERIALIZED, StreamsTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GLOBAL_TABLE_NO_MATERIALIZED, StreamsGlobalTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_SEND_OFFSETS_TO_TXN_GROUP_ID_DEPRECATED, ProducerSendOffsetsToTxnGroupIdDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s -> new MethodCallRule(
-                RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin"),
-                desc -> desc != null
-                        && desc.contains("Ljava/util/function/Function;")
-                        && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
-                "KTable.join(KTable, Function, ValueJoiner...) — foreign-key table join with no Materialized argument. The subscription store, response store, subscription topic, and response topic are all auto-named from the topology graph index; any topology edit renames every one. Use the overload with Materialized.as(\"name\")."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_MATERIALIZED, StreamsForeignKeyJoinNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SELECT_KEY_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_SELECT_KEY_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("selectKey"),
                 desc -> desc != null
