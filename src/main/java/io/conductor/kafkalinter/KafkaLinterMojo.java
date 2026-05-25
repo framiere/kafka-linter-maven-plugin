@@ -248,6 +248,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsTimeWindowedDeserializerNoS
 import io.conductor.kafkalinter.rules.streams.StreamsAllMetadataForStoreDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBranchDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsFlatTransformDeprecatedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsLegacyProcessorApiDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsThroughDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsJoinWindowsOfDeprecatedRule;
@@ -906,14 +907,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 StreamsAllMetadataForStoreDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, ConsumerCommittedSinglePartitionDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_WINDOWS_GRACE_DEPRECATED, StreamsWindowsGraceDeprecatedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, s -> new MethodCallRule(
-                RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, s,
-                Set.of(KafkaTypes.TOPOLOGY, KafkaTypes.STREAMS_BUILDER),
-                Set.of("addProcessor", "addGlobalStore"),
-                desc -> desc != null
-                        && desc.contains("Lorg/apache/kafka/streams/processor/ProcessorSupplier;")
-                        && !desc.contains("Lorg/apache/kafka/streams/processor/api/ProcessorSupplier;"),
-                "Topology.addProcessor / Topology.addGlobalStore / StreamsBuilder.addGlobalStore overloads taking the legacy org.apache.kafka.streams.processor.ProcessorSupplier are deprecated since Kafka 3.3 (KIP-820). The new org.apache.kafka.streams.processor.api.ProcessorSupplier returns Processor<KIn, VIn, KOut, VOut> with typed Record<KIn, VIn>, named-child fan-out via context.forward(record, childName), and a compile-time fixed-key variant (FixedKeyProcessor) that the legacy API lacks. Change the import from `org.apache.kafka.streams.processor.ProcessorSupplier` to `org.apache.kafka.streams.processor.api.ProcessorSupplier` and refactor the Processor's process(K, V) into process(Record<K, V> record)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_LEGACY_PROCESSOR_API_DEPRECATED, StreamsLegacyProcessorApiDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DESCRIBE_TOPICS_RESULT_LEGACY_DEPRECATED, AdminDescribeTopicsResultLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_FEATURE_UPDATE_ALLOW_DOWNGRADE_DEPRECATED, AdminFeatureUpdateAllowDowngradeDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_LIST_CONSUMER_GROUP_OFFSETS_TOPIC_PARTITIONS_DEPRECATED, s -> new MethodCallRule(
