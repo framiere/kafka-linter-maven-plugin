@@ -248,6 +248,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsGlobalTableNoMaterializedRu
 import io.conductor.kafkalinter.rules.streams.StreamsMergeNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSelectKeyNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsTableNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsGroupByKeyNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
@@ -776,10 +777,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_MERGE_NO_NAMED, StreamsMergeNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TO_TABLE_NO_MATERIALIZED, StreamsToTableNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_PROCESS_NO_NAMED, StreamsProcessNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s -> new MethodCallRule(
-                RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupByKey"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Grouped;"),
-                "KStream.groupByKey() without Grouped — if the upstream stream is repartition-required (any prior selectKey/map/flatMap), the auto-named repartition topic is graph-index-derived. Topology edits rename it; downstream aggregations restart from offset 0. Use groupByKey(Grouped.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_KEY_NO_GROUPED, StreamsGroupByKeyNoGroupedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_BRANCHED_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_BRANCHED_NO_NAMED, s, Set.of(KafkaTypes.BRANCHED_KSTREAM), Set.of("branch"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Branched;"),
