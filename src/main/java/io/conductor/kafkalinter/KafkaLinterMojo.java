@@ -242,6 +242,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsBuilderAddGlobalStoreLegacy
 import io.conductor.kafkalinter.rules.streams.StreamsCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeachPeekPrintsStdoutRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamPrintRule;
+import io.conductor.kafkalinter.rules.streams.StreamsKTableGroupByNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKStreamProcessLegacyDeprecatedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoGlobalStateRestoreListenerRule;
 import io.conductor.kafkalinter.rules.streams.StreamsNoStateListenerRule;
@@ -759,10 +760,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "KStream.join() / leftJoin() / outerJoin() without a naming argument (StreamJoined for KStream-KStream, Joined for KStream-KTable, Named for KStream-GlobalKTable) — auto-generated repartition topic and join state-store names are derived from the topology graph index, so any upstream edit renames them and the join produces nulls on the next deploy."));
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, ConsumerCommitAsyncNoCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, ProducerRecordNoKeyRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
-                RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KTABLE), Set.of("groupBy"),
-                desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedTable;"),
-                "KTable.groupBy(KeyValueMapper) with no Grouped argument — the implicit repartition topic name is derived from the topology graph index; any upstream edit renames it and the downstream aggregation restarts from offset 0 of an empty repartition. Use groupBy(mapper, Grouped.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_KTABLE_GROUP_BY_NO_GROUPED, StreamsKTableGroupByNoGroupedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_TABLE_NO_MATERIALIZED, s -> new MethodCallRule(
                 RuleId.STREAMS_TABLE_NO_MATERIALIZED, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("table"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
