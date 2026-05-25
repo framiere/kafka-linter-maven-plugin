@@ -35,6 +35,7 @@ import io.conductor.kafkalinter.rules.clients.ConsumerCommitSyncNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerBeginningOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerEndOffsetsNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerOffsetsForTimesNoTimeoutRule;
+import io.conductor.kafkalinter.rules.clients.ConsumerPartitionsForNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.ConsumerPositionNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureGetNoTimeoutRule;
 import io.conductor.kafkalinter.rules.clients.KafkaFutureThenApplyFunctionDeprecatedRule;
@@ -488,10 +489,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_BEGINNING_OFFSETS_NO_TIMEOUT, ConsumerBeginningOffsetsNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_OFFSETS_FOR_TIMES_NO_TIMEOUT, ConsumerOffsetsForTimesNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_POSITION_NO_TIMEOUT, ConsumerPositionNoTimeoutRule::new);
-        addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, s -> new MethodCallRule(
-                RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("partitionsFor"),
-                desc -> desc != null && desc.equals("(Ljava/lang/String;)Ljava/util/List;"),
-                "Consumer.partitionsFor(String) (no Duration) blocks for up to default.api.timeout.ms (60 s) on metadata unavailability. Startup-health checks that use this overload hang for a full minute on misconfigured bootstrap or missing topics. Use partitionsFor(String, Duration)."));
+        addIfEnabled(rules, sev, RuleId.CONSUMER_PARTITIONS_FOR_NO_TIMEOUT, ConsumerPartitionsForNoTimeoutRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, s -> new MethodCallRule(
                 RuleId.CONSUMER_LIST_TOPICS_NO_TIMEOUT, s, KafkaTypes.CONSUMER_OWNERS, Set.of("listTopics"),
                 desc -> desc != null && desc.equals("()Ljava/util/Map;"),
