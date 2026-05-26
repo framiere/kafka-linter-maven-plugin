@@ -269,6 +269,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsGroupByNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCountNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsMaterializedWithLoggingDisabledRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -747,9 +748,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_CACHE_DISABLED, s, KafkaTypes.STREAMS_CACHE_MAX_BYTES_BUFFERING_KEY,
                 "0"::equals,
                 "cache.max.bytes.buffering=0 — every state-store update is forwarded; changelog write rate explodes."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
-                RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.MATERIALIZED), Set.of("withLoggingDisabled"),
-                "Materialized.withLoggingDisabled() — state-store changelog topic disabled. The store is no longer fault-tolerant: on task reassignment or pod restart it starts empty and downstream aggregates/joins silently return wrong answers."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, StreamsMaterializedWithLoggingDisabledRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
                 RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.STORE_BUILDER), Set.of("withLoggingDisabled"),
                 "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
