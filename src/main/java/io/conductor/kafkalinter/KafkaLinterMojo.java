@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.rules.admin.AdminDeleteTopicsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminAlterPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminCreateAclsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminDeleteAclsNoOptionsRule;
+import io.conductor.kafkalinter.rules.admin.AdminElectLeadersNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminIncrementalAlterConfigsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminListPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
@@ -868,10 +869,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, AdminCreateAclsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, AdminDeleteAclsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, AdminIncrementalAlterConfigsNoOptionsRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, s -> new MethodCallRule(
-                RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("electLeaders"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ElectLeadersOptions;"),
-                "Admin.electLeaders() with no ElectLeadersOptions — leader election is controller-driven and can take minutes for UNCLEAN or busy-cluster PREFERRED elections; default ~30 s timeout fires mid-election. Pass new ElectLeadersOptions().timeoutMs(300_000) for UNCLEAN, 120_000 for PREFERRED."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, AdminElectLeadersNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_REPLICA_LOG_DIRS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ALTER_REPLICA_LOG_DIRS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterReplicaLogDirs"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterReplicaLogDirsOptions;"),
