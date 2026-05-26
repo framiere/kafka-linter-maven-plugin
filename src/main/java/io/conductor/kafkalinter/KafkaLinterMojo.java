@@ -274,6 +274,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsStoreBuilderWithLoggingDisa
 import io.conductor.kafkalinter.rules.streams.StreamsSuppressBufferUnboundedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCountNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsForeignKeyJoinNoTableJoinedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
@@ -804,12 +805,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("build"),
                 desc -> "()Lorg/apache/kafka/streams/Topology;".equals(desc),
                 "StreamsBuilder.build() (no Properties argument) — topology.optimization is SILENTLY IGNORED, including REUSE_KTABLE_SOURCE_TOPICS and MERGE_REPARTITION_TOPICS. Production code that sets `topology.optimization=all` in props expects the rewrites; without props, the topology is emitted un-optimized and every internal topic is created with the un-optimized names. Use builder.build(streamsProperties)."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED, s -> new MethodCallRule(
-                RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED, s, Set.of(KafkaTypes.KTABLE), Set.of("join", "leftJoin"),
-                desc -> desc != null
-                        && desc.contains("Ljava/util/function/Function;")
-                        && !desc.contains("Lorg/apache/kafka/streams/kstream/TableJoined;"),
-                "KTable.join(KTable, Function, ValueJoiner...) foreign-key join with no TableJoined — the subscription registration topic AND the subscription response topic are both graph-index-derived (KTABLE-FK-JOIN-SUBSCRIPTION-REGISTRATION-<N>-topic and -RESPONSE-<N>-topic). Any topology edit renames both; the new deploy starts with empty subscription topics and the FK join produces NO output until every left-side key is re-emitted. Pass TableJoined.with(Named.as(\"my-fk-join\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED, StreamsForeignKeyJoinNoTableJoinedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED,
                 StreamsAllMetadataForStoreDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMITTED_SINGLE_PARTITION_DEPRECATED, ConsumerCommittedSinglePartitionDeprecatedRule::new);
