@@ -271,6 +271,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoMaterializedRule
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsMaterializedWithLoggingDisabledRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStoreBuilderWithLoggingDisabledRule;
+import io.conductor.kafkalinter.rules.streams.StreamsSuppressBufferUnboundedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -757,9 +758,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, ConsumerEnforceRebalanceNoReasonRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, StreamsRepartitionNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_NO_GROUPED, StreamsGroupByNoGroupedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s -> new MethodCallRule(
-                RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s, Set.of(KafkaTypes.SUPPRESSED_BUFFER_CONFIG), Set.of("unbounded"),
-                "Suppressed.BufferConfig.unbounded() — suppress() buffer grows until JVM heap exhaustion on a slow downstream commit. Use BufferConfig.maxBytes(n) or maxRecords(n) with shutDownWhenFull() so the bound is explicit."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, StreamsSuppressBufferUnboundedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_MATERIALIZED, StreamsCountNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_MATERIALIZED, StreamsAggregateNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_MATERIALIZED, StreamsReduceNoMaterializedRule::new);
