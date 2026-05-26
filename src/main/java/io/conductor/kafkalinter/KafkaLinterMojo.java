@@ -264,6 +264,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsFlatMapNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsFlatMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForEachNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStreamJoinNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsRepartitionNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -752,10 +753,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, ConsumerSubscribeWithoutRebalanceListenerRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, ConsumerEnforceRebalanceNoReasonRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_REPARTITION_NO_NAMED, s, Set.of(KafkaTypes.KSTREAM), Set.of("repartition"),
-                desc -> desc != null && desc.equals("()Lorg/apache/kafka/streams/kstream/KStream;"),
-                "KStream.repartition() with no Repartitioned argument — the auto-generated repartition topic name is derived from the topology graph index; any upstream edit renames it and downstream aggregations start from offset 0 of an empty topic. Use repartition(Repartitioned.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, StreamsRepartitionNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
                 RuleId.STREAMS_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupBy"),
                 desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedStream;"),
