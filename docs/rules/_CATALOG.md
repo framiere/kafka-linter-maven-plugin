@@ -51,6 +51,14 @@ Each row is `(ID, Severity, Confidence, Detection, Tagline)`. The ID links to th
 | [versions](versions/_INDEX.md) | 28 | Library-version, EOL, BOM-drift, and CVE rules — pom-level only. |
 | [good-practices](good-practices/_INDEX.md) | 24 | Positive checks — patterns the linter rewards rather than flags. |
 
+### Known drift (doc-tree vs. registry)
+
+The table above counts curated docs. The compiled registry in `RuleId.java` has expanded faster than the doc-tree:
+
+- **Registry-only categories** — `kafka-connect` (~92 rules) and `quarkus` (~6 rules, distinct from `quarkus-kafka`) are registered with `docPath("kafka-connect/...")` / `docPath("quarkus/...")`, but no `docs/rules/kafka-connect/` or `docs/rules/quarkus/` directory exists yet. The full didactic prose lives inline in each `RuleId.message(...)`; the standalone doc files are a backlog item.
+- **Doc-only categories** — `docs/rules/good-practices/` (24 files) and `docs/rules/warpstream/` (4 files) ship as curated guidance documents that pre-date the registry expansion. No `RuleId` is wired to them today; they read as project-curated reference material, not enforced rules.
+- **Curated vs. registered totals** — the per-category counts in the table reflect the curated subset shown below; the registered totals are larger (e.g. `kafka-clients` shows 40 here, the registry has ~259). Treat the table as a guided tour, the registry as truth.
+
 ## Master rule table
 
 ### kafka-clients (40)
