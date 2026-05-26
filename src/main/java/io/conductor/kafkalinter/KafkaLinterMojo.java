@@ -273,6 +273,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsMaterializedWithLoggingDisa
 import io.conductor.kafkalinter.rules.streams.StreamsStoreBuilderWithLoggingDisabledRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSuppressBufferUnboundedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCountNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
@@ -798,10 +799,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
         addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_NAMED, StreamsCountNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_NAMED, StreamsReduceNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_AGGREGATE_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("aggregate"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "Aggregator.aggregate(Initializer, Aggregator) with no Named — KSTREAM-AGGREGATE-<N> processor, state store, changelog topic all graph-index-derived. Of count/reduce/aggregate, aggregate typically carries the LARGEST per-key state (custom VA type); losing it across a topology edit is the most expensive to rebuild. Use aggregate(initializer, aggregator, Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_NAMED, StreamsAggregateNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s -> new MethodCallRule(
                 RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("build"),
                 desc -> "()Lorg/apache/kafka/streams/Topology;".equals(desc),
