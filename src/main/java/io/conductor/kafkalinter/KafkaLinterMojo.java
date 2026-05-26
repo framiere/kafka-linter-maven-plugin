@@ -274,6 +274,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsStoreBuilderWithLoggingDisa
 import io.conductor.kafkalinter.rules.streams.StreamsSuppressBufferUnboundedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCountNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsBuilderBuildNoPropertiesRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeignKeyJoinNoTableJoinedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
@@ -801,10 +802,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_NAMED, StreamsCountNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_NAMED, StreamsReduceNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_NAMED, StreamsAggregateNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s -> new MethodCallRule(
-                RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, s, Set.of(KafkaTypes.STREAMS_BUILDER), Set.of("build"),
-                desc -> "()Lorg/apache/kafka/streams/Topology;".equals(desc),
-                "StreamsBuilder.build() (no Properties argument) — topology.optimization is SILENTLY IGNORED, including REUSE_KTABLE_SOURCE_TOPICS and MERGE_REPARTITION_TOPICS. Production code that sets `topology.optimization=all` in props expects the rewrites; without props, the topology is emitted un-optimized and every internal topic is created with the un-optimized names. Use builder.build(streamsProperties)."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_BUILDER_BUILD_NO_PROPERTIES, StreamsBuilderBuildNoPropertiesRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_FOREIGN_KEY_JOIN_NO_TABLE_JOINED, StreamsForeignKeyJoinNoTableJoinedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_ALL_METADATA_FOR_STORE_DEPRECATED,
                 StreamsAllMetadataForStoreDeprecatedRule::new);
