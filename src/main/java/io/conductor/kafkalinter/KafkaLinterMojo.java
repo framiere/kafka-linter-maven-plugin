@@ -8,6 +8,7 @@ import io.conductor.kafkalinter.rules.admin.AdminCreateTopicsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminDeleteTopicsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminAlterPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminCreateAclsNoOptionsRule;
+import io.conductor.kafkalinter.rules.admin.AdminDeleteAclsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminListPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
@@ -864,10 +865,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_LIST_PARTITION_REASSIGNMENTS_NO_OPTIONS, AdminListPartitionReassignmentsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, AdminAlterPartitionReassignmentsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, AdminCreateAclsNoOptionsRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, s -> new MethodCallRule(
-                RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("deleteAcls"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/DeleteAclsOptions;"),
-                "Admin.deleteAcls() with no DeleteAclsOptions — IRREVERSIBLE security mutation with broad-filter semantics under default ~30 s timeout. A single AclBindingFilter.ANY call can wipe thousands of bindings; mid-batch timeout firing leaves partial deletion with no enumeration. Pass new DeleteAclsOptions().timeoutMs(120_000) AND narrow every filter to a specific principal/resource."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, AdminDeleteAclsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("incrementalAlterConfigs"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterConfigsOptions;"),
