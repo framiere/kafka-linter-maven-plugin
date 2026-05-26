@@ -9,6 +9,7 @@ import io.conductor.kafkalinter.rules.admin.AdminDeleteTopicsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminAlterPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminCreateAclsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminDeleteAclsNoOptionsRule;
+import io.conductor.kafkalinter.rules.admin.AdminIncrementalAlterConfigsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminListPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
@@ -866,10 +867,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, AdminAlterPartitionReassignmentsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, AdminCreateAclsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_DELETE_ACLS_NO_OPTIONS, AdminDeleteAclsNoOptionsRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s -> new MethodCallRule(
-                RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("incrementalAlterConfigs"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterConfigsOptions;"),
-                "Admin.incrementalAlterConfigs() with no AlterConfigsOptions — defaults validateOnly=false: the change is APPLIED to the broker/topic with no dry-run preview. Pass new AlterConfigsOptions().validateOnly(true) for a preview, then re-run with validateOnly(false) once the result is reviewed."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_INCREMENTAL_ALTER_CONFIGS_NO_OPTIONS, AdminIncrementalAlterConfigsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_ELECT_LEADERS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("electLeaders"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/ElectLeadersOptions;"),
