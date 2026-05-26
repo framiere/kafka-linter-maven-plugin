@@ -6,6 +6,7 @@ import io.conductor.kafkalinter.rules.ConsumerCommitPerRecordRule;
 import io.conductor.kafkalinter.rules.AdminCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.admin.AdminCreateTopicsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminDeleteTopicsNoOptionsRule;
+import io.conductor.kafkalinter.rules.admin.AdminAlterPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.admin.AdminListPartitionReassignmentsNoOptionsRule;
 import io.conductor.kafkalinter.rules.ConsumerCloseZeroDurationRule;
 import io.conductor.kafkalinter.rules.ConsumerPollInfiniteDurationRule;
@@ -860,10 +861,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 v -> { long n = parseLongOrZero(v); return n > 0 && n < 10_000L; },
                 "session.timeout.ms={value} — below 10 s. Broker enforces group.min.session.timeout.ms (default 6 s) as a hard floor; values above 6 s but below 10 s rebalance-storm under normal JVM GC pauses (2-9 s on G1/ZGC under K8s memory pressure). Default 45000 since KIP-389 (Kafka 2.5) for this reason."));
         addIfEnabled(rules, sev, RuleId.ADMIN_LIST_PARTITION_REASSIGNMENTS_NO_OPTIONS, AdminListPartitionReassignmentsNoOptionsRule::new);
-        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s -> new MethodCallRule(
-                RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("alterPartitionReassignments"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/AlterPartitionReassignmentsOptions;"),
-                "Admin.alterPartitionReassignments() with no AlterPartitionReassignmentsOptions — controller-driven inter-broker move; the AdminClient ack queues behind other admin writes on busy controllers. Default ~30 s fires before the controller acks; retry sees duplicate-rejection while the original is in flight. Pass new AlterPartitionReassignmentsOptions().timeoutMs(120_000) and poll listPartitionReassignments() for progress."));
+        addIfEnabled(rules, sev, RuleId.ADMIN_ALTER_PARTITION_REASSIGNMENTS_NO_OPTIONS, AdminAlterPartitionReassignmentsNoOptionsRule::new);
         addIfEnabled(rules, sev, RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, s -> new MethodCallRule(
                 RuleId.ADMIN_CREATE_ACLS_NO_OPTIONS, s, KafkaTypes.ADMIN_OWNERS, Set.of("createAcls"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/clients/admin/CreateAclsOptions;"),
