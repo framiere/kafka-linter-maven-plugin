@@ -265,6 +265,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsFlatMapValuesNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForEachNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStreamJoinNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRepartitionNoNamedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsGroupByNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -754,10 +755,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, ConsumerSubscribeWithoutRebalanceListenerRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_ENFORCE_REBALANCE_NO_REASON, ConsumerEnforceRebalanceNoReasonRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REPARTITION_NO_NAMED, StreamsRepartitionNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_NO_GROUPED, s -> new MethodCallRule(
-                RuleId.STREAMS_GROUP_BY_NO_GROUPED, s, Set.of(KafkaTypes.KSTREAM), Set.of("groupBy"),
-                desc -> desc != null && desc.equals("(Lorg/apache/kafka/streams/kstream/KeyValueMapper;)Lorg/apache/kafka/streams/kstream/KGroupedStream;"),
-                "KStream.groupBy(KeyValueMapper) with no Grouped argument — the implicit repartition topic name is derived from the topology graph index; any upstream edit renames it and the aggregation restarts from zero. Use groupBy(mapper, Grouped.as(\"name\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_GROUP_BY_NO_GROUPED, StreamsGroupByNoGroupedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s -> new MethodCallRule(
                 RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s, Set.of(KafkaTypes.SUPPRESSED_BUFFER_CONFIG), Set.of("unbounded"),
                 "Suppressed.BufferConfig.unbounded() — suppress() buffer grows until JVM heap exhaustion on a slow downstream commit. Use BufferConfig.maxBytes(n) or maxRecords(n) with shutDownWhenFull() so the bound is explicit."));
