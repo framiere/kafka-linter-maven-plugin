@@ -268,6 +268,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsRepartitionNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByNoGroupedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsCountNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoMaterializedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsReduceNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -763,10 +764,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "Suppressed.BufferConfig.unbounded() — suppress() buffer grows until JVM heap exhaustion on a slow downstream commit. Use BufferConfig.maxBytes(n) or maxRecords(n) with shutDownWhenFull() so the bound is explicit."));
         addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_MATERIALIZED, StreamsCountNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_MATERIALIZED, StreamsAggregateNoMaterializedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_MATERIALIZED, s -> new MethodCallRule(
-                RuleId.STREAMS_REDUCE_NO_MATERIALIZED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("reduce"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
-                "reduce() without a Materialized argument — the underlying state store and changelog topic are auto-named from the topology graph index, so any upstream edit renames the changelog and the reduction restarts from the first incoming record on the next deploy. Pass Materialized.as(\"name\")."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_MATERIALIZED, StreamsReduceNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_STREAM_JOIN_NO_NAMED, StreamsStreamJoinNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_COMMIT_ASYNC_NO_CALLBACK, ConsumerCommitAsyncNoCallbackRule::new);
         addIfEnabled(rules, sev, RuleId.PRODUCER_RECORD_NO_KEY, ProducerRecordNoKeyRule::new);
