@@ -276,6 +276,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsCountNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsBuilderBuildNoPropertiesRule;
 import io.conductor.kafkalinter.rules.streams.StreamsForeignKeyJoinNoTableJoinedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsInMemoryKvStoreRule;
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
@@ -795,10 +796,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_FLAT_MAP_NO_NAMED, StreamsFlatMapNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_FILTER_NO_NAMED, StreamsKStreamFilterNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_KSTREAM_MAP_VALUES_NO_NAMED, StreamsKStreamMapValuesNoNamedRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_IN_MEMORY_KV_STORE, s -> new MethodCallRule(
-                RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
-                Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
-                "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_IN_MEMORY_KV_STORE, StreamsInMemoryKvStoreRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_NAMED, StreamsCountNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_NAMED, StreamsReduceNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_NAMED, StreamsAggregateNoNamedRule::new);
