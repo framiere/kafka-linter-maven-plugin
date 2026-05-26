@@ -270,6 +270,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsCountNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsAggregateNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsReduceNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsMaterializedWithLoggingDisabledRule;
+import io.conductor.kafkalinter.rules.streams.StreamsStoreBuilderWithLoggingDisabledRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -749,9 +750,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 "0"::equals,
                 "cache.max.bytes.buffering=0 — every state-store update is forwarded; changelog write rate explodes."));
         addIfEnabled(rules, sev, RuleId.STREAMS_MATERIALIZED_WITH_LOGGING_DISABLED, StreamsMaterializedWithLoggingDisabledRule::new);
-        addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s -> new MethodCallRule(
-                RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, s, Set.of(KafkaTypes.STORE_BUILDER), Set.of("withLoggingDisabled"),
-                "StoreBuilder.withLoggingDisabled() — Processor-API state store has no changelog topic. Restoration after rebalance yields an empty store; Processor.process() then runs against missing state and corrupts downstream output."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_STOREBUILDER_WITH_LOGGING_DISABLED, StreamsStoreBuilderWithLoggingDisabledRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_SET_UNCAUGHT_EXCEPTION_HANDLER_LEGACY_DEPRECATED,
                 StreamsSetUncaughtExceptionHandlerLegacyDeprecatedRule::new);
         addIfEnabled(rules, sev, RuleId.CONSUMER_SUBSCRIBE_WITHOUT_REBALANCE_LISTENER, ConsumerSubscribeWithoutRebalanceListenerRule::new);
