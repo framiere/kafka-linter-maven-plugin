@@ -272,6 +272,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsReduceNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsMaterializedWithLoggingDisabledRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStoreBuilderWithLoggingDisabledRule;
 import io.conductor.kafkalinter.rules.streams.StreamsSuppressBufferUnboundedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsCountNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -794,10 +795,7 @@ public class KafkaLinterMojo extends AbstractMojo {
                 RuleId.STREAMS_IN_MEMORY_KV_STORE, s, Set.of(KafkaTypes.STREAMS_STORES),
                 Set.of("inMemoryKeyValueStore", "inMemoryWindowStore", "inMemorySessionStore"),
                 "Stores.inMemory*Store() — state lives only in JVM heap; on restart/crash/rebalance the store is empty and must be fully restored from the changelog topic (minutes-to-hours for non-trivial state, blocking the partition's processing). Use Stores.persistentKeyValueStore / persistentWindowStore / persistentSessionStore for production."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_NAMED, s -> new MethodCallRule(
-                RuleId.STREAMS_COUNT_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("count"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
-                "Aggregator.count() with no Named — KSTREAM-AGGREGATE-<N> processor node, state store, changelog topic, and (when key-changing upstream) repartition topic are ALL graph-index-derived. Any topology edit upstream shifts <N> and silently invalidates the count's persistent state. Use count(Named.as(\"...\")) AND count(Named.as(\"...\"), Materialized.as(\"...\"))."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_NAMED, StreamsCountNoNamedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_REDUCE_NO_NAMED, s -> new MethodCallRule(
                 RuleId.STREAMS_REDUCE_NO_NAMED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("reduce"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Named;"),
