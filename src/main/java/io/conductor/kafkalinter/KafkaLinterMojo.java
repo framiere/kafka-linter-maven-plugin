@@ -266,6 +266,7 @@ import io.conductor.kafkalinter.rules.streams.StreamsForEachNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsStreamJoinNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsRepartitionNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsGroupByNoGroupedRule;
+import io.conductor.kafkalinter.rules.streams.StreamsCountNoMaterializedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsKTableToStreamNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsProcessNoNamedRule;
 import io.conductor.kafkalinter.rules.streams.StreamsToTableNoMaterializedRule;
@@ -759,10 +760,7 @@ public class KafkaLinterMojo extends AbstractMojo {
         addIfEnabled(rules, sev, RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s -> new MethodCallRule(
                 RuleId.STREAMS_SUPPRESS_BUFFER_UNBOUNDED, s, Set.of(KafkaTypes.SUPPRESSED_BUFFER_CONFIG), Set.of("unbounded"),
                 "Suppressed.BufferConfig.unbounded() — suppress() buffer grows until JVM heap exhaustion on a slow downstream commit. Use BufferConfig.maxBytes(n) or maxRecords(n) with shutDownWhenFull() so the bound is explicit."));
-        addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_MATERIALIZED, s -> new MethodCallRule(
-                RuleId.STREAMS_COUNT_NO_MATERIALIZED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("count"),
-                desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
-                "count() without a Materialized argument — the underlying state store and changelog topic are auto-named from the topology graph index, so any upstream edit renames the changelog and the count restarts from zero on the next deploy. Pass Materialized.as(\"name\")."));
+        addIfEnabled(rules, sev, RuleId.STREAMS_COUNT_NO_MATERIALIZED, StreamsCountNoMaterializedRule::new);
         addIfEnabled(rules, sev, RuleId.STREAMS_AGGREGATE_NO_MATERIALIZED, s -> new MethodCallRule(
                 RuleId.STREAMS_AGGREGATE_NO_MATERIALIZED, s, KafkaTypes.GROUPED_KSTREAM_OWNERS, Set.of("aggregate"),
                 desc -> desc != null && !desc.contains("Lorg/apache/kafka/streams/kstream/Materialized;"),
